@@ -1,0 +1,23 @@
+{
+  "id": "sample-email-triage",
+  "name": "Client email triage",
+  "note": "Every email below is made up for this demo. Nothing here is real client mail. Each input carries \"sample\": true so the data itself says so, not only the screen.",
+  "prompt": "You triage client emails. Read the email below and return:\n1. priority (urgent / normal / low)\n2. category (billing, scheduling, question, spam)\n3. a short reply draft\n\nEmail: {input}",
+  "inputs": [
+    {
+      "label": "Client disputes an overdue invoice",
+      "sample": true,
+      "text": "Subject: Invoice 1042 - this is wrong\n\nHi,\n\nI am looking at invoice 1042, dated 2 September, and it is still showing as unpaid in your reminder. Two things.\n\nFirst, the amount. It charges for a second onboarding session at 450 that we never booked. We agreed one session in the kickoff call and that is what happened.\n\nSecond, the reminder fee. I am not paying a late fee on an invoice I disputed in writing on 8 September and never got an answer to.\n\nPlease send a corrected invoice before our payment run on Friday, otherwise this slips another month and neither of us wants that.\n\nThanks,\nDana Whitfield\nOperations, Brightside Studio"
+    },
+    {
+      "label": "Client asks to move tomorrow's meeting",
+      "sample": true,
+      "text": "Subject: tomorrow 10am?\n\nHey - sorry for the short notice. Something came up on our side and I cannot make 10am tomorrow. Could we push it to Thursday, any time after 2pm? Wednesday afternoon also works if Thursday is tight for you.\n\nNothing urgent, the project is fine. Just need to move the slot.\n\nCheers,\nMarcus"
+    },
+    {
+      "label": "A newsletter that landed in the inbox",
+      "sample": true,
+      "text": "Subject: The Automation Weekly - 7 tools that replaced my whole stack\n\nHello there,\n\nThis week: the 7 tools I use to run a six-figure agency with no full-time staff, why most teams pick the wrong CRM, and a reader question about pricing retainers.\n\nRead the full issue online.\n\nYou are getting this because you signed up at a webinar in March. Unsubscribe at any time using the link below.\n\nThe Automation Weekly"
+    }
+  ]
+}

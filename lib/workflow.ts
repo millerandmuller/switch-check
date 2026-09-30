@@ -77,3 +77,28 @@ export function isComplete(problems: DraftProblems): boolean {
     problems.inputs.every((problem) => problem === null)
   );
 }
+
+export type ModelPair = { current: string; candidate: string };
+
+export type SampleInput = { label: string; sample: boolean; text: string };
+export type SampleWorkflow = { prompt: string; inputs: SampleInput[] };
+
+export function draftFromSample(
+  sample: SampleWorkflow,
+  currentModel: string,
+  candidateModel: string,
+): WorkflowDraft {
+  return {
+    prompt: sample.prompt,
+    inputs: sample.inputs.map((input) => input.text),
+    currentModel,
+    candidateModel,
+  };
+}
+
+// The SAMPLE tag follows the text, not the button: it shows while a field still
+// holds one of the shipped sample emails, and goes away once that text is
+// edited, so a real client email is never labeled as made up or the reverse.
+export function sampleLabel(sample: SampleWorkflow, value: string): string | null {
+  return sample.inputs.find((input) => input.text === value)?.label ?? null;
+}

@@ -1,4 +1,5 @@
 import candidatesConfig from "@/config/candidates.json";
+import sampleWorkflow from "@/demo-data/sample-email-triage.json";
 import { WorkflowForm } from "./workflow-form";
 
 export default function Home() {
@@ -9,7 +10,11 @@ export default function Home() {
         Run your own prompt on the model you use today and on a newer one, then decide: switch, stay, or test more.
       </p>
       <div className="mt-10">
-        <WorkflowForm candidates={candidatesConfig.candidates} />
+        <WorkflowForm
+          candidates={candidatesConfig.candidates}
+          defaultPair={candidatesConfig.default_pair}
+          sample={sampleWorkflow}
+        />
       </div>
     </main>
   );

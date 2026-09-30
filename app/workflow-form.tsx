@@ -2,13 +2,18 @@
 
 import { useState } from "react";
 import { ReadyPanel } from "./ready-panel";
+import { SampleTag } from "./sample-tag";
 import {
   INPUT_MAX_CHARS,
   INPUT_PLACEHOLDER,
+  draftFromSample,
   emptyDraft,
   findProblems,
   isComplete,
+  sampleLabel,
   type DraftProblems,
+  type ModelPair,
+  type SampleWorkflow,
   type WorkflowDraft,
 } from "@/lib/workflow";
 
@@ -21,6 +26,9 @@ const invalidFieldClass = "border-red-600 dark:border-red-500";
 function fieldClasses(invalid: boolean) {
   return invalid ? `${fieldClass} ${invalidFieldClass}` : fieldClass;
 }
+
+const secondaryButtonClass =
+  "rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900";
 
 function FieldProblem({ id, message }: { id: string; message: string | null }) {
   if (message === null) return null;
@@ -35,11 +43,13 @@ function InputField({
   position,
   value,
   problem,
+  sampleOf,
   onChange,
 }: {
   position: number;
   value: string;
   problem: string | null;
+  sampleOf: string | null;
   onChange: (value: string) => void;
 }) {
   const fieldId = `input-${position}`;
@@ -51,6 +61,7 @@ function InputField({
     <div>
       <label htmlFor={fieldId} className={labelClass}>
         Input {position}
+        {sampleOf !== null && <SampleTag label={sampleOf} />}
       </label>
       <textarea
         id={fieldId}
@@ -116,9 +127,25 @@ function ModelPicker({
   );
 }
 
-export function WorkflowForm({ candidates }: { candidates: string[] }) {
+// A configured default that is not on the candidate list would leave a picker
+// blank, so fall back to the first candidate rather than show nothing.
+function pick(candidates: string[], preferred: string) {
+  return candidates.includes(preferred) ? preferred : candidates[0];
+}
+
+export function WorkflowForm({
+  candidates,
+  defaultPair,
+  sample,
+}: {
+  candidates: string[];
+  defaultPair: ModelPair;
+  sample: SampleWorkflow;
+}) {
+  const currentDefault = pick(candidates, defaultPair.current);
+  const candidateDefault = pick(candidates, defaultPair.candidate);
   const [draft, setDraft] = useState<WorkflowDraft>(() =>
-    emptyDraft(candidates[0], candidates[1] ?? candidates[0]),
+    emptyDraft(currentDefault, candidateDefault),
   );
   // Refusals appear only after the person has pressed Continue once, then stay
   // live while they fix things. Pressing Continue never runs a model.
@@ -139,6 +166,11 @@ export function WorkflowForm({ candidates }: { candidates: string[] }) {
     }));
   }
 
+  function fillFromSample() {
+    setDraft(draftFromSample(sample, currentDefault, candidateDefault));
+    setAttempted(false);
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAttempted(true);
@@ -146,7 +178,7 @@ export function WorkflowForm({ candidates }: { candidates: string[] }) {
   }
 
   if (ready) {
-    return <ReadyPanel draft={draft} onEdit={() => setReady(false)} />;
+    return <ReadyPanel draft={draft} sample={sample} onEdit={() => setReady(false)} />;
   }
 
   return (
@@ -172,7 +204,14 @@ export function WorkflowForm({ candidates }: { candidates: string[] }) {
 
       <fieldset className="mt-8">
         <legend className={labelClass}>Inputs (3)</legend>
-        <p className={helperClass}>Up to {INPUT_MAX_CHARS.toLocaleString("en-US")} characters each</p>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+          <p className={helperClass}>
+            Up to {INPUT_MAX_CHARS.toLocaleString("en-US")} characters each
+          </p>
+          <button type="button" onClick={fillFromSample} className={secondaryButtonClass}>
+            Use sample workflow
+          </button>
+        </div>
         <div className="mt-3 grid gap-5 sm:grid-cols-3">
           {draft.inputs.map((input, index) => (
             <InputField
@@ -180,6 +219,7 @@ export function WorkflowForm({ candidates }: { candidates: string[] }) {
               position={index + 1}
               value={input}
               problem={shown?.inputs[index] ?? null}
+              sampleOf={sampleLabel(sample, input)}
               onChange={(value) => updateInput(index, value)}
             />
           ))}

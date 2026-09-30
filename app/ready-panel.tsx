@@ -1,4 +1,5 @@
-import type { WorkflowDraft } from "@/lib/workflow";
+import { sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
+import { SampleTag } from "./sample-tag";
 
 // The Ready state shows what will be compared, and nothing else. It holds no
 // model output, no timing and no cost, because nothing has been run yet.
@@ -19,7 +20,15 @@ function ModelRow({ role, model }: { role: string; model: string }) {
   );
 }
 
-export function ReadyPanel({ draft, onEdit }: { draft: WorkflowDraft; onEdit: () => void }) {
+export function ReadyPanel({
+  draft,
+  sample,
+  onEdit,
+}: {
+  draft: WorkflowDraft;
+  sample: SampleWorkflow;
+  onEdit: () => void;
+}) {
   return (
     <section
       aria-labelledby="ready-heading"
@@ -45,20 +54,24 @@ export function ReadyPanel({ draft, onEdit }: { draft: WorkflowDraft; onEdit: ()
 
       <h3 className="mt-5 text-sm font-medium text-zinc-600 dark:text-zinc-400">Inputs (3)</h3>
       <ol className="mt-2 grid gap-3 sm:grid-cols-3">
-        {draft.inputs.map((input, index) => (
-          <li
-            key={index}
-            className="rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-800"
-          >
-            <span className="font-medium">{index + 1}</span>
-            <p className="mt-1 whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
-              {preview(input)}
-            </p>
-            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500">
-              {input.length.toLocaleString("en-US")} characters
-            </p>
-          </li>
-        ))}
+        {draft.inputs.map((input, index) => {
+          const sampleOf = sampleLabel(sample, input);
+          return (
+            <li
+              key={index}
+              className="rounded-md border border-zinc-200 p-3 text-sm dark:border-zinc-800"
+            >
+              <span className="font-medium">{index + 1}</span>
+              {sampleOf !== null && <SampleTag label={sampleOf} />}
+              <p className="mt-1 whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
+                {preview(input)}
+              </p>
+              <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500">
+                {input.length.toLocaleString("en-US")} characters
+              </p>
+            </li>
+          );
+        })}
       </ol>
 
       <dl className="mt-5 grid gap-3 sm:grid-cols-2">

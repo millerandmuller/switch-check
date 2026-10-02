@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { ComparisonView } from "./comparison-view";
 import { ReadyPanel } from "./ready-panel";
 import { SampleTag } from "./sample-tag";
+import { emptyOutputs, withOutput, type ModelSide, type PastedOutputs } from "@/lib/comparison";
 import {
+  INPUT_COUNT,
   INPUT_MAX_CHARS,
   INPUT_PLACEHOLDER,
   draftFromSample,
@@ -127,6 +130,10 @@ function ModelPicker({
   );
 }
 
+// Which screen is showing. The draft and the pasted outputs live above all
+// three, so moving between them loses nothing.
+type Step = "form" | "ready" | "compare";
+
 // A configured default that is not on the candidate list would leave a picker
 // blank, so fall back to the first candidate rather than show nothing.
 function pick(candidates: string[], preferred: string) {
@@ -150,7 +157,8 @@ export function WorkflowForm({
   // Refusals appear only after the person has pressed Continue once, then stay
   // live while they fix things. Pressing Continue never runs a model.
   const [attempted, setAttempted] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [step, setStep] = useState<Step>("form");
+  const [outputs, setOutputs] = useState<PastedOutputs>(() => emptyOutputs(INPUT_COUNT));
 
   const problems = findProblems(draft);
   const shown: DraftProblems | null = attempted ? problems : null;
@@ -174,11 +182,34 @@ export function WorkflowForm({
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAttempted(true);
-    if (isComplete(problems)) setReady(true);
+    if (isComplete(problems)) setStep("ready");
   }
 
-  if (ready) {
-    return <ReadyPanel draft={draft} sample={sample} onEdit={() => setReady(false)} />;
+  function updateOutput(inputIndex: number, side: ModelSide, value: string) {
+    setOutputs((current) => withOutput(current, inputIndex, side, value));
+  }
+
+  if (step === "ready") {
+    return (
+      <ReadyPanel
+        draft={draft}
+        sample={sample}
+        onEdit={() => setStep("form")}
+        onCompare={() => setStep("compare")}
+      />
+    );
+  }
+
+  if (step === "compare") {
+    return (
+      <ComparisonView
+        draft={draft}
+        sample={sample}
+        outputs={outputs}
+        onOutputChange={updateOutput}
+        onBack={() => setStep("ready")}
+      />
+    );
   }
 
   return (

@@ -96,6 +96,13 @@ export function draftFromSample(
   };
 }
 
+// A shortened input for places that only need to say which input this is. The
+// full text stays in the draft.
+export function preview(value: string, maxChars: number): string {
+  if (value.length <= maxChars) return value;
+  return `${value.slice(0, maxChars).trimEnd()}…`;
+}
+
 // The SAMPLE tag follows the text, not the button: it shows while a field still
 // holds one of the shipped sample emails, and goes away once that text is
 // edited, so a real client email is never labeled as made up or the reverse.

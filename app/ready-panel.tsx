@@ -1,15 +1,10 @@
-import { sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
+import { preview, sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
 import { SampleTag } from "./sample-tag";
 
 // The Ready state shows what will be compared, and nothing else. It holds no
 // model output, no timing and no cost, because nothing has been run yet.
 
 const PREVIEW_CHARS = 180;
-
-function preview(value: string) {
-  if (value.length <= PREVIEW_CHARS) return value;
-  return `${value.slice(0, PREVIEW_CHARS).trimEnd()}…`;
-}
 
 function ModelRow({ role, model }: { role: string; model: string }) {
   return (
@@ -24,10 +19,12 @@ export function ReadyPanel({
   draft,
   sample,
   onEdit,
+  onCompare,
 }: {
   draft: WorkflowDraft;
   sample: SampleWorkflow;
   onEdit: () => void;
+  onCompare: () => void;
 }) {
   return (
     <section
@@ -64,7 +61,7 @@ export function ReadyPanel({
               <span className="font-medium">{index + 1}</span>
               {sampleOf !== null && <SampleTag label={sampleOf} />}
               <p className="mt-1 whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
-                {preview(input)}
+                {preview(input, PREVIEW_CHARS)}
               </p>
               <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500">
                 {input.length.toLocaleString("en-US")} characters
@@ -79,9 +76,15 @@ export function ReadyPanel({
         <ModelRow role="Model to compare with" model={draft.candidateModel} />
       </dl>
 
-      <p className="mt-5 border-t border-zinc-200 pt-4 text-sm text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
-        Comparison view: the next step.
-      </p>
+      <div className="mt-5 flex justify-end border-t border-zinc-200 pt-4 dark:border-zinc-800">
+        <button
+          type="button"
+          onClick={onCompare}
+          className="rounded-md bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        >
+          Continue to compare
+        </button>
+      </div>
     </section>
   );
 }

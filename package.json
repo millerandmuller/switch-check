@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check-models": "node scripts/check-models.mjs",
+    "sample-results": "node scripts/run-sample.mjs",
     "test": "node --test scripts/lib/*.test.mjs"
   },
   "dependencies": {

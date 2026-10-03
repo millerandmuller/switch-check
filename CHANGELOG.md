@@ -7,6 +7,14 @@ AI-Dopters 30-Day Community Hackathon.
 
 ### Added
 
+- **Real sample results (Day 9, the Day 8 step).** `npm run sample-results`
+  runs the sample workflow once on the default model pair through OpenRouter
+  and saves the six outputs, with their token counts and response times, to
+  `demo-data/sample-results-<date>.json`. In the comparison view, **Load
+  sample results** fills the table with those outputs, tagged `sample run`
+  with the run date. The button is offered only for the unchanged sample
+  workflow on the default pair. The outputs are saved exactly as the models
+  returned them. Token counts and response times are not shown yet.
 - **Quality review (Day 9).** In the shown comparison, each output can be rated
   on a three-point scale (Usable as is, Needs edits, Not usable) with an
   optional one-line note of up to 200 characters. The rating and note sit in

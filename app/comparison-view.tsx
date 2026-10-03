@@ -13,13 +13,15 @@ import {
   type Rating,
   type Reviews,
 } from "@/lib/comparison";
+import { sampleRunDate, type SampleResults } from "@/lib/sample-results";
 import { preview, sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
 import { CellReview, RatingLegend } from "./cell-review";
 import { SampleTag } from "./sample-tag";
 
-// The comparison table, filled by hand. Nothing is run here: no model is
-// called, and the table shows only what the person pasted. Speed and cost are
-// not on this screen because nobody measured them. Once the comparison is
+// The comparison table, filled by hand or from the saved sample run. Nothing is
+// run here: no model is called, and the table shows only what the person
+// pasted or what one earlier, dated run returned. Speed and cost are not on
+// this screen yet. Once the comparison is
 // shown, the person rates each output; the row result and the summary line
 // only count those ratings and never name a winner.
 
@@ -40,9 +42,16 @@ function modelFor(draft: WorkflowDraft, side: ModelSide) {
   return side === "current" ? draft.currentModel : draft.candidateModel;
 }
 
-// Marks an output that was pasted by hand, so it is never confused with one
-// the tool fetched itself once a live runner exists.
-function PastedTag() {
+// Says where an output came from: pasted by hand, or returned by the saved
+// sample run on the given date. The two are never shown the same way.
+function SourceTag({ sampleRunOn }: { sampleRunOn: string | null }) {
+  if (sampleRunOn !== null) {
+    return (
+      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+        sample run · {sampleRunOn}
+      </span>
+    );
+  }
   return (
     <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-sky-900 dark:bg-sky-950 dark:text-sky-200">
       pasted
@@ -52,13 +61,21 @@ function PastedTag() {
 
 // A cell with no output gets no rating and no note field: a model that was
 // not tried cannot be judged.
-function ReadOnlyCell({ output, review }: { output: string; review: React.ReactNode }) {
+function ReadOnlyCell({
+  output,
+  sampleRunOn,
+  review,
+}: {
+  output: string;
+  sampleRunOn: string | null;
+  review: React.ReactNode;
+}) {
   if (cellState(output) === "not tested") {
     return <p className="text-sm italic text-zinc-500 dark:text-zinc-500">not tested</p>;
   }
   return (
     <>
-      <PastedTag />
+      <SourceTag sampleRunOn={sampleRunOn} />
       <p className="mt-2 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">{output}</p>
       {review}
     </>
@@ -70,18 +87,23 @@ export function ComparisonView({
   sample,
   outputs,
   reviews,
+  sampleResults,
   onOutputChange,
   onRatingChange,
   onNoteChange,
+  onLoadSampleResults,
   onBack,
 }: {
   draft: WorkflowDraft;
   sample: SampleWorkflow;
   outputs: PastedOutputs;
   reviews: Reviews;
+  sampleResults: SampleResults | null;
   onOutputChange: (inputIndex: number, side: ModelSide, value: string) => void;
   onRatingChange: (inputIndex: number, side: ModelSide, rating: Rating) => void;
   onNoteChange: (inputIndex: number, side: ModelSide, note: string) => void;
+  // null when the saved sample results do not belong to this draft.
+  onLoadSampleResults: (() => void) | null;
   onBack: () => void;
 }) {
   const [showing, setShowing] = useState(false);
@@ -91,6 +113,18 @@ export function ComparisonView({
 
   const filled = filledCount(outputs);
   const refused = attempted && filled === 0;
+
+  const sampleRunOn = (inputIndex: number, side: ModelSide) =>
+    sampleRunDate(sampleResults, inputIndex, side, outputs[inputIndex][side]);
+  const anyFromSampleRun = outputs.some((_, index) =>
+    MODEL_SIDES.some((side) => sampleRunOn(index, side) !== null),
+  );
+
+  function loadSampleResults() {
+    if (onLoadSampleResults === null) return;
+    onLoadSampleResults();
+    setShowing(true);
+  }
 
   function showComparison() {
     setAttempted(true);
@@ -111,10 +145,29 @@ export function ComparisonView({
         Run your prompt on each model yourself and paste what it returned. Nothing is run from this
         page.
       </p>
+      {onLoadSampleResults !== null && sampleResults !== null && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <button type="button" onClick={loadSampleResults} className={secondaryButtonClass}>
+            Load sample results
+          </button>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            Real outputs from one run of this sample on {sampleResults.run_date}. Loading replaces
+            what is in the table.
+          </p>
+        </div>
+      )}
       <p aria-live="polite" className="mt-4 text-sm font-medium">
-        {filled} of {cellCount(outputs)} outputs pasted
+        {filled} of {cellCount(outputs)} outputs {anyFromSampleRun ? "filled" : "pasted"}
         {showing && <span className="mt-1 block">{summaryLine(outputs, reviews)}</span>}
       </p>
+      {anyFromSampleRun && sampleResults !== null && (
+        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+          Outputs tagged sample run come from one run of{" "}
+          <span className="font-mono text-xs">{sampleResults.models.current}</span> and{" "}
+          <span className="font-mono text-xs">{sampleResults.models.candidate}</span> through
+          OpenRouter on {sampleResults.run_date}, shown exactly as returned.
+        </p>
+      )}
       {showing && <RatingLegend />}
 
       <table className="mt-3 w-full table-fixed border-collapse text-left">
@@ -159,6 +212,7 @@ export function ComparisonView({
                     {showing ? (
                       <ReadOnlyCell
                         output={outputs[index][side]}
+                        sampleRunOn={sampleRunOn(index, side)}
                         review={
                           <CellReview
                             cellId={`review-${position}-${side}`}

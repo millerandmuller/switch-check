@@ -8,6 +8,7 @@ import {
   emptyOutputs,
   emptyReviews,
   reviewsAfterOutputChange,
+  reviewsAfterOutputsReplaced,
   withNote,
   withOutput,
   withRating,
@@ -30,6 +31,11 @@ import {
   type SampleWorkflow,
   type WorkflowDraft,
 } from "@/lib/workflow";
+import {
+  canLoadSampleResults,
+  outputsFromSampleResults,
+  type SampleResults,
+} from "@/lib/sample-results";
 
 const labelClass = "block text-sm font-medium";
 const helperClass = "mt-1 text-sm text-zinc-600 dark:text-zinc-400";
@@ -155,10 +161,12 @@ export function WorkflowForm({
   candidates,
   defaultPair,
   sample,
+  sampleResults,
 }: {
   candidates: string[];
   defaultPair: ModelPair;
   sample: SampleWorkflow;
+  sampleResults: SampleResults | null;
 }) {
   const currentDefault = pick(candidates, defaultPair.current);
   const candidateDefault = pick(candidates, defaultPair.candidate);
@@ -203,6 +211,15 @@ export function WorkflowForm({
     setOutputs((current) => withOutput(current, inputIndex, side, value));
   }
 
+  // Offered only while the draft is the unchanged sample workflow on the pair
+  // the saved run used, so saved outputs never sit under other inputs or models.
+  function loadSampleResults() {
+    if (sampleResults === null) return;
+    const loaded = outputsFromSampleResults(sampleResults);
+    setReviews((current) => reviewsAfterOutputsReplaced(current, outputs, loaded));
+    setOutputs(loaded);
+  }
+
   function updateRating(inputIndex: number, side: ModelSide, rating: Rating) {
     setReviews((current) => withRating(current, inputIndex, side, rating));
   }
@@ -229,6 +246,10 @@ export function WorkflowForm({
         sample={sample}
         outputs={outputs}
         reviews={reviews}
+        sampleResults={sampleResults}
+        onLoadSampleResults={
+          canLoadSampleResults(draft, sample, sampleResults) ? loadSampleResults : null
+        }
         onOutputChange={updateOutput}
         onRatingChange={updateRating}
         onNoteChange={updateNote}

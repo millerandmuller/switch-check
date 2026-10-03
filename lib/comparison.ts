@@ -130,6 +130,24 @@ export function reviewsAfterOutputChange(
   return withReview(reviews, inputIndex, side, EMPTY_REVIEW);
 }
 
+// The same rule for a whole table replaced at once, as when saved sample
+// results are loaded: only cells whose text changes lose their review.
+export function reviewsAfterOutputsReplaced(
+  reviews: Reviews,
+  outputsBefore: PastedOutputs,
+  outputsAfter: PastedOutputs,
+): Reviews {
+  return outputsAfter.reduce(
+    (current, pair, inputIndex) =>
+      MODEL_SIDES.reduce(
+        (kept, side) =>
+          reviewsAfterOutputChange(kept, outputsBefore, inputIndex, side, pair[side]),
+        current,
+      ),
+    reviews,
+  );
+}
+
 // How the compared model did against the model in use today on one input,
 // worked out from the person's two ratings and nothing else.
 export type RowResult = "better" | "same rating" | "worse" | "not tested" | "not rated yet";

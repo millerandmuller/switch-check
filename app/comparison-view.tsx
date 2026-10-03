@@ -6,15 +6,22 @@ import {
   cellCount,
   cellState,
   filledCount,
+  rowResult,
+  summaryLine,
   type ModelSide,
   type PastedOutputs,
+  type Rating,
+  type Reviews,
 } from "@/lib/comparison";
 import { preview, sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
+import { CellReview, RatingLegend } from "./cell-review";
 import { SampleTag } from "./sample-tag";
 
 // The comparison table, filled by hand. Nothing is run here: no model is
 // called, and the table shows only what the person pasted. Speed and cost are
-// not on this screen because nobody measured them.
+// not on this screen because nobody measured them. Once the comparison is
+// shown, the person rates each output; the row result and the summary line
+// only count those ratings and never name a winner.
 
 const ROW_PREVIEW_CHARS = 90;
 
@@ -43,7 +50,9 @@ function PastedTag() {
   );
 }
 
-function ReadOnlyCell({ output }: { output: string }) {
+// A cell with no output gets no rating and no note field: a model that was
+// not tried cannot be judged.
+function ReadOnlyCell({ output, review }: { output: string; review: React.ReactNode }) {
   if (cellState(output) === "not tested") {
     return <p className="text-sm italic text-zinc-500 dark:text-zinc-500">not tested</p>;
   }
@@ -51,6 +60,7 @@ function ReadOnlyCell({ output }: { output: string }) {
     <>
       <PastedTag />
       <p className="mt-2 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">{output}</p>
+      {review}
     </>
   );
 }
@@ -59,13 +69,19 @@ export function ComparisonView({
   draft,
   sample,
   outputs,
+  reviews,
   onOutputChange,
+  onRatingChange,
+  onNoteChange,
   onBack,
 }: {
   draft: WorkflowDraft;
   sample: SampleWorkflow;
   outputs: PastedOutputs;
+  reviews: Reviews;
   onOutputChange: (inputIndex: number, side: ModelSide, value: string) => void;
+  onRatingChange: (inputIndex: number, side: ModelSide, rating: Rating) => void;
+  onNoteChange: (inputIndex: number, side: ModelSide, note: string) => void;
   onBack: () => void;
 }) {
   const [showing, setShowing] = useState(false);
@@ -97,7 +113,9 @@ export function ComparisonView({
       </p>
       <p aria-live="polite" className="mt-4 text-sm font-medium">
         {filled} of {cellCount(outputs)} outputs pasted
+        {showing && <span className="mt-1 block">{summaryLine(outputs, reviews)}</span>}
       </p>
+      {showing && <RatingLegend />}
 
       <table className="mt-3 w-full table-fixed border-collapse text-left">
         <thead>
@@ -127,11 +145,31 @@ export function ComparisonView({
                   <span className="mt-1 block text-xs font-normal text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400">
                     {preview(input, ROW_PREVIEW_CHARS)}
                   </span>
+                  {showing && (
+                    <span className="mt-2 block text-xs font-normal">
+                      Compared model:{" "}
+                      <span className="font-semibold">
+                        {rowResult(outputs[index], reviews[index])}
+                      </span>
+                    </span>
+                  )}
                 </th>
                 {MODEL_SIDES.map((side) => (
                   <td key={side} className={cellClass}>
                     {showing ? (
-                      <ReadOnlyCell output={outputs[index][side]} />
+                      <ReadOnlyCell
+                        output={outputs[index][side]}
+                        review={
+                          <CellReview
+                            cellId={`review-${position}-${side}`}
+                            model={modelFor(draft, side)}
+                            position={position}
+                            review={reviews[index][side]}
+                            onRatingChange={(rating) => onRatingChange(index, side, rating)}
+                            onNoteChange={(note) => onNoteChange(index, side, note)}
+                          />
+                        }
+                      />
                     ) : (
                       <textarea
                         value={outputs[index][side]}

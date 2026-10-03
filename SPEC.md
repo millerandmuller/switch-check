@@ -25,7 +25,7 @@ The first version compares exactly two models: the current one and one candidate
 - The two outputs side by side for each input
 - Cost: estimated cost per 1,000 runs for each model, calculated from the provider's published per-token price and the tokens each run actually used. The price source and date are shown next to the number.
 - Speed: how long each model took to answer
-- Quality: the person decides, input by input (better, same or worse). The tool doesn't pick a winner on their behalf. A later version will suggest a mark with a one-line reason, which the person can always change.
+- Quality: the person rates each model's output on a three-point scale (usable as is, needs edits, not usable) and can add a one-line note. Better, same or worse for the compared model follows from those two ratings, input by input. The tool doesn't pick a winner on their behalf. A later version will suggest a mark with a one-line reason, which the person can always change.
 - A summary line from those choices, for example: "Same result on 3 of 3, 78% cheaper."
 
 If a model doesn't answer, it's marked "not tested", not "worse".

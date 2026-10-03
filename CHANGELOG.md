@@ -3,6 +3,20 @@
 What changed in Switch Check, newest first. Days are the days of the Early
 AI-Dopters 30-Day Community Hackathon.
 
+## Week 2 (from Oct 2, 2026)
+
+### Added
+
+- **Quality review (Day 9).** In the shown comparison, each output can be rated
+  on a three-point scale (Usable as is, Needs edits, Not usable) with an
+  optional one-line note of up to 200 characters. The rating and note sit in
+  the cell of the output they judge, and the three points are described above
+  the table. Each row shows whether the compared model was rated better, the
+  same or worse than the model in use today, and a line above the table counts
+  those rows. Both are worked out from the person's own ratings: the tool does
+  not rate anything itself. A rating and its note are cleared when that
+  output's text changes.
+
 ## Week 1 (Sep 27 to Oct 1, 2026)
 
 The week went into deciding what the tool is, then building the first two

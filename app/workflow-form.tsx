@@ -4,7 +4,18 @@ import { useState } from "react";
 import { ComparisonView } from "./comparison-view";
 import { ReadyPanel } from "./ready-panel";
 import { SampleTag } from "./sample-tag";
-import { emptyOutputs, withOutput, type ModelSide, type PastedOutputs } from "@/lib/comparison";
+import {
+  emptyOutputs,
+  emptyReviews,
+  reviewsAfterOutputChange,
+  withNote,
+  withOutput,
+  withRating,
+  type ModelSide,
+  type PastedOutputs,
+  type Rating,
+  type Reviews,
+} from "@/lib/comparison";
 import {
   INPUT_COUNT,
   INPUT_MAX_CHARS,
@@ -130,8 +141,8 @@ function ModelPicker({
   );
 }
 
-// Which screen is showing. The draft and the pasted outputs live above all
-// three, so moving between them loses nothing.
+// Which screen is showing. The draft, the pasted outputs and the person's
+// ratings and notes live above all three, so moving between them loses nothing.
 type Step = "form" | "ready" | "compare";
 
 // A configured default that is not on the candidate list would leave a picker
@@ -159,6 +170,7 @@ export function WorkflowForm({
   const [attempted, setAttempted] = useState(false);
   const [step, setStep] = useState<Step>("form");
   const [outputs, setOutputs] = useState<PastedOutputs>(() => emptyOutputs(INPUT_COUNT));
+  const [reviews, setReviews] = useState<Reviews>(() => emptyReviews(INPUT_COUNT));
 
   const problems = findProblems(draft);
   const shown: DraftProblems | null = attempted ? problems : null;
@@ -186,7 +198,17 @@ export function WorkflowForm({
   }
 
   function updateOutput(inputIndex: number, side: ModelSide, value: string) {
+    // The review is cleared against the outputs as they are before this change.
+    setReviews((current) => reviewsAfterOutputChange(current, outputs, inputIndex, side, value));
     setOutputs((current) => withOutput(current, inputIndex, side, value));
+  }
+
+  function updateRating(inputIndex: number, side: ModelSide, rating: Rating) {
+    setReviews((current) => withRating(current, inputIndex, side, rating));
+  }
+
+  function updateNote(inputIndex: number, side: ModelSide, note: string) {
+    setReviews((current) => withNote(current, inputIndex, side, note));
   }
 
   if (step === "ready") {
@@ -206,7 +228,10 @@ export function WorkflowForm({
         draft={draft}
         sample={sample}
         outputs={outputs}
+        reviews={reviews}
         onOutputChange={updateOutput}
+        onRatingChange={updateRating}
+        onNoteChange={updateNote}
         onBack={() => setStep("ready")}
       />
     );

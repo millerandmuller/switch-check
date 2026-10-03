@@ -166,7 +166,7 @@ Missing data in this step:
 
 ## Step 4: Review the result
 
-The person marks each input: better, same or worse for the compared model against the one they use today. The tool never picks a mark. (A later version may suggest one with a one-line reason the person can change.)
+The person rates each model's output for each input on a three-point scale (usable as is, needs edits, not usable), with an optional one-line note, inside the comparison table of step 3. Better, same or worse for the compared model against the one they use today follows from those two ratings. The tool never picks a mark. (A later version may suggest one with a one-line reason the person can change.)
 
 ```text
 +--------------------------------------------------------------------------+

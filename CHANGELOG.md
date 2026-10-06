@@ -25,6 +25,14 @@ AI-Dopters 30-Day Community Hackathon.
   not rate anything itself. A rating and its note are cleared when that
   output's text changes.
 
+### Tested
+
+- **Manual flow test (Day 12).** The whole flow was run end to end in a browser
+  with the sample workflow, once with the saved sample results and once with
+  pasted outputs. Nothing was fixed. The 22 issues found, with steps for each
+  and the three to fix first, are in
+  [`docs/manual-flow-test.md`](docs/manual-flow-test.md).
+
 ## Week 1 (Sep 27 to Oct 1, 2026)
 
 The week went into deciding what the tool is, then building the first two

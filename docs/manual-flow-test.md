@@ -49,7 +49,8 @@ saved outputs from `demo-data/sample-results-2026-10-03.json` for inputs 1 and
 
 ## Issues
 
-22 issues. Each was seen in the browser on the commit above.
+22 issues. Each was seen in the browser on the commit above. Issues 1, 2 and 3
+have since been fixed and carry a status line; the rest are open.
 
 ### 1. Loaded outputs stay in the table under a model that did not produce them
 
@@ -67,6 +68,7 @@ saved outputs from `demo-data/sample-results-2026-10-03.json` for inputs 1 and
 - **Expected:** outputs and ratings do not carry over to a model they were not
   produced by.
 - **Effect:** misleads
+- **Status:** Fixed on Day 13 (Oct 7, 2026): on Continue, outputs under a changed model are removed with their ratings, and a notice says how many.
 
 ### 2. Outputs and ratings stay under an input whose text was changed
 
@@ -82,6 +84,7 @@ saved outputs from `demo-data/sample-results-2026-10-03.json` for inputs 1 and
 - **Expected:** an output and its rating do not stay under an input they were
   not written for.
 - **Effect:** misleads
+- **Status:** Fixed on Day 13 (Oct 7, 2026): on Continue, outputs under a changed input or a changed prompt are removed with their ratings, and a notice says how many.
 
 ### 3. The header describes a tool that runs prompts and ends in a decision, and the page does neither
 
@@ -98,6 +101,7 @@ saved outputs from `demo-data/sample-results-2026-10-03.json` for inputs 1 and
 - **Expected:** the first screen says what the person will have to do
   themselves, and the last screen leads to the decision the header names.
 - **Effect:** misleads
+- **Status:** Fixed on Day 13 (Oct 7, 2026): the header now says that the person runs both models and pastes the outputs, and that the decision stays theirs. The page still runs nothing and still ends at the summary line.
 
 ### 4. "Nothing is saved unless you choose to share the result" names a choice that does not exist
 

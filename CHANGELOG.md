@@ -25,6 +25,18 @@ AI-Dopters 30-Day Community Hackathon.
   not rate anything itself. A rating and its note are cleared when that
   output's text changes.
 
+### Fixed
+
+- **Outputs no longer stay under a prompt, input or model that did not
+  produce them (Day 13).** When the prompt, an input or a model is changed and
+  Continue is pressed, the outputs that belonged to the old one are removed
+  from the comparison together with their ratings and notes, and a notice says
+  how many. A change that is undone before Continue removes nothing. These
+  were issues 1 and 2 of the manual flow test.
+- **The header says what the tool does today (Day 13).** It no longer says
+  Switch Check runs your prompt. It says you run both models yourself and paste
+  what they returned, and that the decision stays yours. This was issue 3.
+
 ### Tested
 
 - **Manual flow test (Day 12).** The whole flow was run end to end in a browser

@@ -6,6 +6,7 @@ import {
   cellCount,
   cellState,
   filledCount,
+  modelFor,
   rowResult,
   summaryLine,
   type ModelSide,
@@ -16,6 +17,7 @@ import {
 import { sampleRunDate, type SampleResults } from "@/lib/sample-results";
 import { preview, sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
 import { CellReview, RatingLegend } from "./cell-review";
+import { RemovedNotice } from "./removed-notice";
 import { SampleTag } from "./sample-tag";
 
 // The comparison table, filled by hand or from the saved sample run. Nothing is
@@ -37,10 +39,6 @@ const SIDE_ROLES: Record<ModelSide, string> = {
   current: "Model you use today",
   candidate: "Model to compare with",
 };
-
-function modelFor(draft: WorkflowDraft, side: ModelSide) {
-  return side === "current" ? draft.currentModel : draft.candidateModel;
-}
 
 // Says where an output came from: pasted by hand, or returned by the saved
 // sample run on the given date. The two are never shown the same way.
@@ -88,6 +86,7 @@ export function ComparisonView({
   outputs,
   reviews,
   sampleResults,
+  removedCount,
   onOutputChange,
   onRatingChange,
   onNoteChange,
@@ -99,6 +98,8 @@ export function ComparisonView({
   outputs: PastedOutputs;
   reviews: Reviews;
   sampleResults: SampleResults | null;
+  // How many outputs the last edit of the draft removed from this table.
+  removedCount: number;
   onOutputChange: (inputIndex: number, side: ModelSide, value: string) => void;
   onRatingChange: (inputIndex: number, side: ModelSide, rating: Rating) => void;
   onNoteChange: (inputIndex: number, side: ModelSide, note: string) => void;
@@ -145,6 +146,7 @@ export function ComparisonView({
         Run your prompt on each model yourself and paste what it returned. Nothing is run from this
         page.
       </p>
+      <RemovedNotice count={removedCount} />
       {onLoadSampleResults !== null && sampleResults !== null && (
         <div className="mt-3 flex flex-wrap items-center gap-3">
           <button type="button" onClick={loadSampleResults} className={secondaryButtonClass}>

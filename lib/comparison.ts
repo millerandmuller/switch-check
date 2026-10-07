@@ -2,6 +2,8 @@
 // and UI-free, same convention as lib/workflow.ts, so outputs pasted by hand
 // today and outputs from sample results or a live runner later fill one shape.
 
+import type { WorkflowDraft } from "./workflow";
+
 export type ModelSide = "current" | "candidate";
 
 export const MODEL_SIDES: ModelSide[] = ["current", "candidate"];
@@ -40,6 +42,40 @@ export function filledCount(outputs: PastedOutputs): number {
   return outputs
     .flatMap((pair) => MODEL_SIDES.map((side) => pair[side]))
     .filter((output) => cellState(output) === "pasted").length;
+}
+
+export function modelFor(draft: WorkflowDraft, side: ModelSide): string {
+  return side === "current" ? draft.currentModel : draft.candidateModel;
+}
+
+// An output belongs to the prompt, the input and the model it was produced
+// with. After the draft is edited, a cell's output still belongs only if none
+// of those three changed for that cell.
+export function outputStillBelongs(
+  before: WorkflowDraft,
+  after: WorkflowDraft,
+  inputIndex: number,
+  side: ModelSide,
+): boolean {
+  return (
+    before.prompt === after.prompt &&
+    before.inputs[inputIndex] === after.inputs[inputIndex] &&
+    modelFor(before, side) === modelFor(after, side)
+  );
+}
+
+// The outputs that may stay in the table after the draft changed. Every other
+// cell is emptied, so no output sits under a prompt, input or model that did
+// not produce it. The reviews follow through reviewsAfterOutputsReplaced.
+export function outputsAfterDraftChange(
+  outputs: PastedOutputs,
+  before: WorkflowDraft,
+  after: WorkflowDraft,
+): PastedOutputs {
+  return outputs.map((pair, inputIndex) => ({
+    current: outputStillBelongs(before, after, inputIndex, "current") ? pair.current : "",
+    candidate: outputStillBelongs(before, after, inputIndex, "candidate") ? pair.candidate : "",
+  }));
 }
 
 // The quality review. The person rates each output on its own, with the same

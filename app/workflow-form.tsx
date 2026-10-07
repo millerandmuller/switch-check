@@ -7,6 +7,8 @@ import { SampleTag } from "./sample-tag";
 import {
   emptyOutputs,
   emptyReviews,
+  filledCount,
+  outputsAfterDraftChange,
   reviewsAfterOutputChange,
   reviewsAfterOutputsReplaced,
   withNote,
@@ -179,6 +181,11 @@ export function WorkflowForm({
   const [step, setStep] = useState<Step>("form");
   const [outputs, setOutputs] = useState<PastedOutputs>(() => emptyOutputs(INPUT_COUNT));
   const [reviews, setReviews] = useState<Reviews>(() => emptyReviews(INPUT_COUNT));
+  // The draft the outputs in the table belong to: the one last continued with.
+  // null until the first Continue, when the table is still empty.
+  const [comparedDraft, setComparedDraft] = useState<WorkflowDraft | null>(null);
+  // How many outputs the last Continue removed, for the notice on the next screens.
+  const [removedCount, setRemovedCount] = useState(0);
 
   const problems = findProblems(draft);
   const shown: DraftProblems | null = attempted ? problems : null;
@@ -199,16 +206,30 @@ export function WorkflowForm({
     setAttempted(false);
   }
 
+  // Outputs stay only under the prompt, input and model they were produced
+  // with. Checked on Continue, not on every keystroke, so a change that is
+  // undone before continuing removes nothing.
+  function dropOutputsOfChangedDraft(before: WorkflowDraft) {
+    const kept = outputsAfterDraftChange(outputs, before, draft);
+    setRemovedCount(filledCount(outputs) - filledCount(kept));
+    setReviews((current) => reviewsAfterOutputsReplaced(current, outputs, kept));
+    setOutputs(kept);
+  }
+
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAttempted(true);
-    if (isComplete(problems)) setStep("ready");
+    if (!isComplete(problems)) return;
+    if (comparedDraft !== null) dropOutputsOfChangedDraft(comparedDraft);
+    setComparedDraft(draft);
+    setStep("ready");
   }
 
   function updateOutput(inputIndex: number, side: ModelSide, value: string) {
     // The review is cleared against the outputs as they are before this change.
     setReviews((current) => reviewsAfterOutputChange(current, outputs, inputIndex, side, value));
     setOutputs((current) => withOutput(current, inputIndex, side, value));
+    setRemovedCount(0);
   }
 
   // Offered only while the draft is the unchanged sample workflow on the pair
@@ -218,6 +239,7 @@ export function WorkflowForm({
     const loaded = outputsFromSampleResults(sampleResults);
     setReviews((current) => reviewsAfterOutputsReplaced(current, outputs, loaded));
     setOutputs(loaded);
+    setRemovedCount(0);
   }
 
   function updateRating(inputIndex: number, side: ModelSide, rating: Rating) {
@@ -233,6 +255,7 @@ export function WorkflowForm({
       <ReadyPanel
         draft={draft}
         sample={sample}
+        removedCount={removedCount}
         onEdit={() => setStep("form")}
         onCompare={() => setStep("compare")}
       />
@@ -247,6 +270,7 @@ export function WorkflowForm({
         outputs={outputs}
         reviews={reviews}
         sampleResults={sampleResults}
+        removedCount={removedCount}
         onLoadSampleResults={
           canLoadSampleResults(draft, sample, sampleResults) ? loadSampleResults : null
         }

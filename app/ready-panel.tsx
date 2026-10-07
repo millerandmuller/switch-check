@@ -1,4 +1,5 @@
 import { preview, sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
+import { RemovedNotice } from "./removed-notice";
 import { SampleTag } from "./sample-tag";
 
 // The Ready state shows what will be compared, and nothing else. It holds no
@@ -18,11 +19,14 @@ function ModelRow({ role, model }: { role: string; model: string }) {
 export function ReadyPanel({
   draft,
   sample,
+  removedCount,
   onEdit,
   onCompare,
 }: {
   draft: WorkflowDraft;
   sample: SampleWorkflow;
+  // How many outputs this edit of the draft removed from the comparison.
+  removedCount: number;
   onEdit: () => void;
   onCompare: () => void;
 }) {
@@ -43,6 +47,7 @@ export function ReadyPanel({
           Edit
         </button>
       </div>
+      <RemovedNotice count={removedCount} />
 
       <h3 className="mt-5 text-sm font-medium text-zinc-600 dark:text-zinc-400">Your prompt</h3>
       <p className="mt-2 whitespace-pre-wrap rounded-md bg-zinc-100 p-3 text-sm dark:bg-zinc-900">

@@ -7,7 +7,9 @@ import {
   RATINGS,
   emptyOutputs,
   emptyReviews,
+  outputsAfterDraftChange,
   reviewsAfterOutputChange,
+  reviewsAfterOutputsReplaced,
   rowResult,
   summaryLine,
   withNote,
@@ -173,4 +175,57 @@ test("an output change that leaves the text as it was keeps the rating and note"
   const reviews = withNote(withRating(emptyReviews(3), 2, "current", "not usable"), 2, "current", "wrong priority");
   const after = reviewsAfterOutputChange(reviews, outputs, 2, "current", "an answer");
   assert.deepEqual(after[2].current, { rating: "not usable", note: "wrong priority" });
+});
+
+// Outputs after the draft was edited. Six filled cells, all rated, on one draft.
+const DRAFT = {
+  prompt: "Triage: {input}",
+  inputs: ["first email", "second email", "third email"],
+  currentModel: "vendor/current",
+  candidateModel: "vendor/candidate",
+};
+const FILLED = DRAFT.inputs.map((_, index) => ({
+  current: `current ${index + 1}`,
+  candidate: `candidate ${index + 1}`,
+}));
+
+test("an unchanged draft keeps every output", () => {
+  assert.deepEqual(outputsAfterDraftChange(FILLED, DRAFT, { ...DRAFT }), FILLED);
+});
+
+test("a different model on one side empties that side's column and keeps the other", () => {
+  const after = outputsAfterDraftChange(FILLED, DRAFT, { ...DRAFT, candidateModel: "vendor/other" });
+  assert.deepEqual(after, [
+    { current: "current 1", candidate: "" },
+    { current: "current 2", candidate: "" },
+    { current: "current 3", candidate: "" },
+  ]);
+});
+
+test("a changed input empties that input's row and keeps the other rows", () => {
+  const edited = { ...DRAFT, inputs: ["first email", "a different email", "third email"] };
+  assert.deepEqual(outputsAfterDraftChange(FILLED, DRAFT, edited), [
+    FILLED[0],
+    { current: "", candidate: "" },
+    FILLED[2],
+  ]);
+});
+
+test("a changed prompt empties the whole table, and so do the two models swapped", () => {
+  const empty = emptyOutputs(3);
+  assert.deepEqual(outputsAfterDraftChange(FILLED, DRAFT, { ...DRAFT, prompt: "Sort: {input}" }), empty);
+  const swapped = { ...DRAFT, currentModel: DRAFT.candidateModel, candidateModel: DRAFT.currentModel };
+  assert.deepEqual(outputsAfterDraftChange(FILLED, DRAFT, swapped), empty);
+});
+
+test("the ratings and notes of emptied cells go with them, and the others stay", () => {
+  const rated = { rating: "usable", note: "kept" };
+  const reviews = FILLED.map(() => ({ current: rated, candidate: rated }));
+  const edited = { ...DRAFT, inputs: ["first email", "a different email", "third email"] };
+  const kept = outputsAfterDraftChange(FILLED, DRAFT, edited);
+  const after = reviewsAfterOutputsReplaced(reviews, FILLED, kept);
+  assert.deepEqual(after[1], { current: { rating: null, note: "" }, candidate: { rating: null, note: "" } });
+  assert.deepEqual(after[0], reviews[0]);
+  assert.deepEqual(after[2], reviews[2]);
+  assert.equal(summaryLine(kept, after), "Compared model rated the same on 2 of 2. 1 input not tested.");
 });

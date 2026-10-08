@@ -408,14 +408,22 @@ export function FlowShell({
 
   return (
     <div className={`ground flex min-h-dvh flex-col ${screen === "rate" ? "wide:h-dvh" : ""}`}>
+      {/* Decoration only: the name also stands in the header. */}
+      {screen === "start" && (
+        <div aria-hidden className="wordmark">
+          Switch Check
+        </div>
+      )}
       <header className={`relative flex flex-wrap items-center gap-x-7 gap-y-2.5 px-gutter ${screen === "rate" ? "py-2" : "py-3"}`}>
         <h1 className="font-display text-[1.3rem] font-semibold tracking-[-0.01em]">
           Switch Check <span className="font-light text-muted">your call</span>
         </h1>
         <StepBar steps={stepsInBar(step, facts)} fromExample={exampleSteps} onOpen={open} />
-        <p className="text-[13.5px] text-muted wide:ml-auto">
-          Nothing is saved. Reloading this page empties it.
-        </p>
+        {screen !== "start" && (
+          <p className="text-[13.5px] text-muted wide:ml-auto">
+            Nothing is saved. Reloading this page empties it.
+          </p>
+        )}
       </header>
 
       {screen === "result" && (
@@ -483,7 +491,31 @@ export function FlowShell({
         </>
       )}
 
-      {screen !== "rate" && screen !== "result" && (
+      {screen === "start" && (
+        <main className="relative w-full flex-1 px-gutter pb-12 pt-4">
+          <StartStep
+            headingRef={headingRef}
+            title={STEP_TITLES.start.title}
+            job={STEP_TITLES.start.job}
+            exampleRunDate={sampleResults?.run_date ?? null}
+            onSeeExample={() => askOrDo("see example", hasWork)}
+            onOwnPrompt={() => askOrDo("empty draft", hasWork)}
+            ask={
+              ask === null ? null : (
+                <AskFirst
+                  question={askQuestion}
+                  replaceLabel={ask.replaceLabel}
+                  keepLabel={ask.keepLabel}
+                  onReplace={() => answer(true)}
+                  onKeep={() => answer(false)}
+                />
+              )
+            }
+          />
+        </main>
+      )}
+
+      {screen !== "rate" && screen !== "result" && screen !== "start" && (
       <main className="relative w-full flex-1 px-gutter pb-12 pt-4">
         <div className="panel p-[clamp(16px,2.4vw,34px)]">
         <StepHeading
@@ -499,14 +531,6 @@ export function FlowShell({
             keepLabel={ask.keepLabel}
             onReplace={() => answer(true)}
             onKeep={() => answer(false)}
-          />
-        )}
-
-        {step === "start" && (
-          <StartStep
-            exampleRunDate={sampleResults?.run_date ?? null}
-            onSeeExample={() => askOrDo("see example", hasWork)}
-            onOwnPrompt={() => askOrDo("empty draft", hasWork)}
           />
         )}
 

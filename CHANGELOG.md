@@ -21,6 +21,14 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Changed
 
+- **The Start screen is redrawn around the two choices (Oct 8).** The headline
+  has two weights ("Should you switch models?" in semibold, "See for
+  yourself." light), followed by the lead, the notice that nothing is saved,
+  and the two choices as cards on one panel with a hover lift and a named
+  arrow line. "Switch Check" stands very large and light behind them along
+  the bottom, hidden from screen readers and not selectable. The wording of
+  the lead and both choices is unchanged. At 390 px the choices stack.
+
 - **A layered glass look on every screen (Oct 8).** The page now has three
   layers: a gold, sage and deep green ground drawn with CSS gradients, one
   frosted panel per screen, and warm ivory cards for everything you read or

@@ -80,6 +80,24 @@
 
   /* Without backdrop-filter the panel and cards are solid ivory, so nothing
      depends on blurring what is behind them. */
+  /* The name, very large and light, behind the content along the bottom. */
+  .wordmark {
+    position: absolute;
+    left: 50%;
+    bottom: -0.16em;
+    transform: translateX(-50%);
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: clamp(5rem, 19.5vw, 24rem);
+    line-height: 1;
+    letter-spacing: -0.045em;
+    white-space: nowrap;
+    color: rgba(255, 255, 255, 0.5);
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
   .panel {
     background: #f1ead9;
     border: 1px solid rgba(255, 255, 255, 0.7);

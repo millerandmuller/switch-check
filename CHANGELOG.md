@@ -21,6 +21,20 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Changed
 
+- **The outputs get most of the rating screen (Oct 8).** At 1,000 px and
+  above the rating screen is three columns: the selected input, the output of
+  the model you use today, the output of the model to compare with. The three
+  inputs are tabs across the top. Each output scrolls in its own reading area,
+  at least 320 px high; when the window is too short for that, the page
+  scrolls instead. One source line above the columns gives the price source
+  and date, the run date, the number of inputs and each model's range of
+  response times for both models, and the small cost line under each model is
+  gone. "What the ratings mean" is a disclosure that closes after your first
+  rating. "Show the prompt" is closed in the input column. The summary line is
+  a size smaller, with room for two lines, so rating no longer moves the
+  panels. Where nothing was measured, each header says so once and the source
+  line gives the reason once.
+
 - **Its own look (Oct 8).** One light look with square, hairline-edged blocks,
   four typefaces (Newsreader, Lato, Poppins, JetBrains Mono) and the full
   width of the window. The dark variant is gone. Nothing behaves differently.

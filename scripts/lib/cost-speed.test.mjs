@@ -14,6 +14,7 @@ import {
   costSpeedLine,
   formatUsd,
   responseTimes,
+  sharedSourceLine,
 } from "../../lib/cost-speed.ts";
 import {
   newestResultsFileName,
@@ -183,4 +184,55 @@ test("after a model change the emptied column is not measured (the Day 13 rule s
   assert.equal(line(run, pastedBack, "candidate", after.candidateModel, SONNET), notMeasured);
   // An empty table has nothing measured either.
   assert.equal(line(run, emptyOutputs(3), "current", before.currentModel, SONNET), notMeasured);
+});
+
+// The shared source line on the rating screen: one line for both models that
+// keeps every state, source and date the two per-model lines carried.
+function sources(results, outputs) {
+  return ["current", "candidate"].map((side) => ({
+    model: MODELS[side],
+    column: sampleRunColumn(results, outputs, side, MODELS[side]),
+    price: PRICE,
+  }));
+}
+
+test("the shared source line keeps the price source and date, the run date, the input counts and both ranges", () => {
+  const text = sharedSourceLine(sources(RESULTS, outputsFromSampleResults(RESULTS)), PRICES_CHECKED_ON, RESULTS.run_date);
+  assert.equal(
+    text,
+    "Cost estimated from OpenRouter prices checked 2026-09-28 and the tokens of the sample run of 2026-10-03, 3 of 3 inputs. Response times measured in one run on 2026-10-03: vendor/current 1.2 to 3.1 s, vendor/candidate 1.5 s, 3 of 3 inputs.",
+  );
+});
+
+test("the shared source line gives each model its own count when the two differ", () => {
+  const outputs = withOutput(outputsFromSampleResults(RESULTS), 1, "current", "current 2, edited");
+  const text = sharedSourceLine(sources(RESULTS, outputs), PRICES_CHECKED_ON, RESULTS.run_date);
+  assert.match(text, /vendor\/current 2 of 3 inputs, vendor\/candidate 3 of 3 inputs\./);
+  assert.match(text, /vendor\/current 1\.2 to 2\.0 s, vendor\/candidate 1\.5 s, vendor\/current 2 of 3 inputs, vendor\/candidate 3 of 3 inputs\.$/);
+});
+
+test("the shared source line says once, with one reason, that pasted outputs were not measured", () => {
+  const outputs = [
+    { current: "pasted 1", candidate: "pasted a" },
+    { current: "pasted 2", candidate: "pasted b" },
+    { current: "pasted 3", candidate: "pasted c" },
+  ];
+  assert.equal(
+    sharedSourceLine(sources(RESULTS, outputs), PRICES_CHECKED_ON, RESULTS.run_date),
+    "Cost and response time not measured for either model (Switch Check did not run these outputs).",
+  );
+});
+
+test("the shared source line names the model that is not measured when only one is", () => {
+  const outputs = outputsAfterDraftChange(
+    outputsFromSampleResults(RESULTS),
+    { prompt: "p", inputs: ["a", "b", "c"], currentModel: MODELS.current, candidateModel: MODELS.candidate },
+    { prompt: "p", inputs: ["a", "b", "c"], currentModel: MODELS.current, candidateModel: "vendor/other" },
+  );
+  const models = sources(RESULTS, outputs);
+  models[1] = { ...models[1], model: "vendor/other", column: sampleRunColumn(RESULTS, outputs, "candidate", "vendor/other") };
+  const text = sharedSourceLine(models, PRICES_CHECKED_ON, RESULTS.run_date);
+  assert.match(text, /^Cost estimated for vendor\/current from OpenRouter prices checked 2026-09-28/);
+  assert.match(text, /cost not measured for vendor\/other \(Switch Check did not run these outputs\)/);
+  assert.match(text, /response time not measured for vendor\/other \(Switch Check did not run these outputs\)/);
 });

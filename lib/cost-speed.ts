@@ -140,6 +140,98 @@ export function costSpeedLine(
   return `${cost} · ${speed}`;
 }
 
+// One model as the rating screen's shared source line sees it.
+export type SourceModel = { model: string; column: RunColumn; price: ModelPrice | undefined };
+
+// "3 of 3 inputs" when every model's figure rests on the same inputs, otherwise
+// each model with its own count, so no basis is dropped by sharing the line.
+function basisText(parts: { model: string; basedOn: number; inputs: number }[]): string {
+  const [first] = parts;
+  const same = parts.every((part) => part.basedOn === first.basedOn && part.inputs === first.inputs);
+  if (same) return ofInputs(first.basedOn, first.inputs);
+  return parts.map((part) => `${part.model} ${ofInputs(part.basedOn, part.inputs)}`).join(", ");
+}
+
+// "cost not measured for a/x (reason), cost not measured for b/y (reason)", or
+// once for both when they share the reason.
+function notMeasuredFor(
+  what: string,
+  missing: { model: string; reason: string }[],
+  showModels: boolean,
+): string[] {
+  return missing.map((entry) =>
+    showModels
+      ? `${what} not measured for ${entry.model} (${entry.reason})`
+      : `${what} not measured (${entry.reason})`,
+  );
+}
+
+// The one line that says where the figures above both outputs come from, once
+// for both models: the price source and date, the run date, how many inputs
+// each figure rests on, and each model's range of response times. It keeps
+// every state (estimated, measured, not measured), source and date that the
+// two per-model lines it replaces carried. Nothing in it compares the models.
+export function sharedSourceLine(
+  models: SourceModel[],
+  priceCheckedOn: string,
+  runDate: string,
+): string {
+  const costs = models.map((entry) => ({ model: entry.model, figure: costPer1000Runs(entry.column, entry.price) }));
+  const speeds = models.map((entry) => ({ model: entry.model, figure: responseTimes(entry.column) }));
+
+  const costsEstimated = costs.flatMap(({ model, figure }) =>
+    figure.state === "estimated" ? [{ model, basedOn: figure.basedOn, inputs: figure.inputs }] : [],
+  );
+  const costsMissing = costs.flatMap(({ model, figure }) =>
+    figure.state === "not measured" ? [{ model, reason: figure.reason }] : [],
+  );
+  const speedsMeasured = speeds.flatMap(({ model, figure }) =>
+    figure.state === "measured" ? [{ model, figure }] : [],
+  );
+  const speedsMissing = speeds.flatMap(({ model, figure }) =>
+    figure.state === "not measured" ? [{ model, reason: figure.reason }] : [],
+  );
+
+  // Nothing measured for either model, for one reason: say it once.
+  const reasons = new Set([...costsMissing, ...speedsMissing].map((entry) => entry.reason));
+  if (costsEstimated.length === 0 && speedsMeasured.length === 0 && reasons.size === 1) {
+    return `Cost and response time not measured for either model (${[...reasons][0]}).`;
+  }
+
+  const sentences: string[] = [];
+
+  const costParts: string[] = [];
+  if (costsEstimated.length > 0) {
+    const forModels =
+      costsEstimated.length === models.length ? "" : ` for ${costsEstimated.map((part) => part.model).join(", ")}`;
+    costParts.push(
+      `Cost estimated${forModels} from OpenRouter prices checked ${priceCheckedOn} and the tokens of the sample run of ${runDate}, ${basisText(costsEstimated)}`,
+    );
+  }
+  const costReasons = new Set(costsMissing.map((entry) => entry.reason));
+  costParts.push(...notMeasuredFor("cost", costsMissing, costReasons.size > 1 || costsEstimated.length > 0));
+  sentences.push(costParts.join("; "));
+
+  const speedParts: string[] = [];
+  if (speedsMeasured.length > 0) {
+    const ranges = speedsMeasured.map(({ model, figure }) => {
+      const fastest = formatSeconds(figure.fastestMs);
+      const slowest = formatSeconds(figure.slowestMs);
+      return `${model} ${fastest === slowest ? `${fastest} s` : `${fastest} to ${slowest} s`}`;
+    });
+    speedParts.push(
+      `Response times measured in one run on ${runDate}: ${ranges.join(", ")}, ${basisText(speedsMeasured.map(({ model, figure }) => ({ model, basedOn: figure.basedOn, inputs: figure.inputs })))}`,
+    );
+  }
+  const speedReasons = new Set(speedsMissing.map((entry) => entry.reason));
+  speedParts.push(
+    ...notMeasuredFor("response time", speedsMissing, speedReasons.size > 1 || speedsMeasured.length > 0),
+  );
+  sentences.push(speedParts.join("; "));
+
+  return `${sentences.filter((sentence) => sentence !== "").join(". ")}.`;
+}
+
 // The time shown in one sample-run cell: "measured 5.5 s".
 export function cellTimeText(cell: SampleOkCell): string {
   return `measured ${formatSeconds(cell.response_ms)} s`;

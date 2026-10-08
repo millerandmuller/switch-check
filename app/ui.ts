@@ -7,6 +7,11 @@ export const capsClass = "font-caps text-[11.5px] font-semibold uppercase tracki
 export const primaryButtonClass =
   "cursor-pointer border border-ink bg-ink px-6 py-3.5 font-caps text-[13px] font-semibold uppercase tracking-[0.05em] text-ground hover:bg-ink/85";
 
+// The same button, shorter, for the footer of the rating screen where every
+// pixel of height goes to the outputs.
+export const primaryButtonCompactClass =
+  "cursor-pointer border border-ink bg-ink px-6 py-2.5 font-caps text-[13px] font-semibold uppercase tracking-[0.05em] text-ground hover:bg-ink/85";
+
 export const secondaryButtonClass =
   "cursor-pointer border border-line bg-ground px-4 py-2.5 text-sm font-bold hover:border-ink";
 

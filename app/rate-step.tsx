@@ -5,83 +5,73 @@ import {
   MODEL_SIDES,
   cellState,
   modelFor,
-  rowResult,
   summaryLine,
   type ModelSide,
   type PastedOutputs,
   type Rating,
   type Reviews,
-  type RowResult,
 } from "@/lib/comparison";
 import {
   costPer1000Runs,
-  costSpeedLine,
   formatSeconds,
   formatUsd,
+  sharedSourceLine,
   type ModelPrices,
 } from "@/lib/cost-speed";
 import { sampleRunColumn, type SampleOkCell, type SampleResults } from "@/lib/sample-results";
-import {
-  INPUT_MAX_CHARS,
-  preview,
-  sampleLabel,
-  type SampleWorkflow,
-  type WorkflowDraft,
-} from "@/lib/workflow";
-import { CellReview, RatingLegend } from "./cell-review";
+import { sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
+import { CellReview, RatingsDisclosure } from "./cell-review";
+import { InputColumn } from "./input-column";
+import { InputTabs } from "./input-tabs";
 import { SIDE_ROLES, cellKey } from "./outputs-step";
 import { RemovedNotice } from "./removed-notice";
-import { SampleTag } from "./sample-tag";
-import { capsClass, primaryButtonClass } from "./ui";
+import { capsClass, primaryButtonCompactClass } from "./ui";
 
-// Step 5: rating, one input at a time. The inputs sit in a left rail, the two
-// models' outputs stand side by side and scroll on their own, and the rating
-// stays in sight under each output. Nothing is run here: the outputs were
-// pasted or come from one earlier, dated run. The row result and the summary
-// line only count the person's ratings and never name a winner.
+// Step 5: rating, one input at a time. The three inputs are tabs across the
+// top. Below them three columns read left to right: the selected input, the
+// output of the model in use today, the output of the model to compare with.
+// Each output scrolls on its own, with at least 320 px to read in, and the
+// page scrolls when the window is too short for that. Nothing is run here: the
+// outputs were pasted or come from one earlier, dated run. The row result and
+// the summary line only count the person's ratings and never name a winner.
 
-const PICK_PREVIEW_CHARS = 60;
-
-const RESULT_CHIP: Partial<Record<RowResult, string>> = {
-  better: "border-better text-better",
-  worse: "border-worse text-worse",
-};
-
-// "Compared model: better", coloured only for better and worse.
-export function ResultChip({ result }: { result: RowResult }) {
+// A figure with its state in the same line: never a bare number.
+function Figure({ value, state }: { value?: string; state: string }) {
   return (
-    <span
-      className={`inline-block w-fit border px-2 py-[3px] font-caps text-[10.5px] font-semibold uppercase tracking-[0.05em] ${RESULT_CHIP[result] ?? "border-line"}`}
-    >
-      Compared model: {result}
+    <span className="whitespace-nowrap">
+      {value !== undefined && <b className="font-bold tabular-nums">{value} </b>}
+      <span className="text-muted">{state}</span>
     </span>
   );
 }
 
-// A figure with its state under it: never a bare number.
-// "not measured" is set smaller than an amount, so it does not read as one.
-function Stat({ figure, state, measured = true }: { figure: string; state: string; measured?: boolean }) {
-  return (
-    <div className="flex flex-col">
-      <b
-        className={`whitespace-nowrap font-display font-medium leading-[1.05] tabular-nums ${measured ? "text-[2rem]" : "text-[1.2rem] leading-[1.6]"}`}
-      >
-        {figure}
-      </b>
-      <span className="whitespace-nowrap text-xs text-muted">{state}</span>
-    </div>
-  );
-}
-
-function CostStat({ column, price }: { column: (SampleOkCell | null)[]; price: ModelPrices["models"][string] | undefined }) {
+// Cost and response time in the header of one output. When neither was
+// measured the header says so once; the reason is in the shared source line.
+function Figures({
+  column,
+  price,
+  cell,
+}: {
+  column: (SampleOkCell | null)[];
+  price: ModelPrices["models"][string] | undefined;
+  cell: SampleOkCell | null;
+}) {
   const cost = costPer1000Runs(column, price);
-  if (cost.state === "not measured") return <Stat figure="not measured" state="cost per 1,000 runs" measured={false} />;
-  return <Stat figure={formatUsd(cost.usdPer1000Runs)} state="estimated, per 1,000 runs" />;
-}
-
-function TimeStat({ cell }: { cell: SampleOkCell | null }) {
-  if (cell === null) return <Stat figure="not measured" state="response time, this input" measured={false} />;
-  return <Stat figure={`${formatSeconds(cell.response_ms)} s`} state="measured, this input" />;
+  if (cost.state === "not measured" && cell === null) return <Figure state="cost and time not measured" />;
+  return (
+    <>
+      {cost.state === "estimated" ? (
+        <Figure value={formatUsd(cost.usdPer1000Runs)} state="estimated, per 1,000 runs" />
+      ) : (
+        <Figure state="cost not measured" />
+      )}
+      {cell === null ? (
+        <Figure state="time not measured, this input" />
+      ) : (
+        <Figure value={`${formatSeconds(cell.response_ms)} s`} state="measured, this input" />
+      )}
+    </>
+  );
 }
 
 function Panel({
@@ -116,25 +106,23 @@ function Panel({
   return (
     <article
       aria-label={`${SIDE_ROLES[side]}, input ${position}`}
-      className={`${hiddenOnPhone ? "hidden wide:grid" : "grid"} min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] border-ink ${side === "candidate" ? "wide:border-l" : ""}`}
+      className={`${hiddenOnPhone ? "hidden wide:flex" : "flex"} min-h-0 min-w-0 flex-col border-ink wide:row-start-3 wide:border-l`}
     >
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-1.5 border-b border-line px-gutter pb-3.5 pt-4">
-        <div className="flex min-w-0 flex-[1_1_12rem] flex-col gap-0.5">
-          <span className={capsClass}>{SIDE_ROLES[side]}</span>
-          <span className="font-mono text-[12.5px] [overflow-wrap:anywhere]">{model}</span>
-        </div>
-        <CostStat column={column} price={prices?.models[model]} />
-        <TimeStat cell={cell} />
-        <p className="basis-full text-xs text-muted [overflow-wrap:anywhere]">
-          {costSpeedLine(column, prices?.models[model], prices?.checked_on ?? "", runDate)}
-        </p>
+      {/* Role and model, then the two figures with their state words. Each
+          part stays whole; a narrow column wraps between them, not inside. */}
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0 border-b border-line px-gutter py-1.5 text-[12.5px]">
+        <span className={capsClass}>{SIDE_ROLES[side]}</span>
+        <span className="font-mono [overflow-wrap:anywhere]">{model}</span>
+        <span className="flex basis-full flex-wrap gap-x-4">
+          <Figures column={column} price={prices?.models[model]} cell={cell} />
+        </span>
       </div>
 
       <div
         role="region"
         aria-label={`Output of ${model} for input ${position}`}
         tabIndex={0}
-        className="min-h-0 px-gutter py-5 wide:overflow-auto"
+        className="px-gutter py-4 wide:min-h-[320px] wide:flex-[1_1_320px] wide:overflow-auto"
       >
         {tested ? (
           <>
@@ -152,7 +140,7 @@ function Panel({
         )}
       </div>
 
-      <div className="border-t border-line bg-soft px-gutter pb-3.5 pt-3">
+      <div className="border-t border-line bg-soft px-gutter pb-3 pt-2.5">
         {reviewCleared && (
           <p role="status" className="mb-2 text-sm font-bold">
             Your rating and note on this output were removed, because its text changed.
@@ -170,6 +158,10 @@ function isTextField(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return true;
   return target instanceof HTMLInputElement && target.type !== "radio";
+}
+
+function anyRated(reviews: Reviews): boolean {
+  return reviews.some((pair) => MODEL_SIDES.some((side) => pair[side].rating !== null));
 }
 
 export function RateStep({
@@ -204,6 +196,8 @@ export function RateStep({
   const [selected, setSelected] = useState(0);
   // Which model's output shows below the side-by-side width.
   const [phoneSide, setPhoneSide] = useState<ModelSide>("current");
+  // "What the ratings mean" is open until the first rating of the session.
+  const [legendOpen, setLegendOpen] = useState(() => !anyRated(reviews));
   const inputCount = draft.inputs.length;
   const last = selected === inputCount - 1;
 
@@ -220,165 +214,149 @@ export function RateStep({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [inputCount]);
 
+  function rate(inputIndex: number, side: ModelSide, rating: Rating) {
+    if (!anyRated(reviews)) setLegendOpen(false);
+    onRatingChange(inputIndex, side, rating);
+  }
+
   const columns = {
     current: sampleRunColumn(sampleResults, outputs, "current", draft.currentModel),
     candidate: sampleRunColumn(sampleResults, outputs, "candidate", draft.candidateModel),
   };
-  const anyFromSampleRun = MODEL_SIDES.some((side) => columns[side].some((cell) => cell !== null));
   const runDate = sampleResults?.run_date ?? "";
+  const sourceLine = sharedSourceLine(
+    MODEL_SIDES.map((side) => ({
+      model: modelFor(draft, side),
+      column: columns[side],
+      price: modelPrices?.models[modelFor(draft, side)],
+    })),
+    modelPrices?.checked_on ?? "",
+    runDate,
+  );
   const input = draft.inputs[selected];
   const position = selected + 1;
-  const selectedSampleOf = sampleLabel(sample, input);
 
   return (
-    <main className="grid min-h-0 w-full flex-1 wide:grid-cols-[minmax(280px,22vw)_minmax(0,1fr)] wide:grid-rows-[minmax(0,1fr)]">
-      <aside className="flex min-h-0 flex-col gap-4 border-b border-line bg-[repeating-linear-gradient(90deg,transparent_0_27px,color-mix(in_srgb,var(--color-gold)_16%,transparent)_27px_28px)] px-gutter py-5 wide:overflow-auto wide:border-b-0 wide:border-r">
-        <span className={capsClass}>Three inputs · pick one</span>
-        <div className="flex flex-col gap-2.5">
-          {draft.inputs.map((text, index) => {
-            const sampleOf = sampleLabel(sample, text);
-            const isSelected = index === selected;
-            return (
-              <button
-                key={index}
-                type="button"
-                aria-pressed={isSelected}
-                onClick={() => setSelected(index)}
-                className={`grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3.5 gap-y-0.5 border bg-ground px-4 py-3.5 text-left ${isSelected ? "border-ink shadow-focus" : "border-line hover:border-ink"}`}
-              >
-                <span className="row-span-2 font-display text-[2.1rem] leading-none text-gold">
-                  {index + 1}
-                </span>
-                <b className="font-caps text-[14.5px] font-medium leading-[1.35] [overflow-wrap:anywhere]">
-                  {sampleOf ?? preview(text, PICK_PREVIEW_CHARS)}
-                  {sampleOf !== null && <SampleTag label={sampleOf} />}
-                </b>
-                <span className="mt-1.5">
-                  <ResultChip result={rowResult(outputs[index], reviews[index])} />
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="flex flex-col gap-2 border border-line bg-ground px-[18px] py-4">
-          <span className={`${capsClass} text-gold`}>
-            Input {position} · {input.length.toLocaleString("en-US")} of{" "}
-            {INPUT_MAX_CHARS.toLocaleString("en-US")} characters
-            {selectedSampleOf !== null && <SampleTag label={selectedSampleOf} />}
-          </span>
-          <pre className="whitespace-pre-wrap font-sans text-[14.5px] leading-[1.6] [overflow-wrap:anywhere]">
-            {input}
-          </pre>
-        </div>
-        <p className="hidden text-[12.5px] text-muted wide:block">
-          Keys:{" "}
-          {draft.inputs.map((_, index) => (
-            <kbd key={index} className="mr-1 border border-line bg-ground px-[5px] py-px font-mono text-[11px]">
-              {index + 1}
-            </kbd>
-          ))}
-          switch the input.
-        </p>
-      </aside>
+    <main className="flex w-full flex-1 flex-col wide:grid wide:grid-cols-[minmax(300px,25%)_minmax(0,1fr)_minmax(0,1fr)] wide:grid-rows-[auto_auto_1fr]">
+      <div className="wide:col-span-3">
+        <InputTabs
+          inputs={draft.inputs}
+          sample={sample}
+          outputs={outputs}
+          reviews={reviews}
+          selected={selected}
+          onSelect={setSelected}
+        />
+      </div>
 
       <section
         aria-labelledby="rate-heading"
-        className="grid min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)_auto]"
+        className="grid items-start gap-x-8 gap-y-2 border-b border-line px-gutter py-2.5 wide:col-span-3 wide:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]"
       >
-        <div className="grid items-center gap-x-10 gap-y-3 border-b border-line px-gutter py-4 wide:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-          <div className="min-w-0">
-            <h2
-              id="rate-heading"
-              ref={headingRef}
-              tabIndex={-1}
-              className={`${capsClass} text-gold focus:outline-none`}
-            >
-              Step 5 of 5 · Rate and result
-            </h2>
-            <p
-              aria-live="polite"
-              className="mt-1 text-balance font-display text-[clamp(1.25rem,1.7vw,1.7rem)] leading-tight"
-            >
-              {summaryLine(outputs, reviews)}
-            </p>
-            <p className="mt-1 text-[13px] text-muted">
-              Read each output and rate it. The line above counts your ratings and nothing else.
-              {anyFromSampleRun && sampleResults !== null && (
-                <>
-                  {" "}
-                  Outputs tagged sample run come from one run of{" "}
-                  <span className="font-mono text-xs">{sampleResults.models.current}</span> and{" "}
-                  <span className="font-mono text-xs">{sampleResults.models.candidate}</span>{" "}
-                  through OpenRouter on {sampleResults.run_date}.
-                </>
-              )}
-            </p>
-            <RemovedNotice count={removedCount} />
-          </div>
-          <RatingLegend />
-          <div
-            role="group"
-            aria-label="Which model's output to show"
-            className="flex w-fit max-w-full flex-wrap gap-1 rounded-[22px] bg-soft p-1 wide:hidden"
+        <div className="min-w-0">
+          <h2
+            id="rate-heading"
+            ref={headingRef}
+            tabIndex={-1}
+            className={`${capsClass} text-gold focus:outline-none`}
           >
-            {MODEL_SIDES.map((side) => (
-              <button
-                key={side}
-                type="button"
-                aria-pressed={phoneSide === side}
-                onClick={() => setPhoneSide(side)}
-                className={`cursor-pointer rounded-full px-4 py-2 text-sm ${phoneSide === side ? "bg-ink font-bold text-ground" : "text-muted"}`}
-              >
-                {SIDE_ROLES[side]}
-              </button>
-            ))}
-          </div>
+            Step 5 of 5 · Rate and result
+          </h2>
+          {/* Two lines tall at every length, so rating never moves the panels. */}
+          <p
+            aria-live="polite"
+            className="mt-0.5 min-h-[2.6rem] text-balance font-display text-[1.05rem] leading-[1.3]"
+          >
+            {summaryLine(outputs, reviews)}
+          </p>
+          <p className="text-[12.5px] text-muted">
+            Read each output and rate it. The line above counts your ratings and nothing else.
+            <span className="hidden wide:inline">
+              {" "}
+              Keys{" "}
+              {draft.inputs.map((_, index) => (
+                <kbd key={index} className="mr-1 border border-line bg-ground px-[5px] py-px font-mono text-[11px]">
+                  {index + 1}
+                </kbd>
+              ))}
+              switch the input.
+            </span>
+          </p>
+          <RemovedNotice count={removedCount} />
         </div>
-
-        {/* Keyed by the input, so each input starts scrolled to the top. */}
-        <div key={selected} className="grid min-h-0 wide:grid-cols-2">
+        <div className="min-w-0">
+          <p className="text-xs text-muted [overflow-wrap:anywhere]">{sourceLine}</p>
+          <RatingsDisclosure open={legendOpen} onToggle={setLegendOpen} />
+        </div>
+        <div
+          role="group"
+          aria-label="Which model's output to show"
+          className="flex w-fit max-w-full flex-wrap gap-1 rounded-[22px] bg-soft p-1 wide:hidden"
+        >
           {MODEL_SIDES.map((side) => (
-            <Panel
+            <button
               key={side}
-              side={side}
-              model={modelFor(draft, side)}
-              position={position}
-              output={outputs[selected][side]}
-              column={columns[side]}
-              cell={columns[side][selected]}
-              prices={modelPrices}
-              runDate={runDate}
-              hiddenOnPhone={phoneSide !== side}
-              reviewCleared={clearedCells.includes(cellKey(selected, side))}
-              review={
-                <CellReview
-                  cellId={`review-${position}-${side}`}
-                  model={modelFor(draft, side)}
-                  position={position}
-                  review={reviews[selected][side]}
-                  onRatingChange={(rating) => onRatingChange(selected, side, rating)}
-                  onNoteChange={(note) => onNoteChange(selected, side, note)}
-                />
-              }
-            />
+              type="button"
+              aria-pressed={phoneSide === side}
+              onClick={() => setPhoneSide(side)}
+              className={`cursor-pointer rounded-full px-4 py-2 text-sm ${phoneSide === side ? "bg-ink font-bold text-ground" : "text-muted"}`}
+            >
+              {SIDE_ROLES[side]}
+            </button>
           ))}
         </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-4 border-t border-ink px-gutter py-3">
-          <p className="text-sm text-muted">
-            Input {position} of {inputCount}
-          </p>
-          {/* One button for both labels, so keyboard focus stays on it when
-              the last input is reached. */}
-          <button
-            type="button"
-            onClick={last ? onSeeResult : () => setSelected(selected + 1)}
-            className={primaryButtonClass}
-          >
-            {last ? "See the result" : "Next input"}
-          </button>
-        </div>
       </section>
+
+      {/* Keyed by the input, so each input starts scrolled to the top. */}
+      <InputColumn
+        key={`input-${selected}`}
+        prompt={draft.prompt}
+        input={input}
+        position={position}
+        sampleOf={sampleLabel(sample, input)}
+      />
+      {MODEL_SIDES.map((side) => (
+        <Panel
+          key={`${selected}-${side}`}
+          side={side}
+          model={modelFor(draft, side)}
+          position={position}
+          output={outputs[selected][side]}
+          column={columns[side]}
+          cell={columns[side][selected]}
+          prices={modelPrices}
+          runDate={runDate}
+          hiddenOnPhone={phoneSide !== side}
+          reviewCleared={clearedCells.includes(cellKey(selected, side))}
+          review={
+            <CellReview
+              cellId={`review-${position}-${side}`}
+              model={modelFor(draft, side)}
+              position={position}
+              review={reviews[selected][side]}
+              onRatingChange={(rating) => rate(selected, side, rating)}
+              onNoteChange={(note) => onNoteChange(selected, side, note)}
+            />
+          }
+        />
+      ))}
+
+      {/* On wide screens this bar sits over the bottom of the input column, so
+          the two outputs keep the height. On a phone it ends the page. */}
+      <div className="flex h-[54px] items-center justify-between gap-3 border-t border-ink bg-ground px-gutter py-2 wide:col-start-1 wide:row-start-3 wide:self-end">
+        <p className="text-sm text-muted">
+          Input {position} of {inputCount}
+        </p>
+        {/* One button for both labels, so keyboard focus stays on it when
+            the last input is reached. */}
+        <button
+          type="button"
+          onClick={last ? onSeeResult : () => setSelected(selected + 1)}
+          className={primaryButtonCompactClass}
+        >
+          {last ? "See the result" : "Next input"}
+        </button>
+      </div>
     </main>
   );
 }

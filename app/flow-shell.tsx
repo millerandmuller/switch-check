@@ -354,7 +354,7 @@ export function FlowShell({
 
   return (
     <div className={`flex min-h-dvh flex-col ${screen === "rate" ? "wide:h-dvh" : ""}`}>
-      <header className="flex flex-wrap items-center gap-x-7 gap-y-2.5 border-b border-ink px-gutter py-3">
+      <header className={`flex flex-wrap items-center gap-x-7 gap-y-2.5 border-b border-ink px-gutter ${screen === "rate" ? "py-2" : "py-3"}`}>
         <h1 className="font-display text-[1.55rem] font-medium tracking-[-0.01em]">
           Switch Check <i className="font-normal text-gold">your call</i>
         </h1>

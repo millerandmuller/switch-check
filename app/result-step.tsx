@@ -18,7 +18,7 @@ import {
 import { sampleRunColumn, type SampleResults } from "@/lib/sample-results";
 import { preview, sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
 import { SIDE_ROLES } from "./outputs-step";
-import { ResultChip } from "./rate-step";
+import { ResultChip } from "./result-chip";
 import { SampleTag } from "./sample-tag";
 import { capsClass, secondaryButtonClass } from "./ui";
 

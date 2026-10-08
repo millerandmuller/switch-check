@@ -3,7 +3,21 @@
 What changed in Switch Check, newest first. Days are the days of the Early
 AI-Dopters 30-Day Community Hackathon.
 
-## Week 2 (from Oct 2, 2026)
+## Week 2 (Oct 2 to Oct 8, 2026)
+
+The week went into making one comparison complete on screen: real outputs for
+the sample, a rating for each output, and a first test of the whole flow with
+the fixes that came out of it. The app still does not call a model itself.
+
+### Decided
+
+- **How the app will reach the models (Day 14).** Both models are called
+  through OpenRouter, from the server, with one key that never reaches the
+  browser. Pasting outputs by hand stays as the fallback. The reasons, the
+  limits on a run, the prices with the date they were checked, what happens
+  when a model is missing and the check for exposed keys are in
+  [`docs/model-connection.md`](docs/model-connection.md). Nothing is
+  implemented yet.
 
 ### Added
 
@@ -14,7 +28,7 @@ AI-Dopters 30-Day Community Hackathon.
   sample results** fills the table with those outputs, tagged `sample run`
   with the run date. The button is offered only for the unchanged sample
   workflow on the default pair. The outputs are saved exactly as the models
-  returned them. Token counts and response times are not shown yet.
+  returned them.
 - **Quality review (Day 9).** In the shown comparison, each output can be rated
   on a three-point scale (Usable as is, Needs edits, Not usable) with an
   optional one-line note of up to 200 characters. The rating and note sit in
@@ -41,9 +55,26 @@ AI-Dopters 30-Day Community Hackathon.
 
 - **Manual flow test (Day 12).** The whole flow was run end to end in a browser
   with the sample workflow, once with the saved sample results and once with
-  pasted outputs. Nothing was fixed. The 22 issues found, with steps for each
-  and the three to fix first, are in
+  pasted outputs. Nothing was fixed that day. The 22 issues found, with steps
+  for each and the three to fix first, are in
   [`docs/manual-flow-test.md`](docs/manual-flow-test.md).
+
+### Not there yet
+
+- The app does not run models itself. Outputs are pasted by hand, or loaded
+  from the one saved run of the sample.
+- No speed or cost figures are shown anywhere. The saved run holds the token
+  counts and response times, and the page does not show them.
+- 19 of the 22 issues from the manual flow test are open.
+- There is no live deployment.
+- Nobody outside the project has used it yet.
+
+### Missed
+
+- Day 7's work was logged a day late, under Day 8, so Day 8's own step was
+  built on Day 9.
+- Days 10 and 11 were not built or logged. Day 10's step (speed and cost) is
+  still open. Day 11's step (more test workflows) was not built.
 
 ## Week 1 (Sep 27 to Oct 1, 2026)
 

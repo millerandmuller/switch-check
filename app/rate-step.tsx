@@ -23,12 +23,14 @@ import {
 import { sampleRunColumn, type SampleOkCell, type SampleResults } from "@/lib/sample-results";
 import { sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
 import { CellReview, RatingsDisclosure } from "./cell-review";
+import { FigureChip } from "./figure-chip";
 import { FormattedOutput, RawOutput } from "./formatted-output";
 import { InputColumn } from "./input-column";
 import { InputTabs } from "./input-tabs";
 import { ModelSwitch } from "./model-switch";
 import { SIDE_ROLES, cellKey } from "./outputs-step";
 import { RemovedNotice } from "./removed-notice";
+import { SummaryLine } from "./summary-line";
 import { labelClass, primaryButtonCompactClass } from "./ui";
 
 // Step 5: rating, one input at a time. The three inputs are tabs across the
@@ -38,19 +40,6 @@ import { labelClass, primaryButtonCompactClass } from "./ui";
 // page scrolls when the window is too short for that. Nothing is run here: the
 // outputs were pasted or come from one earlier, dated run. The row result and
 // the summary line only count the person's ratings and never name a winner.
-
-// One figure as a rounded chip: the figure large, its state word and unit
-// small beneath it, always together. A figure that was not measured says so in
-// the large line and gives its reason beneath, so a bare number never stands
-// alone.
-function FigureChip({ figure, note }: { figure: string; note: string }) {
-  return (
-    <div className="flex min-w-0 flex-col rounded-xl bg-chip px-2 py-px leading-tight">
-      <b className="whitespace-nowrap font-display text-[1.05rem] font-semibold tabular-nums">{figure}</b>
-      <span className="text-[11px] text-muted">{note}</span>
-    </div>
-  );
-}
 
 // Cost and response time in the header of one output, as two chips.
 function Figures({
@@ -63,6 +52,14 @@ function Figures({
   cell: SampleOkCell | null;
 }) {
   const cost = costPer1000Runs(column, price);
+  // Nothing measured for this model: say so once, with the reason once.
+  if (cost.state === "not measured" && cell === null) {
+    return (
+      <div className="flex flex-wrap gap-1.5">
+        <FigureChip figure="cost and time not measured" note={cost.reason} />
+      </div>
+    );
+  }
   return (
     <div className="flex flex-wrap gap-1.5">
       {cost.state === "estimated" ? (
@@ -191,19 +188,6 @@ function Panel({
         {tested ? review : <p className="text-sm text-muted">Nothing to rate: no output was pasted.</p>}
       </div>
     </article>
-  );
-}
-
-// The summary line in two weights: the first sentence (what is counted, or
-// how many inputs still need a rating) in semibold, anything after it (what
-// is still missing, such as inputs not tested) in light.
-function SummaryLine({ text }: { text: string }) {
-  const [first, ...rest] = text.split(/(?<=\.)\s+/);
-  return (
-    <>
-      <span className="font-semibold">{first}</span>
-      {rest.length > 0 && <span className="font-light text-soft"> {rest.join(" ")}</span>}
-    </>
   );
 }
 

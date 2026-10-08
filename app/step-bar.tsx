@@ -33,8 +33,8 @@ export function StepBar({
                 }}
                 className={
                   current
-                    ? "rounded-full bg-accent px-3 py-1 text-[13.5px] font-semibold text-on-accent"
-                    : "rounded-full px-3 py-1 text-[13.5px] text-muted enabled:cursor-pointer enabled:hover:bg-accent/10 disabled:opacity-75"
+                    ? "whitespace-nowrap rounded-full bg-accent px-3 py-1 text-[13.5px] font-semibold text-on-accent"
+                    : "whitespace-nowrap rounded-full px-3 py-1 text-[13.5px] text-muted enabled:cursor-pointer enabled:hover:bg-accent/10 disabled:cursor-default"
                 }
               >
                 <span className={step.state === "done" ? "font-semibold text-ink" : undefined}>

@@ -414,7 +414,7 @@ export function FlowShell({
           <div className="wordmark">Switch Check</div>
         </div>
       )}
-      <header className={`relative flex flex-wrap items-center gap-x-7 gap-y-2 px-gutter wide:flex-nowrap ${screen === "rate" ? "py-1" : "py-3"}`}>
+      <header className={`relative flex flex-wrap items-center gap-x-7 gap-y-2 px-gutter ${screen === "rate" ? "py-1 wide:flex-nowrap" : "py-3"}`}>
         <h1 className="whitespace-nowrap font-display text-[1.3rem] font-semibold tracking-[-0.01em]">
           Switch Check <span className="font-light text-muted">your call</span>
         </h1>

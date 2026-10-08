@@ -12,16 +12,21 @@ import {
 import {
   costPer1000Runs,
   costText,
+  formatSeconds,
+  formatUsd,
   responseTimes,
   sharedSourceLine,
   speedText,
   type ModelPrices,
+  type RunColumn,
 } from "@/lib/cost-speed";
 import { sampleRunColumn, type SampleResults } from "@/lib/sample-results";
 import { preview, sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
+import { FigureChip } from "./figure-chip";
 import { SIDE_ROLES } from "./outputs-step";
 import { ResultChip } from "./result-chip";
 import { SampleTag } from "./sample-tag";
+import { SummaryLine } from "./summary-line";
 import { labelClass, secondaryButtonClass } from "./ui";
 
 // The last screen: what the person's ratings add up to, what is known about
@@ -33,6 +38,41 @@ export const DECISIONS = ["Switch", "Stay", "Test more"] as const;
 export type Decision = (typeof DECISIONS)[number];
 
 const INPUT_PREVIEW_CHARS = 90;
+
+// One model's cost and response times as two chips, each with its state word
+// and unit beneath the figure. The full sentences, with the price source and
+// the dates, are in the disclosure below the cards.
+function ResultFigures({
+  column,
+  price,
+}: {
+  column: RunColumn;
+  price: ModelPrices["models"][string] | undefined;
+}) {
+  const cost = costPer1000Runs(column, price);
+  const speed = responseTimes(column);
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {cost.state === "estimated" ? (
+        <FigureChip figure={formatUsd(cost.usdPer1000Runs)} note="estimated · per 1,000 runs" />
+      ) : (
+        <FigureChip figure="cost not measured" note={cost.reason} />
+      )}
+      {speed.state === "measured" ? (
+        <FigureChip
+          figure={
+            formatSeconds(speed.fastestMs) === formatSeconds(speed.slowestMs)
+              ? `${formatSeconds(speed.fastestMs)} s`
+              : `${formatSeconds(speed.fastestMs)} to ${formatSeconds(speed.slowestMs)} s`
+          }
+          note={`measured · one run, ${speed.basedOn} of ${speed.inputs} inputs`}
+        />
+      ) : (
+        <FigureChip figure="time not measured" note={speed.reason} />
+      )}
+    </div>
+  );
+}
 
 function ratingLabel(output: string, rating: Reviews[number]["current"]["rating"]): string {
   if (cellState(output) === "not tested") return "not tested";
@@ -90,8 +130,8 @@ export function ResultStep({
       >
         The result
       </h2>
-      <p className="mt-4 text-balance font-display text-[clamp(1.6rem,3vw,2.6rem)] font-light leading-tight">
-        {summaryLine(outputs, reviews)}
+      <p className="mt-4 text-balance font-display text-[clamp(1.6rem,3vw,2.6rem)] leading-tight">
+        <SummaryLine text={summaryLine(outputs, reviews)} />
       </p>
       <p className="mt-2 text-sm text-muted">
         This line counts your ratings and nothing else. Two outputs with the same rating can still
@@ -105,12 +145,7 @@ export function ResultStep({
             <p className="text-[13px] font-semibold">{SIDE_ROLES[side]}</p>
             <p className="mt-1 font-mono text-[12.5px] [overflow-wrap:anywhere]">{model}</p>
             {anyMeasured ? (
-              <>
-                <p className="mt-3 [overflow-wrap:anywhere]">
-                  {costText(costPer1000Runs(column, modelPrices?.models[model]), priceCheckedOn, runDate)}
-                </p>
-                <p className="mt-1 [overflow-wrap:anywhere]">{speedText(responseTimes(column), runDate)}</p>
-              </>
+              <ResultFigures column={column} price={modelPrices?.models[model]} />
             ) : (
               <p className="mt-3">cost and response time not measured</p>
             )}
@@ -118,10 +153,26 @@ export function ResultStep({
         ))}
       </div>
       {anyMeasured ? (
-        <p className="mt-2 text-xs text-muted">
-          A run is your prompt with one input. The cost is an estimate from a published price, not a
-          bill. The times are from a single run and change from run to run.
-        </p>
+        <>
+          <p className="mt-2 text-xs text-muted">
+            A run is your prompt with one input. The cost is an estimate from a published price, not
+            a bill. The times are from a single run and change from run to run.
+          </p>
+          <details className="mt-2 text-[13px] text-muted">
+            <summary className="cursor-pointer text-[13.5px] font-semibold text-ink">
+              How these figures were worked out
+            </summary>
+            <ul className="mt-1.5 space-y-1.5">
+              {columns.map(({ side, model, column }) => (
+                <li key={side} className="[overflow-wrap:anywhere]">
+                  <b className="font-semibold">{SIDE_ROLES[side]}</b> ({model}):{" "}
+                  {costText(costPer1000Runs(column, modelPrices?.models[model]), priceCheckedOn, runDate)}.{" "}
+                  {speedText(responseTimes(column), runDate)}.
+                </li>
+              ))}
+            </ul>
+          </details>
+        </>
       ) : (
         <p className="mt-2 text-xs text-muted">
           {sharedSourceLine(

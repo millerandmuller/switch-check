@@ -21,6 +21,18 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Changed
 
+- **The result screen in the glass look (Oct 8).** The summary line has two
+  weights, each model's cost and response times are chips with their state
+  word beneath the figure (estimated, per 1,000 runs; measured, one run, 3 of
+  3 inputs; or not measured with its reason), and the sentences with the
+  price source and dates sit in a closed "How these figures were worked out".
+  The three inputs are cards with their row result, ratings and notes, and the
+  three decision choices are pills, none preselected. No wording or rule
+  changed. In the same commit: the blur behind the panel and cards was not
+  applied in Chrome (the minifier kept only the prefixed property); it now is,
+  and without `backdrop-filter` they stay solid ivory. Where a model has
+  nothing measured, its header says so once in one chip, not twice.
+
 - **Outputs read as formatted text, with the raw text one click away (Oct 8).**
   Marks such as `**Priority:**`, numbered lines, `- ` bullets and `> `
   quotes now show as bold text, numbered and bulleted items and quotes (issue

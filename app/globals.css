@@ -13,7 +13,7 @@
   --color-ink: #1b4a40;
   --color-muted: #2a5449;
   /* The light second weight of a headline. Large text only (3:1). */
-  --color-soft: #4a7066;
+  --color-soft: #3f6a5f;
   /* The one accent: current step, selected rating, main button. */
   --color-accent: #1f4d43;
   --color-on-accent: #ffffff;
@@ -132,23 +132,23 @@
     border: 1px solid rgba(255, 255, 255, 0.7);
   }
 
+  /* The blur comes from Tailwind's backdrop utilities, which write both the
+     prefixed and the plain property; written by hand here, the minifier kept
+     only the prefixed one and Chrome showed no blur. */
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
     .panel {
+      @apply backdrop-blur-[22px] backdrop-saturate-[1.15];
       background: rgba(255, 255, 255, 0.6);
-      backdrop-filter: blur(22px) saturate(1.15);
-      -webkit-backdrop-filter: blur(22px) saturate(1.15);
     }
 
     .card {
+      @apply backdrop-blur-[26px] backdrop-saturate-[1.1];
       background: rgba(252, 246, 234, 0.74);
-      backdrop-filter: blur(26px) saturate(1.1);
-      -webkit-backdrop-filter: blur(26px) saturate(1.1);
     }
 
     .glass {
+      @apply backdrop-blur-[22px];
       background: rgba(255, 255, 255, 0.6);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
     }
   }
 

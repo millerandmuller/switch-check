@@ -94,7 +94,7 @@ function OutputTask({
 
   return (
     <article className="min-w-0 border border-line p-5 focus-within:border-ink focus-within:shadow-focus">
-      <p className={`${capsClass} text-gold`}>
+      <p className={`${capsClass} text-gold-text`}>
         Task {taskNumber} of {taskCount}
       </p>
       <h3 className="mt-1 font-caps text-[1.05rem] font-medium">
@@ -140,7 +140,7 @@ function OutputTask({
       <label htmlFor={boxId} className={`mt-4 block ${capsClass}`}>
         Paste what the model returned
         {sampleRunOn !== null && (
-          <span className="ml-2 text-gold">sample run · {sampleRunOn}</span>
+          <span className="ml-2 text-gold-text">sample run · {sampleRunOn}</span>
         )}
       </label>
       <textarea

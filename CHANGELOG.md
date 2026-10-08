@@ -21,6 +21,17 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Changed
 
+- **Focus, contrast and small points of clarity (Oct 8).** After Next input,
+  keyboard focus moves to the heading of the first output, and the focus ring
+  is 2 px in ink everywhere. Small gold labels are a darker gold (5.36:1 on
+  white, 4.80:1 on the cream panels; the old one was 3.4:1), the lighter gold
+  stays on large numerals, and no label is under 12 px. The two choices on
+  Start have a heavy edge, an arrow and a hover state. Error messages and the
+  edge of the field they belong to are red-brown instead of black. Steps 2, 3
+  and 4 have a Back button that names where it goes. Step 2 says that the four
+  models listed are the ones Switch Check has prices for today. Back to rating
+  returns to the input you left.
+
 - **The page says what will be removed before it removes it (Oct 8).** On
   steps 2 and 3, as soon as the prompt, an input or a model differs from the
   one your outputs were made with, a notice above the main button says how

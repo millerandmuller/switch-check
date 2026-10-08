@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MODEL_SIDES,
   cellState,
@@ -74,6 +74,9 @@ function Figures({
   );
 }
 
+// Marks the heading of an output, so Next input can move focus to the first one.
+const OUTPUT_HEADING = "data-output-heading";
+
 function Panel({
   side,
   model,
@@ -111,8 +114,14 @@ function Panel({
       {/* Role and model, then the two figures with their state words. Each
           part stays whole; a narrow column wraps between them, not inside. */}
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0 border-b border-line px-gutter py-1.5 text-[12.5px]">
-        <span className={capsClass}>{SIDE_ROLES[side]}</span>
-        <span className="font-mono [overflow-wrap:anywhere]">{model}</span>
+        <h3
+          {...{ [OUTPUT_HEADING]: side }}
+          tabIndex={-1}
+          className="flex flex-wrap items-baseline gap-x-3"
+        >
+          <span className={capsClass}>{SIDE_ROLES[side]}</span>
+          <span className="font-mono [overflow-wrap:anywhere]">{model}</span>
+        </h3>
         <span className="flex basis-full flex-wrap gap-x-4">
           <Figures column={column} price={prices?.models[model]} cell={cell} />
         </span>
@@ -126,7 +135,7 @@ function Panel({
       >
         {tested ? (
           <>
-            <p className={`${capsClass} mb-3 ${cell === null ? "text-muted" : "text-gold"}`}>
+            <p className={`${capsClass} mb-3 ${cell === null ? "text-muted" : "text-gold-text"}`}>
               {cell === null
                 ? "pasted · shown exactly as pasted"
                 : `sample run · ${runDate} · shown exactly as returned`}
@@ -219,6 +228,16 @@ export function RateStep({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [inputCount, onSelect]);
 
+  // Next input moves focus to the heading of the first output shown, so the
+  // next Tab starts at the outputs, not back at the button.
+  const focusOutputAfterNext = useRef(false);
+  useEffect(() => {
+    if (!focusOutputAfterNext.current) return;
+    focusOutputAfterNext.current = false;
+    const headings = [...document.querySelectorAll<HTMLElement>(`[${OUTPUT_HEADING}]`)];
+    headings.find((heading) => heading.offsetParent !== null)?.focus();
+  }, [selected]);
+
   function rate(inputIndex: number, side: ModelSide, rating: Rating) {
     if (!anyRated(reviews)) setLegendOpen(false);
     onRatingChange(inputIndex, side, rating);
@@ -263,7 +282,7 @@ export function RateStep({
             id="rate-heading"
             ref={headingRef}
             tabIndex={-1}
-            className={`${capsClass} text-gold focus:outline-none`}
+            className={`${capsClass} text-gold-text focus:outline-none`}
           >
             Step 5 of 5 · Rate the outputs
           </h2>
@@ -280,7 +299,7 @@ export function RateStep({
               {" "}
               Keys{" "}
               {draft.inputs.map((_, index) => (
-                <kbd key={index} className="mr-1 border border-line bg-ground px-[5px] py-px font-mono text-[11px]">
+                <kbd key={index} className="mr-1 border border-line bg-ground px-[5px] py-px font-mono text-xs">
                   {index + 1}
                 </kbd>
               ))}
@@ -356,7 +375,12 @@ export function RateStep({
             the last input is reached. */}
         <button
           type="button"
-          onClick={last ? onSeeResult : () => onSelect(selected + 1)}
+          onClick={last
+              ? onSeeResult
+              : () => {
+                  focusOutputAfterNext.current = true;
+                  onSelect(selected + 1);
+                }}
           className={primaryButtonCompactClass}
         >
           {last ? "See the result" : "Next input"}

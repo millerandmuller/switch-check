@@ -82,7 +82,7 @@ export function ResultStep({
 
   return (
     <div>
-      <p className={`${capsClass} text-gold`}>Step 5 of 5 · The result</p>
+      <p className={`${capsClass} text-gold-text`}>Step 5 of 5 · The result</p>
       <h2
         ref={headingRef}
         tabIndex={-1}

@@ -37,7 +37,7 @@ export function StepBar({
                     : "rounded-full px-4 py-1.5 text-[14.5px] text-muted enabled:cursor-pointer enabled:hover:text-ink disabled:opacity-55"
                 }
               >
-                <span className={step.state === "done" ? "font-bold text-gold" : undefined}>
+                <span className={step.state === "done" ? "font-bold text-gold-text" : undefined}>
                   {step.position}
                 </span>
                 <span className={current ? "" : "hidden md:inline"}> · {step.label}</span>

@@ -45,7 +45,7 @@ function InputField({
         aria-describedby={problem === null ? countId : `${problemId} ${countId}`}
         className={`${fieldClasses(problem !== null)} text-[15px] leading-[1.6]`}
       />
-      <p id={countId} className={over ? "mt-1 text-xs font-bold" : `mt-1 ${capsClass} text-gold`}>
+      <p id={countId} className={over ? "mt-1 text-xs font-bold text-worse" : `mt-1 ${capsClass} text-gold-text`}>
         {value.length.toLocaleString("en-US")} of {INPUT_MAX_CHARS.toLocaleString("en-US")}{" "}
         characters
       </p>

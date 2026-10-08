@@ -48,7 +48,7 @@ import { StartStep } from "./start-step";
 import { StepBar } from "./step-bar";
 import { StepHeading } from "./step-heading";
 import { RemovalWarning, plural, removalSentence } from "./removal-warning";
-import { primaryButtonClass, problemClass } from "./ui";
+import { primaryButtonClass, problemClass, secondaryButtonClass } from "./ui";
 
 // A configured default that is not on the candidate list would leave a picker
 // blank, so fall back to the first candidate rather than show nothing.
@@ -522,7 +522,7 @@ export function FlowShell({
               }
               onUseSample={() => askOrDo("use sample", hasTypedDraft(draft, sample))}
             />
-            <StepFooter>
+            <StepFooter back={<BackButton label="Back to start" onClick={() => open("start")} />}>
               {removal.outputs > 0 && <RemovalWarning removal={removal} onUndo={undoSetupChange} />}
               <button type="button" onClick={() => continueTo("inputs")} className={primaryButtonClass}>
                 {continueLabel("Continue to inputs")}
@@ -544,7 +544,7 @@ export function FlowShell({
                 }))
               }
             />
-            <StepFooter>
+            <StepFooter back={<BackButton label="Back to prompt and models" onClick={() => open("setup")} />}>
               {removal.outputs > 0 && <RemovalWarning removal={removal} onUndo={undoInputsChange} />}
               <button type="button" onClick={() => continueTo("outputs")} className={primaryButtonClass}>
                 {continueLabel("Continue to outputs")}
@@ -568,7 +568,7 @@ export function FlowShell({
         )}
 
         {step === "outputs" && (
-          <StepFooter>
+          <StepFooter back={<BackButton label="Back to inputs" onClick={() => open("inputs")} />}>
             {attempted.includes("outputs") && filled === 0 && (
               <p role="alert" className={problemClass}>
                 There is nothing to compare yet, so paste at least one output first.
@@ -592,10 +592,27 @@ export function FlowShell({
 
 // The bottom of a step: at most one main button, with what it needs to say
 // next to it.
-function StepFooter({ children }: { children: React.ReactNode }) {
+function StepFooter({
+  back,
+  children,
+}: {
+  // A button that names where it goes, at the left edge.
+  back?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="mt-8 flex flex-wrap items-center justify-end gap-4 border-t border-line pt-5">
+      {back !== undefined && <span className="mr-auto">{back}</span>}
       {children}
     </div>
+  );
+}
+
+function BackButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className={secondaryButtonClass}>
+      <span aria-hidden>← </span>
+      {label}
+    </button>
   );
 }

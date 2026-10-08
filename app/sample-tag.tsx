@@ -7,7 +7,7 @@ export function SampleTag({ label }: { label: string }) {
   return (
     <span
       title={label}
-      className={`${capsClass} ml-2 align-middle text-gold`}
+      className={`${capsClass} ml-2 align-middle text-gold-text`}
     >
       SAMPLE
     </span>

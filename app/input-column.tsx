@@ -36,7 +36,7 @@ export function InputColumn({
         tabIndex={0}
         className="px-gutter py-4 wide:min-h-[320px] wide:flex-[1_1_320px] wide:overflow-auto"
       >
-        <p className={`${capsClass} mb-3 text-gold`}>
+        <p className={`${capsClass} mb-3 text-gold-text`}>
           Input {position} · {input.length.toLocaleString("en-US")} of{" "}
           {INPUT_MAX_CHARS.toLocaleString("en-US")} characters
           {sampleOf !== null && <SampleTag label={sampleOf} />}

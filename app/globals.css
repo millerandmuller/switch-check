@@ -9,6 +9,9 @@
   --color-ink: #141210;
   --color-muted: #5b554c;
   --color-gold: #b08428;
+  /* Small gold text: 5.36:1 on white and 4.80:1 on the soft ground. The lighter
+     gold above stays for large numerals and rules only. */
+  --color-gold-text: #8a6417;
   /* Row result chips only. */
   --color-better: #2f6f3a;
   --color-worse: #a8432c;
@@ -41,7 +44,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-gold);
+    outline: 2px solid var(--color-ink);
     outline-offset: 2px;
   }
 }

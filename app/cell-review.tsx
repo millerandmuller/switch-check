@@ -6,7 +6,7 @@ import { NOTE_MAX_CHARS, RATINGS, type Rating, type Review } from "@/lib/compari
 // picks.
 
 const choiceClass =
-  "block cursor-pointer rounded-full px-3.5 py-1 text-[13.5px] text-muted has-[:checked]:bg-ink has-[:checked]:font-bold has-[:checked]:text-ground has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-gold";
+  "block cursor-pointer rounded-full px-3.5 py-1 text-[13.5px] text-muted has-[:checked]:bg-ink has-[:checked]:font-bold has-[:checked]:text-ground has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink";
 
 // The three descriptions, shown once above the outputs.
 export function RatingLegend() {
@@ -107,7 +107,7 @@ export function CellReview({
           onChange={(event) => onNoteChange(event.target.value)}
           className="min-w-0 flex-1 border border-line bg-ground px-3 py-1.5 text-sm focus:border-ink"
         />
-        <span className="text-[11px] text-muted">
+        <span className="text-xs text-muted">
           {review.note.length} / {NOTE_MAX_CHARS}
         </span>
       </div>

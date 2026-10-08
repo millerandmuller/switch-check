@@ -21,6 +21,8 @@ export function FieldProblem({ id, message }: { id: string; message: string | nu
   );
 }
 
+const COUNT_WORDS = ["no", "one", "two", "three", "four", "five", "six", "seven", "eight"];
+
 function ModelPicker({
   id,
   label,
@@ -127,6 +129,9 @@ export function SetupStep({
           describedBy={modelsDescribedBy}
           onChange={onCandidateModelChange}
         />
+        <p className={helperClass}>
+          These {COUNT_WORDS[candidates.length] ?? candidates.length} are the models Switch Check has prices for today.
+        </p>
         <FieldProblem id="models-problem" message={problems?.models ?? null} />
       </div>
     </div>

@@ -1,7 +1,7 @@
 // Class names shared by the screens, so the look is defined once. Colours and
 // fonts come from the tokens in globals.css.
 
-export const capsClass = "font-caps text-[11.5px] font-semibold uppercase tracking-[0.06em]";
+export const capsClass = "font-caps text-[12px] font-semibold uppercase tracking-[0.06em]";
 
 // The one main button of a screen: square, ink, named after what it does.
 export const primaryButtonClass =
@@ -17,11 +17,11 @@ export const secondaryButtonClass =
 
 export const fieldClass = "mt-2 w-full border border-line bg-ground px-3.5 py-3 text-[15px] focus:border-ink";
 
-// A field with a problem is marked by a heavier ink edge and its message, not
-// by colour: red and green are kept for the row result chips.
-export const invalidFieldClass = "border-2 border-ink";
+// A field with a problem is marked by a heavier edge and its message, both in
+// the "worse" colour, so it is not missed in plain black.
+export const invalidFieldClass = "border-2 border-worse";
 
-export const problemClass = "mt-2 border-l-2 border-ink pl-3 text-sm font-bold";
+export const problemClass = "mt-2 border-l-2 border-worse pl-3 text-sm font-bold text-worse";
 
 export const blockClass = "border border-line bg-ground";
 

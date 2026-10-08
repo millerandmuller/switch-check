@@ -15,7 +15,7 @@ const NAMES_COMPARED_MODEL: RowResult[] = ["better", "same rating", "worse"];
 export function ResultChip({ result }: { result: RowResult }) {
   return (
     <span
-      className={`inline-block w-fit border px-2 py-[3px] font-caps text-[10.5px] font-semibold uppercase tracking-[0.05em] ${RESULT_CHIP[result] ?? "border-line"}`}
+      className={`inline-block w-fit border px-2 py-[3px] font-caps text-xs font-semibold uppercase tracking-[0.05em] ${RESULT_CHIP[result] ?? "border-line"}`}
     >
       {NAMES_COMPARED_MODEL.includes(result) ? `Compared model: ${result}` : result}
     </span>

@@ -15,7 +15,7 @@ export function StepHeading({
 }) {
   return (
     <div className="max-w-[72ch]">
-      <p className={`${capsClass} text-gold`}>Step {position} of 5</p>
+      <p className={`${capsClass} text-gold-text`}>Step {position} of 5</p>
       <h2 ref={headingRef} tabIndex={-1} className="mt-1 font-display text-[2rem] font-medium leading-tight focus:outline-none">
         {title}
       </h2>

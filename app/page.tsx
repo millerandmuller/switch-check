@@ -4,7 +4,7 @@ import candidatesConfig from "@/config/candidates.json";
 import sampleWorkflow from "@/demo-data/sample-email-triage.json";
 import type { ModelPrices } from "@/lib/cost-speed";
 import { newestResultsFileName, type SampleResults } from "@/lib/sample-results";
-import { WorkflowForm } from "./workflow-form";
+import { FlowShell } from "./flow-shell";
 
 // The newest saved run of the sample workflow, read on the server when the
 // page is built. null when no run has been saved yet.
@@ -27,27 +27,12 @@ export default function Home() {
   const sampleResults = readSampleResults();
   const modelPrices = readModelPrices();
   return (
-    <main className="w-full">
-      <header className="border-b border-ink px-gutter py-3">
-        <h1 className="font-display text-[1.55rem] font-medium tracking-[-0.01em]">
-          Switch Check <i className="font-normal text-gold">your call</i>
-        </h1>
-      </header>
-      <p className="max-w-[72ch] px-gutter pt-8 text-lg text-muted">
-        Compare the model you use today with a newer one on your own prompt and three inputs. For
-        now you run both models yourself and paste what they returned. Switch Check puts the
-        outputs side by side and counts your ratings. The decision stays yours: switch, stay, or
-        test more.
-      </p>
-      <div className="px-gutter pb-16 pt-8">
-        <WorkflowForm
-          candidates={candidatesConfig.candidates}
-          defaultPair={candidatesConfig.default_pair}
-          sample={sampleWorkflow}
-          sampleResults={sampleResults}
-          modelPrices={modelPrices}
-        />
-      </div>
-    </main>
+    <FlowShell
+      candidates={candidatesConfig.candidates}
+      defaultPair={candidatesConfig.default_pair}
+      sample={sampleWorkflow}
+      sampleResults={sampleResults}
+      modelPrices={modelPrices}
+    />
   );
 }

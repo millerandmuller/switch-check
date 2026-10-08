@@ -24,6 +24,23 @@ the fixes that came out of it. The app still does not call a model itself.
 - **Its own look (Oct 8).** One light look with square, hairline-edged blocks,
   four typefaces (Newsreader, Lato, Poppins, JetBrains Mono) and the full
   width of the window. The dark variant is gone. Nothing behaves differently.
+- **A guided flow in five steps (Oct 8).** The three screens are now five
+  steps with a bar across the top: Start, Prompt and models, Inputs, Outputs,
+  Rate and result. Each step has one job and one main button that names where
+  it goes. A finished step in the bar goes back to it, and a step that cannot
+  be opened yet is shown and cannot be pressed. Start offers the finished
+  example, with nothing rated, or a comparison on your own prompt. The Ready
+  screen is gone. After each step change, keyboard focus is on the new
+  heading.
+- **The page asks before it replaces your work (Oct 8).** Use sample workflow
+  over a typed draft, Load sample results over pasted outputs, and opening the
+  example over a comparison in progress each ask first, in the page, with two
+  buttons that name both outcomes. When editing an output removes its rating
+  and note, a line next to that output now says so. When the saved sample
+  results are not offered, a line says which draft they belong to.
+- **The line about saving says what is true (Oct 8).** "Nothing is saved unless
+  you choose to share the result" is replaced by "Nothing is saved. Reloading
+  this page empties it." There is no way to share or save.
 
 ### Added
 

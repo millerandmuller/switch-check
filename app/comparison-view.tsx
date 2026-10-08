@@ -1,6 +1,3 @@
-"use client";
-
-import { useState } from "react";
 import {
   MODEL_SIDES,
   cellCount,
@@ -21,9 +18,11 @@ import { CellReview, RatingLegend } from "./cell-review";
 import { CostSpeed } from "./cost-speed";
 import { RemovedNotice } from "./removed-notice";
 import { SampleTag } from "./sample-tag";
-import { capsClass, primaryButtonClass, secondaryButtonClass } from "./ui";
+import { capsClass, secondaryButtonClass } from "./ui";
 
-// The comparison table, filled by hand or from the saved sample run. Nothing is
+// The comparison table, filled by hand or from the saved sample run. It has
+// two modes: "edit" is the outputs step, where the six outputs are pasted;
+// "shown" is the rating step, where each output is read and rated. Nothing is
 // run here: no model is called, and the table shows only what the person
 // pasted or what one earlier, dated run returned. Cost and speed are shown for
 // that run only, each figure marked estimated, measured or not measured (see
@@ -86,7 +85,13 @@ function ReadOnlyCell({
   );
 }
 
+// The key of one cell, for the list of cells whose review an edit removed.
+export function cellKey(inputIndex: number, side: ModelSide): string {
+  return `${inputIndex}-${side}`;
+}
+
 export function ComparisonView({
+  mode,
   draft,
   sample,
   outputs,
@@ -98,8 +103,10 @@ export function ComparisonView({
   onRatingChange,
   onNoteChange,
   onLoadSampleResults,
-  onBack,
+  notOfferedReason,
+  clearedCells,
 }: {
+  mode: "edit" | "shown";
   draft: WorkflowDraft;
   sample: SampleWorkflow;
   outputs: PastedOutputs;
@@ -113,15 +120,13 @@ export function ComparisonView({
   onNoteChange: (inputIndex: number, side: ModelSide, note: string) => void;
   // null when the saved sample results do not belong to this draft.
   onLoadSampleResults: (() => void) | null;
-  onBack: () => void;
+  // Why the saved sample results are not offered for this draft, or null.
+  notOfferedReason: string | null;
+  // Cells whose rating or note was removed because their text was edited.
+  clearedCells: string[];
 }) {
-  const [showing, setShowing] = useState(false);
-  // The refusal appears only after Show comparison was pressed on an empty
-  // table, and goes away by itself once anything is pasted.
-  const [attempted, setAttempted] = useState(false);
-
+  const showing = mode === "shown";
   const filled = filledCount(outputs);
-  const refused = attempted && filled === 0;
 
   // What the saved run holds for a cell, while the cell still shows it.
   function sampleRunFor(inputIndex: number, side: ModelSide) {
@@ -133,35 +138,15 @@ export function ComparisonView({
     MODEL_SIDES.some((side) => sampleRunFor(index, side) !== null),
   );
 
-  function loadSampleResults() {
-    if (onLoadSampleResults === null) return;
-    onLoadSampleResults();
-    setShowing(true);
-  }
-
-  function showComparison() {
-    setAttempted(true);
-    if (filled > 0) setShowing(true);
-  }
-
   return (
-    <section aria-labelledby="comparison-heading">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="comparison-heading" className="font-display text-2xl font-medium">
-          Compare outputs
-        </h2>
-        <button type="button" onClick={onBack} className={secondaryButtonClass}>
-          Back
-        </button>
-      </div>
-      <p className="mt-2 text-sm text-muted">
-        Run your prompt on each model yourself and paste what it returned. Nothing is run from this
-        page.
-      </p>
+    <section aria-label="Outputs of both models">
       <RemovedNotice count={removedCount} />
-      {onLoadSampleResults !== null && sampleResults !== null && (
+      {!showing && notOfferedReason !== null && (
+        <p className="mt-3 text-sm text-muted">{notOfferedReason}</p>
+      )}
+      {!showing && onLoadSampleResults !== null && sampleResults !== null && (
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={loadSampleResults} className={secondaryButtonClass}>
+          <button type="button" onClick={onLoadSampleResults} className={secondaryButtonClass}>
             Load sample results
           </button>
           <p className="text-sm text-muted">
@@ -245,6 +230,7 @@ export function ComparisonView({
                         }
                       />
                     ) : (
+                      <>
                       <textarea
                         value={outputs[index][side]}
                         onChange={(event) => onOutputChange(index, side, event.target.value)}
@@ -253,6 +239,13 @@ export function ComparisonView({
                         aria-label={`Output of ${modelFor(draft, side)} for input ${position}`}
                         className="w-full border border-line bg-transparent px-3 py-2 font-mono text-sm focus:border-ink"
                       />
+                      {clearedCells.includes(cellKey(index, side)) && (
+                        <p role="status" className="mt-1 text-sm font-bold">
+                          Your rating and note on this output were removed, because its text
+                          changed.
+                        </p>
+                      )}
+                      </>
                     )}
                   </td>
                 ))}
@@ -262,22 +255,6 @@ export function ComparisonView({
         </tbody>
       </table>
 
-      <div className="mt-5 flex flex-wrap items-center justify-end gap-4 border-t border-line pt-5">
-        {refused && (
-          <p role="alert" className="border-l-2 border-ink pl-3 text-sm font-bold">
-            There is nothing to compare yet, so paste at least one output first.
-          </p>
-        )}
-        {showing ? (
-          <button type="button" onClick={() => setShowing(false)} className={secondaryButtonClass}>
-            Edit outputs
-          </button>
-        ) : (
-          <button type="button" onClick={showComparison} className={primaryButtonClass}>
-            Show comparison
-          </button>
-        )}
-      </div>
     </section>
   );
 }

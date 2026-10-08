@@ -18,24 +18,30 @@
   --font-caps: var(--font-poppins), "Avenir Next", "Helvetica Neue", sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", Menlo, monospace;
 
+  /* Where the side-by-side layouts start. */
+  --breakpoint-wide: 1000px;
+
   --spacing-gutter: clamp(16px, 2.2vw, 36px);
   /* The one block in focus. */
   --shadow-focus: 0 14px 28px rgba(20, 18, 16, 0.12);
 }
 
-:root {
-  color-scheme: light;
-}
+/* In the base layer, so a utility class on an element can still override it. */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
 
-body {
-  background: var(--color-ground);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.55;
-}
+  body {
+    background: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 1.55;
+  }
 
-:focus-visible {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 2px;
+  :focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
 }

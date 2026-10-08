@@ -1,50 +1,140 @@
 @import "tailwindcss";
 
-/* One light look. The tokens live here so components use Tailwind classes
-   (bg-ground, text-muted, border-line, font-caps) and no literal colours. */
-@theme inline {
-  --color-ground: #ffffff;
-  --color-soft: #f6f2e9;
-  --color-line: #d8d2c4;
-  --color-ink: #141210;
-  --color-muted: #5b554c;
-  --color-gold: #b08428;
-  /* Small gold text: 5.36:1 on white and 4.80:1 on the soft ground. The lighter
-     gold above stays for large numerals and rules only. */
-  --color-gold-text: #8a6417;
-  /* Row result chips only. */
+/* One layered look: a gradient ground, one frosted panel per screen, ivory
+   cards for everything a person reads or types into. The colour tokens live
+   here so components use Tailwind classes (text-ink, text-muted, bg-chip) and
+   no literal colours.
+
+   Colours are a plain @theme (not inline) so a card can swap them: inside a
+   .card, text-ink and text-muted mean the card's own text colours. */
+@theme {
+  /* Text on the panel (and on the ground at the top of the page): deep pine,
+     and the lighter pine for secondary text. */
+  --color-ink: #1b4a40;
+  --color-muted: #2a5449;
+  /* The light second weight of a headline. Large text only (3:1). */
+  --color-soft: #4a7066;
+  /* The one accent: current step, selected rating, main button. */
+  --color-accent: #1f4d43;
+  --color-on-accent: #ffffff;
+  --color-line: rgba(27, 74, 64, 0.2);
+  /* Soft filled fields, chips and the track behind a rating. */
+  --color-chip: rgba(31, 77, 67, 0.09);
+  /* Green and red appear only in the row-result dots and in error messages. */
   --color-better: #2f6f3a;
   --color-worse: #a8432c;
-
-  --font-display: var(--font-newsreader), "Iowan Old Style", Georgia, serif;
-  --font-sans: var(--font-lato), "Helvetica Neue", Arial, sans-serif;
-  --font-caps: var(--font-poppins), "Avenir Next", "Helvetica Neue", sans-serif;
-  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", Menlo, monospace;
+  --color-idle: #9aa39e;
 
   /* Where the side-by-side layouts start. */
   --breakpoint-wide: 1000px;
 
-  --spacing-gutter: clamp(16px, 2.2vw, 36px);
-  /* The one block in focus. */
-  --shadow-focus: 0 14px 28px rgba(20, 18, 16, 0.12);
+  --spacing-gutter: clamp(16px, 3vw, 44px);
+}
+
+/* Fonts come from next/font as variables on <html>, so these stay inline. */
+@theme inline {
+  --font-display: var(--font-outfit), "Avenir Next", "Segoe UI", sans-serif;
+  --font-sans: var(--font-figtree), "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+:root {
+  color-scheme: light;
+  /* The ground: warm gold at the top, sage in the middle, deep green below.
+     Gradients only, no image file. */
+  --ground:
+    radial-gradient(120% 70% at 12% 0%, #f3cf8e 0%, transparent 60%),
+    radial-gradient(90% 60% at 95% 8%, #f0b79a 0%, transparent 62%),
+    radial-gradient(130% 55% at 50% 62%, #a9c4a4 0%, transparent 70%),
+    linear-gradient(180deg, #ecd6ae 0%, #b9cdb3 52%, #55766c 100%);
+  --ground-base: #b9cdb3;
+  --shadow-panel: 0 24px 60px rgba(31, 55, 48, 0.22);
+  --shadow-card: 0 6px 20px rgba(31, 55, 48, 0.1);
 }
 
 /* In the base layer, so a utility class on an element can still override it. */
 @layer base {
-  :root {
-    color-scheme: light;
-  }
-
   body {
-    background: var(--color-ground);
+    background: var(--ground-base);
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: 16px;
     line-height: 1.55;
   }
 
+  /* A 2 px pine ring with a light halo, so it shows on gold, sage and green. */
   :focus-visible {
-    outline: 2px solid var(--color-ink);
+    outline: 2px solid var(--color-accent);
     outline-offset: 2px;
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.85);
+  }
+}
+
+@layer components {
+  .ground {
+    position: relative;
+    background: var(--ground);
+    background-color: var(--ground-base);
+    overflow: clip;
+  }
+
+  /* Without backdrop-filter the panel and cards are solid ivory, so nothing
+     depends on blurring what is behind them. */
+  .panel {
+    background: #f1ead9;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 30px;
+    box-shadow: var(--shadow-panel);
+  }
+
+  .card {
+    --color-ink: #1d332d;
+    --color-muted: #4d635c;
+    --color-line: rgba(29, 51, 45, 0.14);
+    background: #fbf5e8;
+    color: var(--color-ink);
+    border-radius: 20px;
+    box-shadow: var(--shadow-card);
+  }
+
+  /* A small glass bar: the step bar. */
+  .glass {
+    background: #f1ead9;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+  }
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .panel {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(22px) saturate(1.15);
+      -webkit-backdrop-filter: blur(22px) saturate(1.15);
+    }
+
+    .card {
+      background: rgba(252, 246, 234, 0.74);
+      backdrop-filter: blur(26px) saturate(1.1);
+      -webkit-backdrop-filter: blur(26px) saturate(1.1);
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+  }
+
+  /* The hover lift. Off for people who asked for less motion: the rule is
+     only written for the case where they did not. */
+  @media (prefers-reduced-motion: no-preference) {
+    .lift {
+      transition:
+        transform 0.18s ease,
+        box-shadow 0.18s ease;
+    }
+
+    .lift:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 30px rgba(31, 55, 48, 0.18);
+    }
   }
 }

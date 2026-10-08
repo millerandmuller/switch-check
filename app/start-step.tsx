@@ -1,10 +1,10 @@
-import { capsClass } from "./ui";
+import { labelClass } from "./ui";
 
 const choiceClass =
-  "flex cursor-pointer flex-col items-start gap-2 border-2 border-ink bg-ground p-6 text-left hover:bg-soft hover:shadow-focus";
+  "card lift flex cursor-pointer flex-col items-start gap-2 p-6 text-left";
 
 const arrowClass =
-  "mt-2 font-caps text-[13px] font-semibold uppercase tracking-[0.05em] text-ink";
+  "mt-2 text-[14.5px] font-semibold text-accent";
 
 // Step 1: one choice. Either look at the finished example, or start a
 // comparison on your own prompt.
@@ -19,10 +19,10 @@ export function StartStep({
   onOwnPrompt: () => void;
 }) {
   return (
-    <div className="mt-8 grid max-w-5xl gap-5 md:grid-cols-2">
+    <div className="panel mt-8 grid max-w-5xl gap-3.5 p-3.5 md:grid-cols-2">
       <button type="button" onClick={onSeeExample} className={choiceClass}>
-        <span className={`${capsClass} text-gold-text`}>Sample</span>
-        <span className="font-display text-2xl font-medium">
+        <span className={`${labelClass} font-semibold text-accent`}>Sample</span>
+        <span className="font-display text-2xl font-semibold tracking-[-0.01em]">
           {exampleRunDate === null ? "Use the sample workflow" : "See a finished example"}
         </span>
         <span className="text-muted">
@@ -35,8 +35,8 @@ export function StartStep({
         </span>
       </button>
       <button type="button" onClick={onOwnPrompt} className={choiceClass}>
-        <span className={`${capsClass} text-gold-text`}>Yours</span>
-        <span className="font-display text-2xl font-medium">Compare on my own prompt</span>
+        <span className={`${labelClass} font-semibold text-accent`}>Yours</span>
+        <span className="font-display text-2xl font-semibold tracking-[-0.01em]">Compare on my own prompt</span>
         <span className="text-muted">
           One prompt you already use, three real inputs, and the two models to compare. Steps
           2 to 5 follow.

@@ -407,10 +407,10 @@ export function FlowShell({
         : ask.question;
 
   return (
-    <div className={`flex min-h-dvh flex-col ${screen === "rate" ? "wide:h-dvh" : ""}`}>
-      <header className={`flex flex-wrap items-center gap-x-7 gap-y-2.5 border-b border-ink px-gutter ${screen === "rate" ? "py-2" : "py-3"}`}>
-        <h1 className="font-display text-[1.55rem] font-medium tracking-[-0.01em]">
-          Switch Check <i className="font-normal text-gold">your call</i>
+    <div className={`ground flex min-h-dvh flex-col ${screen === "rate" ? "wide:h-dvh" : ""}`}>
+      <header className={`relative flex flex-wrap items-center gap-x-7 gap-y-2.5 px-gutter ${screen === "rate" ? "py-2" : "py-3"}`}>
+        <h1 className="font-display text-[1.3rem] font-semibold tracking-[-0.01em]">
+          Switch Check <span className="font-light text-muted">your call</span>
         </h1>
         <StepBar steps={stepsInBar(step, facts)} fromExample={exampleSteps} onOpen={open} />
         <p className="text-[13.5px] text-muted wide:ml-auto">
@@ -419,7 +419,8 @@ export function FlowShell({
       </header>
 
       {screen === "result" && (
-        <main className="w-full flex-1 px-gutter pb-16 pt-8">
+        <main className="relative w-full flex-1 px-gutter pb-12 pt-4">
+          <div className="panel p-[clamp(16px,2.4vw,34px)]">
           <ResultStep
             headingRef={headingRef}
             draft={draft}
@@ -446,13 +447,14 @@ export function FlowShell({
               onKeep={() => answer(false)}
             />
           )}
+          </div>
         </main>
       )}
 
       {screen === "rate" && (
         <>
           {ask !== null && (
-            <div className="px-gutter pb-4">
+            <div className="relative px-gutter pb-4">
               <AskFirst
                 question={askQuestion}
                 replaceLabel={ask.replaceLabel}
@@ -482,7 +484,8 @@ export function FlowShell({
       )}
 
       {screen !== "rate" && screen !== "result" && (
-      <main className="w-full flex-1 px-gutter pb-16 pt-8">
+      <main className="relative w-full flex-1 px-gutter pb-12 pt-4">
+        <div className="panel p-[clamp(16px,2.4vw,34px)]">
         <StepHeading
           headingRef={headingRef}
           position={position}
@@ -584,6 +587,7 @@ export function FlowShell({
             </button>
           </StepFooter>
         )}
+        </div>
       </main>
       )}
     </div>
@@ -601,7 +605,7 @@ function StepFooter({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mt-8 flex flex-wrap items-center justify-end gap-4 border-t border-line pt-5">
+    <div className="mt-8 flex flex-wrap items-center justify-end gap-4">
       {back !== undefined && <span className="mr-auto">{back}</span>}
       {children}
     </div>

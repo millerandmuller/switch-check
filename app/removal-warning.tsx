@@ -1,4 +1,4 @@
-import { secondaryButtonClass } from "./ui";
+import { noticeClass, secondaryButtonClass } from "./ui";
 
 // Said above the main button of steps 2 and 3, while the draft differs from
 // the one the outputs were made with: what continuing will remove, before it
@@ -22,7 +22,7 @@ export function RemovalWarning({
   onUndo: () => void;
 }) {
   return (
-    <div role="status" className="flex max-w-[72ch] flex-col items-start gap-2 border border-line border-l-2 border-l-gold bg-soft p-3 text-sm">
+    <div role="status" className={`${noticeClass} flex max-w-[72ch] flex-col items-start gap-2 p-3.5 text-sm`}>
       <p>
         Continuing will remove {removalSentence(removal)}, because the prompt, an input or a model
         they were produced with has changed.

@@ -19,7 +19,7 @@ import {
 } from "@/lib/workflow";
 import { RemovedNotice } from "./removed-notice";
 import { SampleTag } from "./sample-tag";
-import { capsClass, fieldClass, secondaryButtonClass } from "./ui";
+import { fieldClass, labelClass, secondaryButtonClass } from "./ui";
 
 // Step 4: getting both models' outputs, as six tasks in a fixed order. The
 // person runs each prompt in their own tool and pastes what came back. This
@@ -93,11 +93,11 @@ function OutputTask({
   }
 
   return (
-    <article className="min-w-0 border border-line p-5 focus-within:border-ink focus-within:shadow-focus">
-      <p className={`${capsClass} text-gold-text`}>
+    <article className="card min-w-0 p-5">
+      <p className={labelClass}>
         Task {taskNumber} of {taskCount}
       </p>
-      <h3 className="mt-1 font-caps text-[1.05rem] font-medium">
+      <h3 className="mt-1 font-display text-[1.15rem] font-semibold tracking-[-0.01em]">
         Input {position} on the {SIDE_ROLES[side].toLowerCase()}
       </h3>
       <p className="mt-1 font-mono text-[12.5px] [overflow-wrap:anywhere]">{model}</p>
@@ -110,13 +110,13 @@ function OutputTask({
         <button type="button" onClick={copy} className={secondaryButtonClass}>
           Copy the filled-in prompt
         </button>
-        <span role="status" className="text-sm font-bold">
+        <span role="status" className="text-sm font-semibold">
           {copyState === "copied" ? "Copied" : ""}
         </span>
       </div>
       {copyState === "refused" && (
         <div className="mt-3">
-          <label htmlFor={`${boxId}-prompt`} className="text-sm font-bold">
+          <label htmlFor={`${boxId}-prompt`} className="text-sm font-semibold">
             The browser did not allow copying. Copy this text by hand.
           </label>
           <textarea
@@ -132,15 +132,15 @@ function OutputTask({
       )}
       <details className="mt-3 text-sm">
         <summary className="cursor-pointer text-muted">Read the filled-in prompt</summary>
-        <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap border border-line bg-soft p-3 font-mono text-[12.5px] [overflow-wrap:anywhere]">
+        <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap rounded-2xl bg-chip p-3.5 font-mono text-[12.5px] [overflow-wrap:anywhere]">
           {filled}
         </pre>
       </details>
 
-      <label htmlFor={boxId} className={`mt-4 block ${capsClass}`}>
+      <label htmlFor={boxId} className={`mt-4 block ${labelClass}`}>
         Paste what the model returned
         {sampleRunOn !== null && (
-          <span className="ml-2 text-gold-text">sample run · {sampleRunOn}</span>
+          <span className="ml-2 font-semibold">sample run · {sampleRunOn}</span>
         )}
       </label>
       <textarea
@@ -151,7 +151,7 @@ function OutputTask({
         className={`${fieldClass} font-mono text-[13px]`}
       />
       {reviewCleared && (
-        <p role="status" className="mt-1 text-sm font-bold">
+        <p role="status" className="mt-1 text-sm font-semibold">
           Your rating and note on this output were removed, because its text changed.
         </p>
       )}
@@ -201,8 +201,8 @@ export function OutputsStep({
       {/* Where the outputs come from. Today that is the person's own tools,
           plus the saved run for the sample. This block is the one place for
           any other way of getting them. */}
-      <div className="mt-6 border border-line bg-soft p-5">
-        <p className={capsClass}>Where the outputs come from</p>
+      <div className="card mt-6 p-5">
+        <p className={`${labelClass} font-semibold`}>Where the outputs come from</p>
         <p className="mt-2 max-w-[72ch]">
           You run each prompt in your own tool for that model, then paste what it returned here.
           Copy the filled-in prompt of a task, run it there, and paste the whole answer into the
@@ -221,7 +221,7 @@ export function OutputsStep({
         {notOfferedReason !== null && <p className="mt-3 text-sm text-muted">{notOfferedReason}</p>}
       </div>
 
-      <p aria-live="polite" className="mt-6 font-bold">
+      <p aria-live="polite" className="mt-6 font-semibold">
         {filled} of {total} {anyFromSampleRun ? "filled" : "pasted"}
       </p>
 

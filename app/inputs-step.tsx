@@ -9,7 +9,7 @@ import {
 } from "@/lib/workflow";
 import { SampleTag } from "./sample-tag";
 import { FieldProblem, fieldClasses } from "./setup-step";
-import { capsClass } from "./ui";
+import { labelClass } from "./ui";
 
 function InputField({
   position,
@@ -30,10 +30,10 @@ function InputField({
   const over = value.length > INPUT_MAX_CHARS;
 
   return (
-    <div className="min-w-0 border border-line p-5">
+    <div className="card min-w-0 p-5">
       <label htmlFor={fieldId} className="flex items-baseline gap-3">
-        <span className="font-display text-5xl leading-none text-gold">{position}</span>
-        <span className={capsClass}>Input {position}</span>
+        <span className="font-display text-5xl font-light leading-none text-accent">{position}</span>
+        <span className={`${labelClass} font-semibold`}>Input {position}</span>
         {sampleOf !== null && <SampleTag label={sampleOf} />}
       </label>
       <textarea
@@ -45,7 +45,7 @@ function InputField({
         aria-describedby={problem === null ? countId : `${problemId} ${countId}`}
         className={`${fieldClasses(problem !== null)} text-[15px] leading-[1.6]`}
       />
-      <p id={countId} className={over ? "mt-1 text-xs font-bold text-worse" : `mt-1 ${capsClass} text-gold-text`}>
+      <p id={countId} className={over ? "mt-1 text-xs font-semibold text-worse" : `mt-1 ${labelClass}`}>
         {value.length.toLocaleString("en-US")} of {INPUT_MAX_CHARS.toLocaleString("en-US")}{" "}
         characters
       </p>
@@ -70,7 +70,7 @@ export function InputsStep({
 }) {
   return (
     <>
-      <p aria-live="polite" className="mt-6 font-bold">
+      <p aria-live="polite" className="mt-6 font-semibold">
         {inputsAdded(draft)} of {INPUT_COUNT} added
       </p>
       <div className="mt-3 grid gap-5 wide:grid-cols-3">

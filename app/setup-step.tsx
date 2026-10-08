@@ -1,15 +1,16 @@
 import { INPUT_PLACEHOLDER, type DraftProblems, type WorkflowDraft } from "@/lib/workflow";
 import {
-  capsClass,
   fieldClass,
   helperClass,
   invalidFieldClass,
+  labelClass,
+  pillFieldClass,
   problemClass,
   secondaryButtonClass,
 } from "./ui";
 
 export function fieldClasses(invalid: boolean) {
-  return invalid ? `${fieldClass} ${invalidFieldClass}` : fieldClass;
+  return invalid ? invalidFieldClass : fieldClass;
 }
 
 export function FieldProblem({ id, message }: { id: string; message: string | null }) {
@@ -42,7 +43,7 @@ function ModelPicker({
 }) {
   return (
     <div>
-      <label htmlFor={id} className={`block ${capsClass}`}>
+      <label htmlFor={id} className={`block ${labelClass}`}>
         {label}
       </label>
       <select
@@ -51,7 +52,7 @@ function ModelPicker({
         onChange={(event) => onChange(event.target.value)}
         aria-invalid={invalid}
         aria-describedby={describedBy}
-        className={`${fieldClasses(invalid)} font-mono text-[13.5px]`}
+        className={`${fieldClasses(invalid)} ${pillFieldClass} font-mono text-[13.5px]`}
       >
         {candidates.map((candidate) => (
           <option key={candidate} value={candidate}>
@@ -85,10 +86,10 @@ export function SetupStep({
 }) {
   const modelsDescribedBy = problems?.models == null ? undefined : "models-problem";
   return (
-    <div className="mt-8 grid gap-8 wide:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-      <div className="min-w-0">
+    <div className="mt-8 grid gap-4 wide:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="card min-w-0 p-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <label htmlFor="prompt" className={`block ${capsClass}`}>
+          <label htmlFor="prompt" className={`block ${labelClass}`}>
             Your prompt
           </label>
           <button type="button" onClick={onUseSample} className={secondaryButtonClass}>
@@ -110,7 +111,7 @@ export function SetupStep({
         />
         <FieldProblem id="prompt-problem" message={problems?.prompt ?? null} />
       </div>
-      <div className="flex min-w-0 flex-col gap-6">
+      <div className="card flex min-w-0 flex-col gap-6 p-5">
         <ModelPicker
           id="current-model"
           label="Model you use today"

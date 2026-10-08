@@ -28,7 +28,7 @@ export function InputTabs({
     <div
       role="group"
       aria-label="Three inputs, pick one"
-      className="grid grid-cols-3 gap-2 border-b border-line px-gutter py-2"
+      className="grid grid-cols-3 gap-2 px-1 py-2"
     >
       {inputs.map((text, index) => {
         const sampleOf = sampleLabel(sample, text);
@@ -39,10 +39,10 @@ export function InputTabs({
             type="button"
             aria-pressed={isSelected}
             onClick={() => onSelect(index)}
-            className={`flex min-w-0 cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 border bg-ground px-3 py-1 text-left wide:px-4 ${isSelected ? "border-ink shadow-focus" : "border-line hover:border-ink"}`}
+            className={`flex min-w-0 cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl px-3 py-1 text-left wide:px-4 ${isSelected ? "card" : "bg-white/45 hover:bg-white/70"}`}
           >
-            <span className="font-display text-[1.4rem] leading-none text-gold">{index + 1}</span>
-            <b className="min-w-0 flex-1 truncate font-caps text-[13.5px] font-medium max-wide:sr-only">
+            <span className="font-display text-[1.4rem] font-light leading-none text-accent">{index + 1}</span>
+            <b className="min-w-0 flex-1 truncate text-[14px] font-semibold max-wide:sr-only">
               {sampleOf ?? preview(text, TAB_PREVIEW_CHARS)}
               {sampleOf !== null && <SampleTag label={sampleOf} />}
             </b>

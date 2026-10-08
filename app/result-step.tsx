@@ -22,7 +22,7 @@ import { preview, sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@
 import { SIDE_ROLES } from "./outputs-step";
 import { ResultChip } from "./result-chip";
 import { SampleTag } from "./sample-tag";
-import { capsClass, secondaryButtonClass } from "./ui";
+import { labelClass, secondaryButtonClass } from "./ui";
 
 // The last screen: what the person's ratings add up to, what is known about
 // cost and speed, and a place to mark their own decision. The tool suggests
@@ -82,15 +82,15 @@ export function ResultStep({
 
   return (
     <div>
-      <p className={`${capsClass} text-gold-text`}>Step 5 of 5 · The result</p>
+      <p className={labelClass}>Step 5 of 5 · The result</p>
       <h2
         ref={headingRef}
         tabIndex={-1}
-        className="mt-1 font-display text-[2rem] font-medium leading-tight focus:outline-none"
+        className="mt-1 font-display text-[2rem] font-semibold leading-tight tracking-[-0.02em] focus:outline-none"
       >
         The result
       </h2>
-      <p className="mt-4 text-balance font-display text-[clamp(1.6rem,3vw,2.6rem)] leading-tight">
+      <p className="mt-4 text-balance font-display text-[clamp(1.6rem,3vw,2.6rem)] font-light leading-tight">
         {summaryLine(outputs, reviews)}
       </p>
       <p className="mt-2 text-sm text-muted">
@@ -98,11 +98,11 @@ export function ResultStep({
         differ.
       </p>
 
-      <h3 className={`mt-10 ${capsClass}`}>Cost and speed</h3>
+      <h3 className={`mt-10 ${labelClass} font-semibold`}>Cost and speed</h3>
       <div className="mt-3 grid gap-5 wide:grid-cols-2">
         {columns.map(({ side, model, column }) => (
-          <div key={side} className="min-w-0 border border-line p-5">
-            <p className={capsClass}>{SIDE_ROLES[side]}</p>
+          <div key={side} className="card min-w-0 p-5">
+            <p className="text-[13px] font-semibold">{SIDE_ROLES[side]}</p>
             <p className="mt-1 font-mono text-[12.5px] [overflow-wrap:anywhere]">{model}</p>
             {anyMeasured ? (
               <>
@@ -132,15 +132,15 @@ export function ResultStep({
         </p>
       )}
 
-      <h3 className={`mt-10 ${capsClass}`}>Input by input</h3>
+      <h3 className={`mt-10 ${labelClass} font-semibold`}>Input by input</h3>
       <ol className="mt-3 grid gap-5 wide:grid-cols-3">
         {draft.inputs.map((input, index) => {
           const sampleOf = sampleLabel(sample, input);
           return (
-            <li key={index} className="min-w-0 border border-line p-5">
+            <li key={index} className="card min-w-0 p-5">
               <div className="flex items-start gap-3.5">
-                <span className="font-display text-[2.1rem] leading-none text-gold">{index + 1}</span>
-                <p className="min-w-0 font-caps text-[14.5px] font-medium leading-[1.35] [overflow-wrap:anywhere]">
+                <span className="font-display text-[2.1rem] font-light leading-none text-accent">{index + 1}</span>
+                <p className="min-w-0 text-[14.5px] font-semibold leading-[1.35] [overflow-wrap:anywhere]">
                   {sampleOf ?? preview(input, INPUT_PREVIEW_CHARS)}
                   {sampleOf !== null && <SampleTag label={sampleOf} />}
                 </p>
@@ -155,7 +155,7 @@ export function ResultStep({
                     <div key={side}>
                       <dt className="text-muted">{SIDE_ROLES[side]}</dt>
                       <dd className="[overflow-wrap:anywhere]">
-                        <b>{ratingLabel(outputs[index][side], review.rating)}</b>
+                        <b className="font-semibold">{ratingLabel(outputs[index][side], review.rating)}</b>
                         {review.note !== "" && <span>. Your note: {review.note}</span>}
                       </dd>
                     </div>
@@ -169,7 +169,7 @@ export function ResultStep({
 
       {missing.length > 0 ? (
         <>
-          <h3 className={`mt-10 ${capsClass}`}>Still to rate</h3>
+          <h3 className={`mt-10 ${labelClass} font-semibold`}>Still to rate</h3>
           <p className="mt-2 max-w-[72ch] text-sm text-muted">
             Your decision opens when every output that was tested has a rating. An output that was
             not tested does not hold it back.
@@ -178,7 +178,7 @@ export function ResultStep({
             {missing.map(({ index, sides }) => (
               <li key={index} className="flex flex-wrap items-center gap-3 text-sm">
                 <span>
-                  <b>Input {index + 1}</b>: no rating on{" "}
+                  <b className="font-semibold">Input {index + 1}</b>: no rating on{" "}
                   {sides.map((side) => SIDE_ROLES[side].toLowerCase()).join(" and ")}.
                 </span>
                 <button type="button" onClick={() => onRateInput(index)} className={secondaryButtonClass}>
@@ -190,7 +190,7 @@ export function ResultStep({
         </>
       ) : (
         <>
-          <h3 className={`mt-10 ${capsClass}`}>Your decision</h3>
+          <h3 className={`mt-10 ${labelClass} font-semibold`}>Your decision</h3>
           <p className="mt-2 max-w-[72ch] text-sm text-muted">
             The choice is yours and Switch Check does not suggest one. It is shown on this screen
             only: it is not saved or sent, and reloading the page empties it.
@@ -202,19 +202,19 @@ export function ResultStep({
                 type="button"
                 aria-pressed={decision === choice}
                 onClick={() => onDecide(choice)}
-                className={`cursor-pointer border px-6 py-3.5 font-caps text-[13px] font-semibold uppercase tracking-[0.05em] ${decision === choice ? "border-ink bg-ink text-ground" : "border-line bg-ground hover:border-ink"}`}
+                className={`cursor-pointer rounded-full px-6 py-3 text-[15px] font-semibold ${decision === choice ? "bg-accent text-on-accent" : "border border-accent/35 bg-chip text-ink hover:border-accent hover:bg-accent/15"}`}
               >
                 {choice}
               </button>
             ))}
           </div>
-          <p aria-live="polite" className="mt-3 min-h-[1.6em] font-display text-xl">
+          <p aria-live="polite" className="mt-3 min-h-[1.6em] font-display text-xl font-semibold">
             {decision === null ? "" : `Your decision: ${decision}.`}
           </p>
         </>
       )}
 
-      <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-line pt-5">
+      <div className="mt-8 flex flex-wrap items-center gap-3">
         <button type="button" onClick={onBackToRating} className={secondaryButtonClass}>
           Back to rating
         </button>

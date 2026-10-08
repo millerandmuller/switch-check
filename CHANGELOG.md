@@ -21,6 +21,17 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Changed
 
+- **A layered glass look on every screen (Oct 8).** The page now has three
+  layers: a gold, sage and deep green ground drawn with CSS gradients, one
+  frosted panel per screen, and warm ivory cards for everything you read or
+  type into. Text is deep pine green with one pine accent, headlines and
+  figures are set in Outfit, reading text in Figtree, ids and the prompt in
+  JetBrains Mono. Labels are sentence case, buttons, tabs and ratings are
+  pills, fields are soft and filled. Focus is a 2 px pine ring with a light
+  halo, cards and panel fall back to solid ivory without `backdrop-filter`,
+  and the hover lift is off under reduced motion. No behaviour or layout
+  changed.
+
 - **Both outputs are hard to miss at phone width (Oct 8).** Below 1,000 px the
   switch between the two models sits in the rating bar, next to the rating,
   and shows for each model its rating or "not rated". If you press Next input

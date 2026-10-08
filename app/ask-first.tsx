@@ -28,9 +28,9 @@ export function AskFirst({
     <div
       role="group"
       aria-label="Before this replaces your work"
-      className="mt-4 border border-ink bg-soft p-4 shadow-focus"
+      className="card mt-4 p-4 ring-2 ring-accent"
     >
-      <p className="font-bold">{question}</p>
+      <p className="font-semibold">{question}</p>
       <div className="mt-3 flex flex-wrap gap-3">
         <button ref={keepRef} type="button" onClick={onKeep} className={primaryButtonClass}>
           {keepLabel}

@@ -1,5 +1,5 @@
 import { SampleTag } from "./sample-tag";
-import { capsClass } from "./ui";
+import { labelClass } from "./ui";
 import { INPUT_MAX_CHARS } from "@/lib/workflow";
 
 // The input column of the rating screen: the prompt as written, closed until
@@ -19,7 +19,7 @@ export function InputColumn({
 }) {
   const inputText = (
     <>
-      <p className={`${capsClass} mb-3 text-gold-text`}>
+      <p className={`${labelClass} mb-3`}>
         Input {position} · {input.length.toLocaleString("en-US")} of{" "}
         {INPUT_MAX_CHARS.toLocaleString("en-US")} characters
         {sampleOf !== null && <SampleTag label={sampleOf} />}
@@ -33,10 +33,10 @@ export function InputColumn({
   return (
     <section
       aria-label={`Input ${position}`}
-      className="flex min-h-0 min-w-0 flex-col border-b border-line wide:col-start-1 wide:row-start-3 wide:border-b-0 wide:pb-[54px]"
+      className="card flex min-h-0 min-w-0 flex-col wide:col-start-1 wide:row-start-3 wide:pb-[54px]"
     >
       <details className="border-b border-line px-gutter py-2.5">
-        <summary className="cursor-pointer font-caps text-[12px] font-semibold uppercase tracking-[0.06em]">
+        <summary className="cursor-pointer text-[13.5px] font-semibold">
           Show the prompt
         </summary>
         <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap font-mono text-[12.5px] leading-[1.6] [overflow-wrap:anywhere]">
@@ -46,7 +46,7 @@ export function InputColumn({
       {/* Below the side-by-side width the text is closed, so the output comes
           first; from 1,000 px it is always open and scrolls on its own. */}
       <details className="px-gutter py-2.5 wide:hidden">
-        <summary className="cursor-pointer font-caps text-[12px] font-semibold uppercase tracking-[0.06em]">
+        <summary className="cursor-pointer text-[13.5px] font-semibold">
           Show the input
         </summary>
         <div className="mt-2">{inputText}</div>

@@ -26,15 +26,15 @@ export function ModelSwitch({
             type="button"
             aria-pressed={shown === side}
             onClick={() => onShow(side)}
-            className={`flex cursor-pointer items-baseline justify-between gap-3 border px-3 py-2 text-left text-sm ${shown === side ? "border-ink bg-ground font-bold" : "border-line bg-ground text-muted"}`}
+            className={`flex cursor-pointer items-baseline justify-between gap-3 rounded-full px-4 py-2 text-left text-sm ${shown === side ? "bg-accent font-semibold text-on-accent" : "bg-chip text-muted"}`}
           >
             <span>{SIDE_ROLES[side]}</span>
-            <span className={status[side] === "not rated" ? "italic text-worse" : ""}>{status[side]}</span>
+            <span className={status[side] === "not rated" ? "font-semibold italic" : ""}>{status[side]}</span>
           </button>
         ))}
       </div>
       {unratedNudge !== null && (
-        <p role="status" className="mt-2 text-sm font-bold">
+        <p role="status" className="mt-2 text-sm font-semibold">
           {SIDE_ROLES[unratedNudge]} is not rated yet. Rate it, or press Next input again to move on
           without rating it.
         </p>

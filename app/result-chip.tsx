@@ -4,8 +4,8 @@ import type { RowResult } from "@/lib/comparison";
 // the input tabs of the rating screen and on the result screen.
 
 const RESULT_CHIP: Partial<Record<RowResult, string>> = {
-  better: "border-better text-better",
-  worse: "border-worse text-worse",
+  better: "bg-better/10 text-better",
+  worse: "bg-worse/10 text-worse",
 };
 
 // "Compared model: better". "Not rated yet" and "Not tested" say it without
@@ -15,7 +15,7 @@ const NAMES_COMPARED_MODEL: RowResult[] = ["better", "same rating", "worse"];
 export function ResultChip({ result }: { result: RowResult }) {
   return (
     <span
-      className={`inline-block w-fit border px-2 py-[3px] font-caps text-xs font-semibold uppercase tracking-[0.05em] ${RESULT_CHIP[result] ?? "border-line"}`}
+      className={`inline-block w-fit whitespace-nowrap rounded-full px-3 py-[3px] text-[12.5px] font-semibold ${RESULT_CHIP[result] ?? "bg-chip text-ink"}`}
     >
       {NAMES_COMPARED_MODEL.includes(result) ? `Compared model: ${result}` : result}
     </span>

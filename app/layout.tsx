@@ -1,26 +1,20 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Lato, Newsreader, Poppins } from "next/font/google";
+import { Figtree, JetBrains_Mono, Outfit } from "next/font/google";
 import "./globals.css";
 
-// Newsreader: the brand line, the summary line and large figures.
-const newsreader = Newsreader({
-  variable: "--font-newsreader",
+// Outfit: headlines, figures and the wordmark. Light weights carry the soft
+// half of a two-weight headline.
+const outfit = Outfit({
+  variable: "--font-outfit",
   subsets: ["latin"],
-  style: ["normal", "italic"],
+  weight: ["200", "300", "400", "600"],
 });
 
-// Lato: running text.
-const lato = Lato({
-  variable: "--font-lato",
+// Figtree: everything that is read.
+const figtree = Figtree({
+  variable: "--font-figtree",
   subsets: ["latin"],
-  weight: ["400", "700"],
-});
-
-// Poppins: caps labels and block headings.
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 // JetBrains Mono: model ids and the prompt.
@@ -38,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${newsreader.variable} ${lato.variable} ${poppins.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${outfit.variable} ${figtree.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

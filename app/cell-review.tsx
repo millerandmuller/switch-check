@@ -6,7 +6,7 @@ import { NOTE_MAX_CHARS, RATINGS, type Rating, type Review } from "@/lib/compari
 // picks.
 
 const choiceClass =
-  "block cursor-pointer rounded-full px-3.5 py-1 text-[13.5px] text-muted has-[:checked]:bg-ink has-[:checked]:font-bold has-[:checked]:text-ground has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink";
+  "block cursor-pointer rounded-full px-3.5 py-1 text-[13.5px] text-muted has-[:checked]:bg-accent has-[:checked]:font-semibold has-[:checked]:text-on-accent has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent has-[:focus-visible]:shadow-[0_0_0_6px_rgba(255,255,255,0.85)]";
 
 // The three descriptions, shown once above the outputs.
 export function RatingLegend() {
@@ -14,7 +14,7 @@ export function RatingLegend() {
     <dl className="grid gap-x-5 gap-y-1 text-[12.5px] leading-snug text-muted md:grid-cols-3">
       {RATINGS.map((entry) => (
         <div key={entry.value}>
-          <dt className="inline font-bold text-ink">{entry.label}. </dt>
+          <dt className="inline font-semibold text-ink">{entry.label}. </dt>
           <dd className="inline">{entry.description}</dd>
         </div>
       ))}
@@ -33,7 +33,7 @@ export function RatingsDisclosure({
 }) {
   return (
     <details open={open} onToggle={(event) => onToggle(event.currentTarget.open)} className="mt-1.5">
-      <summary className="cursor-pointer font-caps text-[12px] font-semibold uppercase tracking-[0.06em]">
+      <summary className="cursor-pointer text-[13.5px] font-semibold">
         What the ratings mean
       </summary>
       <div className="mt-1.5">
@@ -72,12 +72,12 @@ export function CellReview({
           <p className="text-xs text-muted">
             Your rating:{" "}
             {chosen ? (
-              <span className="font-bold text-ink">{chosen.label}</span>
+              <span className="font-semibold text-ink">{chosen.label}</span>
             ) : (
               <span className="italic">not rated</span>
             )}
           </p>
-          <div className="flex flex-wrap gap-[3px] rounded-[20px] border border-line bg-ground p-[3px]">
+          <div className="flex flex-wrap gap-[3px] rounded-full bg-chip p-[3px]">
             {RATINGS.map((entry) => (
               <label key={entry.value} className={choiceClass}>
                 <input
@@ -105,7 +105,7 @@ export function CellReview({
           maxLength={NOTE_MAX_CHARS}
           placeholder="One-line note, optional"
           onChange={(event) => onNoteChange(event.target.value)}
-          className="min-w-0 flex-1 border border-line bg-ground px-3 py-1.5 text-sm focus:border-ink"
+          className="min-w-0 flex-1 rounded-full border-2 border-transparent bg-chip px-4 py-1.5 text-sm text-ink placeholder:text-muted focus:bg-white/60"
         />
         <span className="text-xs text-muted">
           {review.note.length} / {NOTE_MAX_CHARS}

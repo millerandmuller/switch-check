@@ -27,7 +27,7 @@ import { InputTabs } from "./input-tabs";
 import { ModelSwitch } from "./model-switch";
 import { SIDE_ROLES, cellKey } from "./outputs-step";
 import { RemovedNotice } from "./removed-notice";
-import { capsClass, primaryButtonCompactClass } from "./ui";
+import { labelClass, primaryButtonCompactClass } from "./ui";
 
 // Step 5: rating, one input at a time. The three inputs are tabs across the
 // top. Below them three columns read left to right: the selected input, the
@@ -41,7 +41,7 @@ import { capsClass, primaryButtonCompactClass } from "./ui";
 function Figure({ value, state }: { value?: string; state: string }) {
   return (
     <span className="whitespace-nowrap">
-      {value !== undefined && <b className="font-bold tabular-nums">{value} </b>}
+      {value !== undefined && <b className="font-semibold tabular-nums">{value} </b>}
       <span className="text-muted">{state}</span>
     </span>
   );
@@ -114,17 +114,17 @@ function Panel({
   return (
     <article
       aria-label={`${SIDE_ROLES[side]}, input ${position}`}
-      className={`${hiddenOnPhone ? "hidden wide:flex" : "flex"} min-h-0 min-w-0 flex-col border-ink wide:row-start-3 wide:border-l`}
+      className={`card ${hiddenOnPhone ? "hidden wide:flex" : "flex"} min-h-0 min-w-0 flex-col wide:row-start-3`}
     >
       {/* Role and model, then the two figures with their state words. Each
           part stays whole; a narrow column wraps between them, not inside. */}
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0 border-b border-line px-gutter py-1.5 text-[12.5px]">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0 border-b border-line px-4 py-2 text-[12.5px]">
         <h3
           {...{ [OUTPUT_HEADING]: side }}
           tabIndex={-1}
           className="flex flex-wrap items-baseline gap-x-3"
         >
-          <span className={capsClass}>{SIDE_ROLES[side]}</span>
+          <span className="text-[13px] font-semibold">{SIDE_ROLES[side]}</span>
           <span className="font-mono [overflow-wrap:anywhere]">{model}</span>
         </h3>
         <span className="flex basis-full flex-wrap gap-x-4">
@@ -136,11 +136,11 @@ function Panel({
         role="region"
         aria-label={`Output of ${model} for input ${position}`}
         tabIndex={0}
-        className="px-gutter py-4 wide:min-h-[320px] wide:flex-[1_1_320px] wide:overflow-auto"
+        className="px-5 py-4 wide:min-h-[320px] wide:flex-[1_1_320px] wide:overflow-auto"
       >
         {tested ? (
           <>
-            <p className={`${capsClass} mb-3 ${cell === null ? "text-muted" : "text-gold-text"}`}>
+            <p className={`${labelClass} mb-3`}>
               {cell === null
                 ? "pasted · shown exactly as pasted"
                 : `sample run · ${runDate} · shown exactly as returned`}
@@ -154,10 +154,10 @@ function Panel({
         )}
       </div>
 
-      <div className="border-t border-line bg-soft px-gutter pb-3 pt-2.5">
+      <div className="border-t border-line px-4 pb-3 pt-2.5">
         {switcher}
         {reviewCleared && (
-          <p role="status" className="mb-2 text-sm font-bold">
+          <p role="status" className="mb-2 text-sm font-semibold">
             Your rating and note on this output were removed, because its text changed.
           </p>
         )}
@@ -302,7 +302,9 @@ export function RateStep({
   const position = selected + 1;
 
   return (
-    <main className="flex w-full flex-1 flex-col wide:grid wide:grid-cols-[minmax(300px,25%)_minmax(0,1fr)_minmax(0,1fr)] wide:grid-rows-[auto_auto_1fr]">
+    <main className="relative flex min-h-0 w-full flex-1 flex-col px-gutter pb-3 pt-1">
+      <div className="panel flex min-h-0 flex-1 flex-col p-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 wide:grid wide:grid-cols-[minmax(300px,25%)_minmax(0,1fr)_minmax(0,1fr)] wide:grid-rows-[auto_auto_1fr] wide:gap-y-2">
       <div className="wide:col-span-3">
         <InputTabs
           inputs={draft.inputs}
@@ -316,14 +318,14 @@ export function RateStep({
 
       <section
         aria-labelledby="rate-heading"
-        className="grid items-start gap-x-8 gap-y-2 border-b border-line px-gutter py-2.5 wide:col-span-3 wide:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]"
+        className="grid items-start gap-x-8 gap-y-2 px-1 py-1 wide:col-span-3 wide:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]"
       >
         <div className="min-w-0">
           <h2
             id="rate-heading"
             ref={headingRef}
             tabIndex={-1}
-            className={`${capsClass} text-gold-text focus:outline-none`}
+            className={`${labelClass} focus:outline-none`}
           >
             Step 5 of 5 · Rate the outputs
           </h2>
@@ -340,7 +342,7 @@ export function RateStep({
               {" "}
               Keys{" "}
               {draft.inputs.map((_, index) => (
-                <kbd key={index} className="mr-1 border border-line bg-ground px-[5px] py-px font-mono text-xs">
+                <kbd key={index} className="mr-1 rounded-md bg-chip px-[5px] py-px font-mono text-xs">
                   {index + 1}
                 </kbd>
               ))}
@@ -399,7 +401,7 @@ export function RateStep({
 
       {/* On wide screens this bar sits over the bottom of the input column, so
           the two outputs keep the height. On a phone it ends the page. */}
-      <div className="flex h-[54px] items-center justify-between gap-3 border-t border-ink bg-ground px-gutter py-2 wide:col-start-1 wide:row-start-3 wide:self-end">
+      <div className="flex h-[54px] items-center justify-between gap-3 px-5 py-2 wide:col-start-1 wide:row-start-3 wide:self-end">
         <p className="text-sm text-muted">
           Input {position} of {inputCount}
         </p>
@@ -412,6 +414,8 @@ export function RateStep({
         >
           {last ? "See the result" : "Next input"}
         </button>
+      </div>
+      </div>
       </div>
     </main>
   );

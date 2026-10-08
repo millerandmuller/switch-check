@@ -38,9 +38,9 @@ import {
   type WorkflowDraft,
 } from "@/lib/workflow";
 import { AskFirst } from "./ask-first";
-import { ComparisonView } from "./comparison-view";
 import { InputsStep } from "./inputs-step";
 import { OutputsStep, cellKey } from "./outputs-step";
+import { RateStep } from "./rate-step";
 import { SetupStep } from "./setup-step";
 import { StartStep } from "./start-step";
 import { StepBar } from "./step-bar";
@@ -101,7 +101,7 @@ const STEP_TITLES: Record<StepId, { title: string; job: string }> = {
   },
   rate: {
     title: "Rate and result",
-    job: "Read each output and rate it. The counts above the table follow your ratings and nothing else.",
+    job: "Read each output and rate it. The line above counts your ratings and nothing else.",
   },
 };
 
@@ -331,7 +331,7 @@ export function FlowShell({
   const ask = pending === null ? null : QUESTIONS[pending];
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className={`flex min-h-dvh flex-col ${step === "rate" ? "wide:h-dvh" : ""}`}>
       <header className="flex flex-wrap items-center gap-x-7 gap-y-2.5 border-b border-ink px-gutter py-3">
         <h1 className="font-display text-[1.55rem] font-medium tracking-[-0.01em]">
           Switch Check <i className="font-normal text-gold">your call</i>
@@ -342,6 +342,37 @@ export function FlowShell({
         </p>
       </header>
 
+      {step === "rate" && (
+        <>
+          {ask !== null && (
+            <div className="px-gutter pb-4">
+              <AskFirst
+                question={ask.question}
+                replaceLabel={ask.replaceLabel}
+                keepLabel={ask.keepLabel}
+                onReplace={() => answer(true)}
+                onKeep={() => answer(false)}
+              />
+            </div>
+          )}
+          <RateStep
+            headingRef={headingRef}
+            draft={draft}
+            sample={sample}
+            outputs={outputs}
+            reviews={reviews}
+            sampleResults={sampleResults}
+            modelPrices={modelPrices}
+            removedCount={removedCount}
+            clearedCells={clearedCells}
+            onRatingChange={updateRating}
+            onNoteChange={updateNote}
+            onSeeResult={null}
+          />
+        </>
+      )}
+
+      {step !== "rate" && (
       <main className="w-full flex-1 px-gutter pb-16 pt-8">
         <StepHeading
           headingRef={headingRef}
@@ -425,20 +456,6 @@ export function FlowShell({
           />
         )}
 
-        {step === "rate" && (
-          <ComparisonView
-            draft={draft}
-            sample={sample}
-            outputs={outputs}
-            reviews={reviews}
-            sampleResults={sampleResults}
-            modelPrices={modelPrices}
-            removedCount={removedCount}
-            onRatingChange={updateRating}
-            onNoteChange={updateNote}
-          />
-        )}
-
         {step === "outputs" && (
           <StepFooter>
             {attempted.includes("outputs") && filled === 0 && (
@@ -457,6 +474,7 @@ export function FlowShell({
           </StepFooter>
         )}
       </main>
+      )}
     </div>
   );
 }

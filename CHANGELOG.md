@@ -49,6 +49,16 @@ the fixes that came out of it. The app still does not call a model itself.
   pasted. If the browser does not allow copying, the text is shown selected to
   copy by hand. You still run each prompt in your own tool: the page runs
   nothing.
+- **Rating one input at a time (Oct 8).** At 1,000 px wide and above, the
+  three inputs sit in a left rail with the selected input's full text, and the
+  two models' outputs stand side by side. Each output scrolls on its own, and
+  its rating and note stay in sight under it, so the window does not scroll.
+  Each model's header shows its cost and this output's response time, marked
+  estimated, measured or not measured, with the price date and the run date.
+  The summary line and the three rating descriptions run across the top.
+  **Next input** moves on, and the keys 1, 2 and 3 switch the input. Below
+  1,000 px it is one column with a switch between the two models' outputs.
+  The comparison table is gone.
 
 ### Added
 

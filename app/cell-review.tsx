@@ -1,28 +1,24 @@
 import { NOTE_MAX_CHARS, RATINGS, type Rating, type Review } from "@/lib/comparison";
 
 // The quality review of one output: three rating choices and an optional
-// one-line reason, shown inside the cell of the output they judge. Nothing is
-// preselected and nothing is suggested: a cell stays "not rated" until the
-// person picks.
+// one-line reason, pinned under the output they judge. Nothing is preselected
+// and nothing is suggested: an output stays "not rated" until the person
+// picks.
 
 const choiceClass =
-  "flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[13.5px] text-muted has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:font-bold has-[:checked]:text-ground has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-gold";
+  "block cursor-pointer rounded-full px-3.5 py-1.5 text-[13.5px] text-muted has-[:checked]:bg-ink has-[:checked]:font-bold has-[:checked]:text-ground has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-gold";
 
-// The three descriptions, shown once above the table whenever ratings can be
-// entered.
+// The three descriptions, shown once above the outputs.
 export function RatingLegend() {
   return (
-    <div className="mt-4 border border-line p-3">
-      <h3 className="text-sm font-medium">Rate each output: would you use it?</h3>
-      <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
-        {RATINGS.map((entry) => (
-          <div key={entry.value}>
-            <dt className="font-medium">{entry.label}</dt>
-            <dd className="text-muted">{entry.description}</dd>
-          </div>
-        ))}
-      </dl>
-    </div>
+    <dl className="grid gap-x-5 gap-y-2 text-[13px] text-muted md:grid-cols-3">
+      {RATINGS.map((entry) => (
+        <div key={entry.value}>
+          <dt className="font-bold text-ink">{entry.label}</dt>
+          <dd>{entry.description}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -46,48 +42,54 @@ export function CellReview({
   const chosen = RATINGS.find((entry) => entry.value === review.rating);
 
   return (
-    <div className="mt-3 border-t border-dashed border-line pt-3">
-      <fieldset>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5">
+      <fieldset className="min-w-0">
         <legend className="sr-only">
           Rating for {model} on input {position}
         </legend>
-        <p className="text-xs text-muted">
-          Your rating:{" "}
-          {chosen ? (
-            <span className="font-semibold text-ink">{chosen.label}</span>
-          ) : (
-            <span className="italic">not rated</span>
-          )}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {RATINGS.map((entry) => (
-            <label key={entry.value} className={choiceClass}>
-              <input
-                type="radio"
-                name={`${cellId}-rating`}
-                value={entry.value}
-                checked={review.rating === entry.value}
-                onChange={() => onRatingChange(entry.value)}
-              />
-              {entry.label}
-            </label>
-          ))}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <p className="text-xs text-muted">
+            Your rating:{" "}
+            {chosen ? (
+              <span className="font-bold text-ink">{chosen.label}</span>
+            ) : (
+              <span className="italic">not rated</span>
+            )}
+          </p>
+          <div className="flex flex-wrap gap-[3px] rounded-[20px] border border-line bg-ground p-[3px]">
+            {RATINGS.map((entry) => (
+              <label key={entry.value} className={choiceClass}>
+                <input
+                  type="radio"
+                  name={`${cellId}-rating`}
+                  value={entry.value}
+                  checked={review.rating === entry.value}
+                  onChange={() => onRatingChange(entry.value)}
+                  className="sr-only"
+                />
+                {entry.label}
+              </label>
+            ))}
+          </div>
         </div>
       </fieldset>
-      <label htmlFor={noteId} className="mt-3 block text-xs text-muted">
-        Why? (optional)
-      </label>
-      <input
-        id={noteId}
-        type="text"
-        value={review.note}
-        maxLength={NOTE_MAX_CHARS}
-        onChange={(event) => onNoteChange(event.target.value)}
-        className="mt-1 w-full border border-line bg-transparent px-2 py-1 text-sm focus:border-ink"
-      />
-      <p className="mt-1 text-right text-[10px] text-muted">
-        {review.note.length} / {NOTE_MAX_CHARS}
-      </p>
+      <div className="flex min-w-0 flex-[1_1_220px] items-center gap-2">
+        <label htmlFor={noteId} className="sr-only">
+          Why? One-line note on this output, optional
+        </label>
+        <input
+          id={noteId}
+          type="text"
+          value={review.note}
+          maxLength={NOTE_MAX_CHARS}
+          placeholder="One-line note, optional"
+          onChange={(event) => onNoteChange(event.target.value)}
+          className="min-w-0 flex-1 border border-line bg-ground px-3 py-2 text-sm focus:border-ink"
+        />
+        <span className="text-[11px] text-muted">
+          {review.note.length} / {NOTE_MAX_CHARS}
+        </span>
+      </div>
     </div>
   );
 }

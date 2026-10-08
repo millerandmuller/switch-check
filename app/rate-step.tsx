@@ -199,8 +199,7 @@ export function RateStep({
   clearedCells: string[];
   onRatingChange: (inputIndex: number, side: ModelSide, rating: Rating) => void;
   onNoteChange: (inputIndex: number, side: ModelSide, note: string) => void;
-  // null while there is no result screen to go to.
-  onSeeResult: (() => void) | null;
+  onSeeResult: () => void;
 }) {
   const [selected, setSelected] = useState(0);
   // Which model's output shows below the side-by-side width.
@@ -369,16 +368,15 @@ export function RateStep({
           <p className="text-sm text-muted">
             Input {position} of {inputCount}
           </p>
-          {!last && (
-            <button type="button" onClick={() => setSelected(selected + 1)} className={primaryButtonClass}>
-              Next input
-            </button>
-          )}
-          {last && onSeeResult !== null && (
-            <button type="button" onClick={onSeeResult} className={primaryButtonClass}>
-              See the result
-            </button>
-          )}
+          {/* One button for both labels, so keyboard focus stays on it when
+              the last input is reached. */}
+          <button
+            type="button"
+            onClick={last ? onSeeResult : () => setSelected(selected + 1)}
+            className={primaryButtonClass}
+          >
+            {last ? "See the result" : "Next input"}
+          </button>
         </div>
       </section>
     </main>

@@ -59,6 +59,13 @@ the fixes that came out of it. The app still does not call a model itself.
   **Next input** moves on, and the keys 1, 2 and 3 switch the input. Below
   1,000 px it is one column with a switch between the two models' outputs.
   The comparison table is gone.
+- **A result screen where you record your decision (Oct 8).** After the third
+  input, **See the result** opens a last screen: the summary line, each
+  model's cost and speed with their states and dates, each input's result
+  with your ratings and notes, and three choices: Switch, Stay, Test more.
+  None is preselected and the tool does not suggest one. The choice is shown
+  on the screen and nothing else happens: it is not saved or sent. **Start a
+  new comparison** asks first, because it empties the page.
 
 ### Added
 
@@ -112,7 +119,7 @@ the fixes that came out of it. The app still does not call a model itself.
   from the one saved run of the sample.
 - Cost and speed are shown for the saved sample run only. A person's own
   pasted outputs have neither.
-- 18 of the 22 issues from the manual flow test are open.
+- 10 of the 22 issues from the manual flow test are open.
 - There is no live deployment.
 - Nobody outside the project has used it yet.
 

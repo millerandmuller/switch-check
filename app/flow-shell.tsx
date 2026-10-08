@@ -41,6 +41,7 @@ import { AskFirst } from "./ask-first";
 import { InputsStep } from "./inputs-step";
 import { OutputsStep, cellKey } from "./outputs-step";
 import { RateStep } from "./rate-step";
+import { ResultStep, type Decision } from "./result-step";
 import { SetupStep } from "./setup-step";
 import { StartStep } from "./start-step";
 import { StepBar } from "./step-bar";
@@ -55,7 +56,7 @@ function pick(candidates: string[], preferred: string) {
 
 // An action that would replace or remove the person's work, waiting for their
 // answer. Each one is asked about in the page before anything changes.
-type Pending = "see example" | "empty draft" | "use sample" | "load results";
+type Pending = "see example" | "empty draft" | "use sample" | "load results" | "new comparison";
 
 const QUESTIONS: Record<Pending, { question: string; replaceLabel: string; keepLabel: string }> = {
   "see example": {
@@ -72,6 +73,12 @@ const QUESTIONS: Record<Pending, { question: string; replaceLabel: string; keepL
   "use sample": {
     question: "The sample workflow replaces the prompt, the three inputs and both models you chose.",
     replaceLabel: "Replace my draft",
+    keepLabel: "Keep mine",
+  },
+  "new comparison": {
+    question:
+      "Starting a new comparison empties the prompt, the inputs, the outputs, the ratings and your decision.",
+    replaceLabel: "Empty everything",
     keepLabel: "Keep mine",
   },
   "load results": {
@@ -141,6 +148,11 @@ export function FlowShell({
   const [pending, setPending] = useState<Pending | null>(null);
   // Cells whose rating or note an edit of the output removed (see cellKey).
   const [clearedCells, setClearedCells] = useState<string[]>([]);
+  // The result screen is the second half of the last step.
+  const [showResult, setShowResult] = useState(false);
+  // The person's own decision on the result screen. Never preselected, never
+  // saved or sent.
+  const [decision, setDecision] = useState<Decision | null>(null);
 
   const problems = findProblems(draft);
   const facts: FlowFacts = {
@@ -153,13 +165,14 @@ export function FlowShell({
 
   // Focus follows the step: after each change it sits on the new heading.
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const focusedStep = useRef<StepId>(step);
+  const screen = showResult ? "result" : step;
+  const focusedScreen = useRef(screen);
   useEffect(() => {
-    if (focusedStep.current === step) return;
-    focusedStep.current = step;
+    if (focusedScreen.current === screen) return;
+    focusedScreen.current = screen;
     headingRef.current?.focus();
     window.scrollTo(0, 0);
-  }, [step]);
+  }, [screen]);
 
   // Outputs stay only under the prompt, input and model they were produced
   // with. Checked when the outputs or the rating step is opened, not on every
@@ -184,6 +197,7 @@ export function FlowShell({
       }
     }
     setPending(null);
+    setShowResult(false);
     setStep(target);
   }
 
@@ -201,6 +215,8 @@ export function FlowShell({
     setRemovedCount(0);
     setAttempted([]);
     setClearedCells([]);
+    setShowResult(false);
+    setDecision(null);
   }
 
   const hasWork = hasTypedDraft(draft, sample) || pastedCount() > 0 || ratedCount() > 0;
@@ -249,6 +265,11 @@ export function FlowShell({
     setStep("setup");
   }
 
+  function startNewComparison() {
+    replaceEverything(emptyDraft(currentDefault, candidateDefault), emptyOutputs(INPUT_COUNT));
+    setStep("start");
+  }
+
   function fillFromSample() {
     setDraft(draftFromSample(sample, currentDefault, candidateDefault));
     setAttempted([]);
@@ -270,6 +291,7 @@ export function FlowShell({
     "empty draft": startOwnPrompt,
     "use sample": fillFromSample,
     "load results": loadSampleResults,
+    "new comparison": startNewComparison,
   };
 
   // Runs the action at once when it loses nothing, and asks first otherwise.
@@ -331,7 +353,7 @@ export function FlowShell({
   const ask = pending === null ? null : QUESTIONS[pending];
 
   return (
-    <div className={`flex min-h-dvh flex-col ${step === "rate" ? "wide:h-dvh" : ""}`}>
+    <div className={`flex min-h-dvh flex-col ${screen === "rate" ? "wide:h-dvh" : ""}`}>
       <header className="flex flex-wrap items-center gap-x-7 gap-y-2.5 border-b border-ink px-gutter py-3">
         <h1 className="font-display text-[1.55rem] font-medium tracking-[-0.01em]">
           Switch Check <i className="font-normal text-gold">your call</i>
@@ -342,7 +364,34 @@ export function FlowShell({
         </p>
       </header>
 
-      {step === "rate" && (
+      {screen === "result" && (
+        <main className="w-full flex-1 px-gutter pb-16 pt-8">
+          <ResultStep
+            headingRef={headingRef}
+            draft={draft}
+            sample={sample}
+            outputs={outputs}
+            reviews={reviews}
+            sampleResults={sampleResults}
+            modelPrices={modelPrices}
+            decision={decision}
+            onDecide={setDecision}
+            onBackToRating={() => setShowResult(false)}
+            onStartNew={() => askOrDo("new comparison", true)}
+          />
+          {ask !== null && (
+            <AskFirst
+              question={ask.question}
+              replaceLabel={ask.replaceLabel}
+              keepLabel={ask.keepLabel}
+              onReplace={() => answer(true)}
+              onKeep={() => answer(false)}
+            />
+          )}
+        </main>
+      )}
+
+      {screen === "rate" && (
         <>
           {ask !== null && (
             <div className="px-gutter pb-4">
@@ -367,12 +416,12 @@ export function FlowShell({
             clearedCells={clearedCells}
             onRatingChange={updateRating}
             onNoteChange={updateNote}
-            onSeeResult={null}
+            onSeeResult={() => setShowResult(true)}
           />
         </>
       )}
 
-      {step !== "rate" && (
+      {screen !== "rate" && screen !== "result" && (
       <main className="w-full flex-1 px-gutter pb-16 pt-8">
         <StepHeading
           headingRef={headingRef}

@@ -116,6 +116,7 @@ have since been fixed and carry a status line; the rest are open.
 - **Expected:** either a way to share, or a line that says the work is gone
   when the page is closed or reloaded.
 - **Effect:** misleads
+- **Status:** Fixed on Oct 8, 2026: the line now reads "Nothing is saved. Reloading this page empties it." and is in the top bar on every step. There is still no way to share or save.
 
 ### 5. Text pasted by hand is tagged as coming from the sample run
 
@@ -150,6 +151,7 @@ have since been fixed and carry a status line; the rest are open.
 - **Expected:** the text to give each model can be read and copied from the
   screen that asks for its output.
 - **Effect:** slows
+- **Status:** Fixed on Oct 8, 2026: each of the six tasks in the outputs step has a Copy the filled-in prompt button, and the same text can be read on the page.
 
 ### 7. A one-character change to an output drops its rating and note without a word
 
@@ -165,6 +167,7 @@ have since been fixed and carry a status line; the rest are open.
 - **Expected:** the person is told before or after that the rating and note
   were removed.
 - **Effect:** slows
+- **Status:** Fixed on Oct 8, 2026: the rule stays, and a line next to the output now says that its rating and note were removed because its text changed.
 
 ### 8. Load sample results replaces pasted outputs without asking
 
@@ -178,6 +181,7 @@ have since been fixed and carry a status line; the rest are open.
   also still offered after the results are loaded.
 - **Expected:** a question before pasted work is replaced, or a way to undo it.
 - **Effect:** slows
+- **Status:** Fixed on Oct 8, 2026: Load sample results asks first when pasted outputs would be replaced, with Replace my outputs and Keep mine.
 
 ### 9. Use sample workflow replaces what was typed without asking
 
@@ -190,6 +194,7 @@ have since been fixed and carry a status line; the rest are open.
   back.
 - **Expected:** a question before typed text is replaced.
 - **Effect:** slows
+- **Status:** Fixed on Oct 8, 2026: Use sample workflow asks first when a typed draft would be replaced, with Replace my draft and Keep mine.
 
 ### 10. Back and Continue to compare hides the ratings
 
@@ -204,6 +209,7 @@ have since been fixed and carry a status line; the rest are open.
 - **Expected:** the person lands where they left, or is told the ratings are
   kept.
 - **Effect:** slows
+- **Status:** Fixed on Oct 8, 2026: pasting and rating are separate steps, and going to the outputs step and back shows the ratings as they were.
 
 ### 11. The summary line is out of sight when the last rating is set
 
@@ -259,6 +265,7 @@ have since been fixed and carry a status line; the rest are open.
 - **Expected:** a line saying the saved results belong to the unchanged sample
   on the default pair.
 - **Effect:** slows
+- **Status:** Fixed on Oct 8, 2026: when the saved results are not offered for a changed sample, a line in the outputs step says which draft they belong to.
 
 ### 15. The two rating groups in one row sit far apart
 
@@ -351,6 +358,7 @@ have since been fixed and carry a status line; the rest are open.
   next Tab started again from the top of the page.
 - **Expected:** focus moves to the new screen.
 - **Effect:** cosmetic
+- **Status:** Fixed on Oct 8, 2026: after each step change, focus is on the new step's heading.
 
 ### 22. The character counter and the limit are written two ways
 

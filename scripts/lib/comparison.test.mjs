@@ -7,6 +7,7 @@ import {
   RATINGS,
   emptyOutputs,
   emptyReviews,
+  inputsMissingRating,
   outputsAfterDraftChange,
   reviewsAfterOutputChange,
   reviewsAfterOutputsReplaced,
@@ -228,4 +229,22 @@ test("the ratings and notes of emptied cells go with them, and the others stay",
   assert.deepEqual(after[0], reviews[0]);
   assert.deepEqual(after[2], reviews[2]);
   assert.equal(summaryLine(kept, after), "Compared model rated the same on 2 of 2. 1 input not tested.");
+});
+
+test("inputsMissingRating names tested outputs without a rating and skips outputs that are not tested", () => {
+  const outputs = [
+    { current: "a", candidate: "b" },
+    { current: "a", candidate: "" },
+    { current: "a", candidate: "b" },
+  ];
+  let reviews = emptyReviews(3);
+  reviews = withRating(reviews, 0, "current", "usable");
+  reviews = withRating(reviews, 0, "candidate", "usable");
+  reviews = withRating(reviews, 2, "current", "usable");
+  assert.deepEqual(inputsMissingRating(outputs, reviews), [
+    { index: 1, sides: ["current"] },
+    { index: 2, sides: ["candidate"] },
+  ]);
+  reviews = withRating(withRating(reviews, 1, "current", "needs edits"), 2, "candidate", "not usable");
+  assert.deepEqual(inputsMissingRating(outputs, reviews), []);
 });

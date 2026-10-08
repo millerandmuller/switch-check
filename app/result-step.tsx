@@ -2,6 +2,7 @@ import {
   MODEL_SIDES,
   RATINGS,
   cellState,
+  inputsMissingRating,
   modelFor,
   rowResult,
   summaryLine,
@@ -12,6 +13,7 @@ import {
   costPer1000Runs,
   costText,
   responseTimes,
+  sharedSourceLine,
   speedText,
   type ModelPrices,
 } from "@/lib/cost-speed";
@@ -48,6 +50,7 @@ export function ResultStep({
   decision,
   onDecide,
   onBackToRating,
+  onRateInput,
   onStartNew,
 }: {
   headingRef: React.RefObject<HTMLHeadingElement | null>;
@@ -61,14 +64,25 @@ export function ResultStep({
   decision: Decision | null;
   onDecide: (decision: Decision) => void;
   onBackToRating: () => void;
+  // Back to the rating screen, on this input (0 is the first).
+  onRateInput: (index: number) => void;
   onStartNew: () => void;
 }) {
   const runDate = sampleResults?.run_date ?? "";
   const priceCheckedOn = modelPrices?.checked_on ?? "";
 
+  const columns = MODEL_SIDES.map((side) => {
+    const model = modelFor(draft, side);
+    return { side, model, column: sampleRunColumn(sampleResults, outputs, side, model) };
+  });
+  // The cost and time sentences and the footnote about them are only true of
+  // figures that exist: with nothing measured they are not shown.
+  const anyMeasured = columns.some(({ column }) => column.some((cell) => cell !== null));
+  const missing = inputsMissingRating(outputs, reviews);
+
   return (
     <div>
-      <p className={`${capsClass} text-gold`}>Step 5 of 5 · Rate and result</p>
+      <p className={`${capsClass} text-gold`}>Step 5 of 5 · The result</p>
       <h2
         ref={headingRef}
         tabIndex={-1}
@@ -86,25 +100,37 @@ export function ResultStep({
 
       <h3 className={`mt-10 ${capsClass}`}>Cost and speed</h3>
       <div className="mt-3 grid gap-5 wide:grid-cols-2">
-        {MODEL_SIDES.map((side) => {
-          const model = modelFor(draft, side);
-          const column = sampleRunColumn(sampleResults, outputs, side, model);
-          return (
-            <div key={side} className="min-w-0 border border-line p-5">
-              <p className={capsClass}>{SIDE_ROLES[side]}</p>
-              <p className="mt-1 font-mono text-[12.5px] [overflow-wrap:anywhere]">{model}</p>
-              <p className="mt-3 [overflow-wrap:anywhere]">
-                {costText(costPer1000Runs(column, modelPrices?.models[model]), priceCheckedOn, runDate)}
-              </p>
-              <p className="mt-1 [overflow-wrap:anywhere]">{speedText(responseTimes(column), runDate)}</p>
-            </div>
-          );
-        })}
+        {columns.map(({ side, model, column }) => (
+          <div key={side} className="min-w-0 border border-line p-5">
+            <p className={capsClass}>{SIDE_ROLES[side]}</p>
+            <p className="mt-1 font-mono text-[12.5px] [overflow-wrap:anywhere]">{model}</p>
+            {anyMeasured ? (
+              <>
+                <p className="mt-3 [overflow-wrap:anywhere]">
+                  {costText(costPer1000Runs(column, modelPrices?.models[model]), priceCheckedOn, runDate)}
+                </p>
+                <p className="mt-1 [overflow-wrap:anywhere]">{speedText(responseTimes(column), runDate)}</p>
+              </>
+            ) : (
+              <p className="mt-3">cost and response time not measured</p>
+            )}
+          </div>
+        ))}
       </div>
-      <p className="mt-2 text-xs text-muted">
-        A run is your prompt with one input. The cost is an estimate from a published price, not a
-        bill. The times are from a single run and change from run to run.
-      </p>
+      {anyMeasured ? (
+        <p className="mt-2 text-xs text-muted">
+          A run is your prompt with one input. The cost is an estimate from a published price, not a
+          bill. The times are from a single run and change from run to run.
+        </p>
+      ) : (
+        <p className="mt-2 text-xs text-muted">
+          {sharedSourceLine(
+            columns.map(({ model, column }) => ({ model, column, price: modelPrices?.models[model] })),
+            priceCheckedOn,
+            runDate,
+          )}
+        </p>
+      )}
 
       <h3 className={`mt-10 ${capsClass}`}>Input by input</h3>
       <ol className="mt-3 grid gap-5 wide:grid-cols-3">
@@ -141,27 +167,52 @@ export function ResultStep({
         })}
       </ol>
 
-      <h3 className={`mt-10 ${capsClass}`}>Your decision</h3>
-      <p className="mt-2 max-w-[72ch] text-sm text-muted">
-        The choice is yours and Switch Check does not suggest one. It is shown on this screen
-        only: it is not saved or sent, and reloading the page empties it.
-      </p>
-      <div role="group" aria-label="Your decision" className="mt-3 flex flex-wrap gap-3">
-        {DECISIONS.map((choice) => (
-          <button
-            key={choice}
-            type="button"
-            aria-pressed={decision === choice}
-            onClick={() => onDecide(choice)}
-            className={`cursor-pointer border px-6 py-3.5 font-caps text-[13px] font-semibold uppercase tracking-[0.05em] ${decision === choice ? "border-ink bg-ink text-ground" : "border-line bg-ground hover:border-ink"}`}
-          >
-            {choice}
-          </button>
-        ))}
-      </div>
-      <p aria-live="polite" className="mt-3 min-h-[1.6em] font-display text-xl">
-        {decision === null ? "" : `Your decision: ${decision}.`}
-      </p>
+      {missing.length > 0 ? (
+        <>
+          <h3 className={`mt-10 ${capsClass}`}>Still to rate</h3>
+          <p className="mt-2 max-w-[72ch] text-sm text-muted">
+            Your decision opens when every output that was tested has a rating. An output that was
+            not tested does not hold it back.
+          </p>
+          <ul className="mt-3 flex flex-col gap-2">
+            {missing.map(({ index, sides }) => (
+              <li key={index} className="flex flex-wrap items-center gap-3 text-sm">
+                <span>
+                  <b>Input {index + 1}</b>: no rating on{" "}
+                  {sides.map((side) => SIDE_ROLES[side].toLowerCase()).join(" and ")}.
+                </span>
+                <button type="button" onClick={() => onRateInput(index)} className={secondaryButtonClass}>
+                  Rate input {index + 1}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <>
+          <h3 className={`mt-10 ${capsClass}`}>Your decision</h3>
+          <p className="mt-2 max-w-[72ch] text-sm text-muted">
+            The choice is yours and Switch Check does not suggest one. It is shown on this screen
+            only: it is not saved or sent, and reloading the page empties it.
+          </p>
+          <div role="group" aria-label="Your decision" className="mt-3 flex flex-wrap gap-3">
+            {DECISIONS.map((choice) => (
+              <button
+                key={choice}
+                type="button"
+                aria-pressed={decision === choice}
+                onClick={() => onDecide(choice)}
+                className={`cursor-pointer border px-6 py-3.5 font-caps text-[13px] font-semibold uppercase tracking-[0.05em] ${decision === choice ? "border-ink bg-ink text-ground" : "border-line bg-ground hover:border-ink"}`}
+              >
+                {choice}
+              </button>
+            ))}
+          </div>
+          <p aria-live="polite" className="mt-3 min-h-[1.6em] font-display text-xl">
+            {decision === null ? "" : `Your decision: ${decision}.`}
+          </p>
+        </>
+      )}
 
       <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-line pt-5">
         <button type="button" onClick={onBackToRating} className={secondaryButtonClass}>

@@ -150,6 +150,12 @@ export function FlowShell({
   const [clearedCells, setClearedCells] = useState<string[]>([]);
   // The result screen is the second half of the last step.
   const [showResult, setShowResult] = useState(false);
+  // The input on show on the rating screen, kept when the result screen is
+  // opened, so Back to rating returns to the input the person left.
+  const [ratingInput, setRatingInput] = useState(0);
+  // Steps whose content came with the example and that the person has not
+  // gone through themselves. The step bar says so instead of "done".
+  const [exampleSteps, setExampleSteps] = useState<StepId[]>([]);
   // The person's own decision on the result screen. Never preselected, never
   // saved or sent.
   const [decision, setDecision] = useState<Decision | null>(null);
@@ -204,6 +210,7 @@ export function FlowShell({
   // The main button of a step: show what is wrong, or go on.
   function continueTo(target: StepId) {
     setAttempted((current) => (current.includes(step) ? current : [...current, step]));
+    setExampleSteps((current) => current.filter((id) => id !== step));
     open(target);
   }
 
@@ -217,6 +224,8 @@ export function FlowShell({
     setClearedCells([]);
     setShowResult(false);
     setDecision(null);
+    setRatingInput(0);
+    setExampleSteps([]);
   }
 
   const hasWork = hasTypedDraft(draft, sample) || pastedCount() > 0 || ratedCount() > 0;
@@ -248,6 +257,7 @@ export function FlowShell({
   function seeExample() {
     if (sampleResults === null) {
       replaceEverything(draftFromSample(sample, currentDefault, candidateDefault), emptyOutputs(INPUT_COUNT));
+      setExampleSteps(["setup", "inputs"]);
       setStep("outputs");
       return;
     }
@@ -257,6 +267,7 @@ export function FlowShell({
       sampleResults.models.candidate,
     );
     replaceEverything(exampleDraft, outputsFromSampleResults(sampleResults));
+    setExampleSteps(["setup", "inputs", "outputs"]);
     setStep("rate");
   }
 
@@ -358,7 +369,7 @@ export function FlowShell({
         <h1 className="font-display text-[1.55rem] font-medium tracking-[-0.01em]">
           Switch Check <i className="font-normal text-gold">your call</i>
         </h1>
-        <StepBar steps={stepsInBar(step, facts)} onOpen={open} />
+        <StepBar steps={stepsInBar(step, facts)} fromExample={exampleSteps} onOpen={open} />
         <p className="text-[13.5px] text-muted wide:ml-auto">
           Nothing is saved. Reloading this page empties it.
         </p>
@@ -377,6 +388,10 @@ export function FlowShell({
             decision={decision}
             onDecide={setDecision}
             onBackToRating={() => setShowResult(false)}
+            onRateInput={(index) => {
+              setRatingInput(index);
+              setShowResult(false);
+            }}
             onStartNew={() => askOrDo("new comparison", true)}
           />
           {ask !== null && (
@@ -416,6 +431,8 @@ export function FlowShell({
             clearedCells={clearedCells}
             onRatingChange={updateRating}
             onNoteChange={updateNote}
+            selected={ratingInput}
+            onSelect={setRatingInput}
             onSeeResult={() => setShowResult(true)}
           />
         </>

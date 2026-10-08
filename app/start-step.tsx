@@ -32,8 +32,8 @@ export function StartStep({
         <span className={`${capsClass} text-gold`}>Yours</span>
         <span className="font-display text-2xl font-medium">Compare on my own prompt</span>
         <span className="text-muted">
-          One prompt you already use, three real inputs, and the two models to compare. Four
-          short steps.
+          One prompt you already use, three real inputs, and the two models to compare. Steps
+          2 to 5 follow.
         </span>
       </button>
     </div>

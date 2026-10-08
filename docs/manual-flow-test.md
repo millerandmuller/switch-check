@@ -225,6 +225,7 @@ have since been fixed and carry a status line; the rest are open.
 - **Expected:** the result of rating everything can be seen from where the
   rating was done.
 - **Effect:** slows
+- **Status:** Fixed on Oct 8, 2026 and re-checked in the browser at 1440 x 900: the summary line sits in the top band, above the outputs, and the ratings are under them in the same window, so the page does not scroll while rating. At 1280 x 720 the page scrolls by about 40 px.
 
 ### 12. Two different outputs that both need edits read "same rating"
 
@@ -280,6 +281,7 @@ have since been fixed and carry a status line; the rest are open.
   rated from one scroll position.
 - **Expected:** the two ratings for one input can be reached together.
 - **Effect:** slows
+- **Status:** Fixed on Oct 8, 2026 and re-checked in the browser at 1440 x 900 and 1280 x 720: the two rating groups for one input sit side by side at the same height, under their outputs, and are reached from one scroll position.
 
 ### 16. At phone width the table needs a very long scroll
 

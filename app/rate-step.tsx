@@ -176,6 +176,8 @@ export function RateStep({
   clearedCells,
   onRatingChange,
   onNoteChange,
+  selected,
+  onSelect,
   onSeeResult,
 }: {
   headingRef: React.RefObject<HTMLHeadingElement | null>;
@@ -191,9 +193,12 @@ export function RateStep({
   clearedCells: string[];
   onRatingChange: (inputIndex: number, side: ModelSide, rating: Rating) => void;
   onNoteChange: (inputIndex: number, side: ModelSide, note: string) => void;
+  // The input on show. It lives above this screen so the result screen can
+  // send the person back to a particular input.
+  selected: number;
+  onSelect: (index: number) => void;
   onSeeResult: () => void;
 }) {
-  const [selected, setSelected] = useState(0);
   // Which model's output shows below the side-by-side width.
   const [phoneSide, setPhoneSide] = useState<ModelSide>("current");
   // "What the ratings mean" is open until the first rating of the session.
@@ -207,12 +212,12 @@ export function RateStep({
       if (event.metaKey || event.ctrlKey || event.altKey || isTextField(event.target)) return;
       const position = Number(event.key);
       if (Number.isInteger(position) && position >= 1 && position <= inputCount) {
-        setSelected(position - 1);
+        onSelect(position - 1);
       }
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [inputCount]);
+  }, [inputCount, onSelect]);
 
   function rate(inputIndex: number, side: ModelSide, rating: Rating) {
     if (!anyRated(reviews)) setLegendOpen(false);
@@ -245,7 +250,7 @@ export function RateStep({
           outputs={outputs}
           reviews={reviews}
           selected={selected}
-          onSelect={setSelected}
+          onSelect={onSelect}
         />
       </div>
 
@@ -260,7 +265,7 @@ export function RateStep({
             tabIndex={-1}
             className={`${capsClass} text-gold focus:outline-none`}
           >
-            Step 5 of 5 · Rate and result
+            Step 5 of 5 · Rate the outputs
           </h2>
           {/* Two lines tall at every length, so rating never moves the panels. */}
           <p
@@ -351,7 +356,7 @@ export function RateStep({
             the last input is reached. */}
         <button
           type="button"
-          onClick={last ? onSeeResult : () => setSelected(selected + 1)}
+          onClick={last ? onSeeResult : () => onSelect(selected + 1)}
           className={primaryButtonCompactClass}
         >
           {last ? "See the result" : "Next input"}

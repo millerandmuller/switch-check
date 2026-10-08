@@ -6,9 +6,12 @@ import type { StepId, StepInBar } from "@/lib/flow";
 // colour.
 export function StepBar({
   steps,
+  fromExample,
   onOpen,
 }: {
   steps: StepInBar[];
+  // Steps that came with the example and were not done by the person.
+  fromExample: StepId[];
   onOpen: (step: StepId) => void;
 }) {
   return (
@@ -16,13 +19,15 @@ export function StepBar({
       <ol className="flex flex-wrap gap-1 rounded-[22px] border border-line p-1">
         {steps.map((step) => {
           const current = step.state === "current";
+          const stateText =
+            step.state === "done" && fromExample.includes(step.id) ? "from the example" : step.state;
           return (
             <li key={step.id}>
               <button
                 type="button"
                 disabled={!step.canOpen && !current}
                 aria-current={current ? "step" : undefined}
-                aria-label={`Step ${step.position}, ${step.label}: ${step.state}`}
+                aria-label={`Step ${step.position}, ${step.label}: ${stateText}`}
                 onClick={() => {
                   if (step.canOpen) onOpen(step.id);
                 }}
@@ -36,7 +41,7 @@ export function StepBar({
                   {step.position}
                 </span>
                 <span className={current ? "" : "hidden md:inline"}> · {step.label}</span>
-                {step.state === "done" && <span className="hidden md:inline"> · done</span>}
+                {step.state === "done" && <span className="hidden md:inline"> · {stateText}</span>}
               </button>
             </li>
           );

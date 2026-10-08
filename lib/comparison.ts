@@ -247,3 +247,19 @@ export function summaryLine(outputs: PastedOutputs, reviews: Reviews): string {
   if (untested > 0) sentences.push(`${inputs(untested)} not tested.`);
   return sentences.join(" ");
 }
+
+// The inputs where an output that was tested still has no rating, with the
+// sides that lack one. An output that is not tested needs no rating and never
+// appears here. The result screen uses it to hold the decision back until
+// every tested output is rated.
+export function inputsMissingRating(
+  outputs: PastedOutputs,
+  reviews: Reviews,
+): { index: number; sides: ModelSide[] }[] {
+  return outputs.flatMap((pair, index) => {
+    const sides = MODEL_SIDES.filter(
+      (side) => cellState(pair[side]) === "pasted" && reviews[index][side].rating === null,
+    );
+    return sides.length === 0 ? [] : [{ index, sides }];
+  });
+}

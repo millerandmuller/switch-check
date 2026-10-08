@@ -21,6 +21,19 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Changed
 
+- **Labels and notes now match the state (Oct 8).** An input whose rating of
+  either model is missing reads "Not rated yet", and an untested one "Not
+  tested", without naming the compared model. With nothing measured, the
+  result screen no longer says the times are from a single run; each model
+  says "cost and response time not measured" once and one line gives the
+  reason. "See the result" with ratings missing now lists the inputs that
+  still need one, each with a button back to it, and the three decision
+  choices appear only when every output that was tested has a rating. In the
+  step bar, steps that came with the example read "from the example" instead
+  of "done" until you press their button yourself. The start screen no longer
+  says "four short steps" next to "Step 1 of 5", and the result screen has its
+  own label.
+
 - **The outputs get most of the rating screen (Oct 8).** At 1,000 px and
   above the rating screen is three columns: the selected input, the output of
   the model you use today, the output of the model to compare with. The three

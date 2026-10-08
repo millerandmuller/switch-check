@@ -6,6 +6,15 @@ import { ComparisonView } from "./comparison-view";
 import { ReadyPanel } from "./ready-panel";
 import { SampleTag } from "./sample-tag";
 import {
+  capsClass,
+  fieldClass,
+  helperClass,
+  invalidFieldClass,
+  primaryButtonClass,
+  problemClass,
+  secondaryButtonClass,
+} from "./ui";
+import {
   emptyOutputs,
   emptyReviews,
   filledCount,
@@ -40,23 +49,16 @@ import {
   type SampleResults,
 } from "@/lib/sample-results";
 
-const labelClass = "block text-sm font-medium";
-const helperClass = "mt-1 text-sm text-zinc-600 dark:text-zinc-400";
-const fieldClass =
-  "mt-2 w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:focus:border-zinc-400";
-const invalidFieldClass = "border-red-600 dark:border-red-500";
+const labelClass = `block ${capsClass}`;
 
 function fieldClasses(invalid: boolean) {
   return invalid ? `${fieldClass} ${invalidFieldClass}` : fieldClass;
 }
 
-const secondaryButtonClass =
-  "rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900";
-
 function FieldProblem({ id, message }: { id: string; message: string | null }) {
   if (message === null) return null;
   return (
-    <p id={id} role="alert" className="mt-2 text-sm text-red-700 dark:text-red-400">
+    <p id={id} role="alert" className={problemClass}>
       {message}
     </p>
   );
@@ -99,8 +101,8 @@ function InputField({
         id={countId}
         className={
           over
-            ? "mt-1 text-xs text-red-700 dark:text-red-400"
-            : "mt-1 text-xs text-zinc-500 dark:text-zinc-500"
+            ? "mt-1 text-xs font-bold text-ink"
+            : "mt-1 text-xs text-muted"
         }
       >
         {value.length} / {INPUT_MAX_CHARS}
@@ -353,13 +355,13 @@ export function WorkflowForm({
       </div>
       <FieldProblem id="models-problem" message={shown?.models ?? null} />
 
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+      <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5">
+        <p className="text-sm text-muted">
           Nothing is saved unless you choose to share the result.
         </p>
         <button
           type="submit"
-          className="rounded-md bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className={primaryButtonClass}
         >
           Continue
         </button>

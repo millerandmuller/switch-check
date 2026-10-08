@@ -27,15 +27,19 @@ export default function Home() {
   const sampleResults = readSampleResults();
   const modelPrices = readModelPrices();
   return (
-    <main className="mx-auto w-full max-w-4xl px-6 py-12">
-      <h1 className="text-3xl font-semibold tracking-tight">Switch Check</h1>
-      <p className="mt-3 text-lg text-zinc-600 dark:text-zinc-400">
+    <main className="w-full">
+      <header className="border-b border-ink px-gutter py-3">
+        <h1 className="font-display text-[1.55rem] font-medium tracking-[-0.01em]">
+          Switch Check <i className="font-normal text-gold">your call</i>
+        </h1>
+      </header>
+      <p className="max-w-[72ch] px-gutter pt-8 text-lg text-muted">
         Compare the model you use today with a newer one on your own prompt and three inputs. For
         now you run both models yourself and paste what they returned. Switch Check puts the
         outputs side by side and counts your ratings. The decision stays yours: switch, stay, or
         test more.
       </p>
-      <div className="mt-10">
+      <div className="px-gutter pb-16 pt-8">
         <WorkflowForm
           candidates={candidatesConfig.candidates}
           defaultPair={candidatesConfig.default_pair}

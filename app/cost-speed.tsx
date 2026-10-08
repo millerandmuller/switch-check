@@ -19,7 +19,7 @@ export function CostSpeed({
   prices: ModelPrices | null;
 }) {
   return (
-    <div className="mt-4 rounded-md border border-zinc-200 p-3 dark:border-zinc-800">
+    <div className="mt-4 border border-line p-3">
       <h3 className="text-sm font-medium">Cost and speed</h3>
       <ul className="mt-2 space-y-2 text-sm">
         {MODEL_SIDES.map((side) => {
@@ -37,7 +37,7 @@ export function CostSpeed({
           );
         })}
       </ul>
-      <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
+      <p className="mt-2 text-xs text-muted">
         A run is your prompt with one input. The cost is an estimate from a published price, not a
         bill. The times are from a single run and change from run to run.
       </p>

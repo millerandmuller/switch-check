@@ -21,6 +21,7 @@ import { CellReview, RatingLegend } from "./cell-review";
 import { CostSpeed } from "./cost-speed";
 import { RemovedNotice } from "./removed-notice";
 import { SampleTag } from "./sample-tag";
+import { capsClass, primaryButtonClass, secondaryButtonClass } from "./ui";
 
 // The comparison table, filled by hand or from the saved sample run. Nothing is
 // run here: no model is called, and the table shows only what the person
@@ -32,11 +33,7 @@ import { SampleTag } from "./sample-tag";
 
 const ROW_PREVIEW_CHARS = 90;
 
-const primaryButtonClass =
-  "rounded-md bg-zinc-900 px-5 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300";
-const secondaryButtonClass =
-  "rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900";
-const cellClass = "border-t border-zinc-200 p-3 align-top dark:border-zinc-800";
+const cellClass = "border-t border-line p-3 align-top";
 
 const SIDE_ROLES: Record<ModelSide, string> = {
   current: "Model you use today",
@@ -50,17 +47,17 @@ function SourceTag({ sampleRun }: { sampleRun: { date: string; cell: SampleOkCel
   if (sampleRun !== null) {
     return (
       <>
-        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+        <span className={`${capsClass} text-gold`}>
           sample run · {sampleRun.date}
         </span>
-        <span className="ml-2 text-[11px] text-zinc-600 dark:text-zinc-400">
+        <span className="ml-2 text-[11px] text-muted">
           {cellTimeText(sampleRun.cell)}
         </span>
       </>
     );
   }
   return (
-    <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-sky-900 dark:bg-sky-950 dark:text-sky-200">
+    <span className={`${capsClass} text-muted`}>
       pasted
     </span>
   );
@@ -78,7 +75,7 @@ function ReadOnlyCell({
   review: React.ReactNode;
 }) {
   if (cellState(output) === "not tested") {
-    return <p className="text-sm italic text-zinc-500 dark:text-zinc-500">not tested</p>;
+    return <p className="text-sm italic text-muted">not tested</p>;
   }
   return (
     <>
@@ -150,14 +147,14 @@ export function ComparisonView({
   return (
     <section aria-labelledby="comparison-heading">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="comparison-heading" className="text-xl font-semibold tracking-tight">
+        <h2 id="comparison-heading" className="font-display text-2xl font-medium">
           Compare outputs
         </h2>
         <button type="button" onClick={onBack} className={secondaryButtonClass}>
           Back
         </button>
       </div>
-      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+      <p className="mt-2 text-sm text-muted">
         Run your prompt on each model yourself and paste what it returned. Nothing is run from this
         page.
       </p>
@@ -167,7 +164,7 @@ export function ComparisonView({
           <button type="button" onClick={loadSampleResults} className={secondaryButtonClass}>
             Load sample results
           </button>
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-muted">
             Real outputs from one run of this sample on {sampleResults.run_date}. Loading replaces
             what is in the table.
           </p>
@@ -178,7 +175,7 @@ export function ComparisonView({
         {showing && <span className="mt-1 block">{summaryLine(outputs, reviews)}</span>}
       </p>
       {anyFromSampleRun && sampleResults !== null && (
-        <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+        <p className="mt-1 text-sm text-muted">
           Outputs tagged sample run come from one run of{" "}
           <span className="font-mono text-xs">{sampleResults.models.current}</span> and{" "}
           <span className="font-mono text-xs">{sampleResults.models.candidate}</span> through
@@ -202,7 +199,7 @@ export function ComparisonView({
             {MODEL_SIDES.map((side) => (
               <th key={side} scope="col" className="p-3 align-bottom text-sm font-medium">
                 {SIDE_ROLES[side]}
-                <span className="mt-1 block font-mono text-xs font-normal text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400">
+                <span className="mt-1 block font-mono text-xs font-normal text-muted [overflow-wrap:anywhere]">
                   {modelFor(draft, side)}
                 </span>
               </th>
@@ -218,7 +215,7 @@ export function ComparisonView({
                 <th scope="row" className={`${cellClass} text-sm font-medium`}>
                   Input {position}
                   {sampleOf !== null && <SampleTag label={sampleOf} />}
-                  <span className="mt-1 block text-xs font-normal text-zinc-600 [overflow-wrap:anywhere] dark:text-zinc-400">
+                  <span className="mt-1 block text-xs font-normal text-muted [overflow-wrap:anywhere]">
                     {preview(input, ROW_PREVIEW_CHARS)}
                   </span>
                   {showing && (
@@ -254,7 +251,7 @@ export function ComparisonView({
                         rows={8}
                         placeholder={`Paste this model's output for input ${position}`}
                         aria-label={`Output of ${modelFor(draft, side)} for input ${position}`}
-                        className="w-full rounded-md border border-zinc-300 bg-transparent px-3 py-2 font-mono text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:focus:border-zinc-400"
+                        className="w-full border border-line bg-transparent px-3 py-2 font-mono text-sm focus:border-ink"
                       />
                     )}
                   </td>
@@ -265,9 +262,9 @@ export function ComparisonView({
         </tbody>
       </table>
 
-      <div className="mt-5 flex flex-wrap items-center justify-end gap-4 border-t border-zinc-200 pt-5 dark:border-zinc-800">
+      <div className="mt-5 flex flex-wrap items-center justify-end gap-4 border-t border-line pt-5">
         {refused && (
-          <p role="alert" className="text-sm text-red-700 dark:text-red-400">
+          <p role="alert" className="border-l-2 border-ink pl-3 text-sm font-bold">
             There is nothing to compare yet, so paste at least one output first.
           </p>
         )}

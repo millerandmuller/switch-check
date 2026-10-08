@@ -6,7 +6,7 @@ export function RemovedNotice({ count }: { count: number }) {
   return (
     <p
       role="status"
-      className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+      className="mt-3 border border-line border-l-2 border-l-gold bg-soft p-3 text-sm"
     >
       {count === 1 ? "1 output was" : `${count} outputs were`} removed from the comparison, with any
       rating and note on {count === 1 ? "it" : "them"}, because the prompt, the input or the model{" "}

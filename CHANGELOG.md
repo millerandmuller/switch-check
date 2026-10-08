@@ -19,6 +19,12 @@ the fixes that came out of it. The app still does not call a model itself.
   [`docs/model-connection.md`](docs/model-connection.md). Nothing is
   implemented yet.
 
+### Changed
+
+- **Its own look (Oct 8).** One light look with square, hairline-edged blocks,
+  four typefaces (Newsreader, Lato, Poppins, JetBrains Mono) and the full
+  width of the window. The dark variant is gone. Nothing behaves differently.
+
 ### Added
 
 - **Cost and speed (Day 14, the Day 10 step).** With the sample results

@@ -6,19 +6,19 @@ import { NOTE_MAX_CHARS, RATINGS, type Rating, type Review } from "@/lib/compari
 // person picks.
 
 const choiceClass =
-  "flex cursor-pointer items-center gap-1.5 rounded-md border border-zinc-300 px-2 py-1 text-xs has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-900 has-[:checked]:font-semibold has-[:checked]:text-white has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-sky-600 dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900";
+  "flex cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-[13.5px] text-muted has-[:checked]:border-ink has-[:checked]:bg-ink has-[:checked]:font-bold has-[:checked]:text-ground has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-gold";
 
 // The three descriptions, shown once above the table whenever ratings can be
 // entered.
 export function RatingLegend() {
   return (
-    <div className="mt-4 rounded-md border border-zinc-200 p-3 dark:border-zinc-800">
+    <div className="mt-4 border border-line p-3">
       <h3 className="text-sm font-medium">Rate each output: would you use it?</h3>
       <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
         {RATINGS.map((entry) => (
           <div key={entry.value}>
             <dt className="font-medium">{entry.label}</dt>
-            <dd className="text-zinc-600 dark:text-zinc-400">{entry.description}</dd>
+            <dd className="text-muted">{entry.description}</dd>
           </div>
         ))}
       </dl>
@@ -46,15 +46,15 @@ export function CellReview({
   const chosen = RATINGS.find((entry) => entry.value === review.rating);
 
   return (
-    <div className="mt-3 border-t border-dashed border-zinc-300 pt-3 dark:border-zinc-700">
+    <div className="mt-3 border-t border-dashed border-line pt-3">
       <fieldset>
         <legend className="sr-only">
           Rating for {model} on input {position}
         </legend>
-        <p className="text-xs text-zinc-600 dark:text-zinc-400">
+        <p className="text-xs text-muted">
           Your rating:{" "}
           {chosen ? (
-            <span className="font-semibold text-zinc-900 dark:text-zinc-100">{chosen.label}</span>
+            <span className="font-semibold text-ink">{chosen.label}</span>
           ) : (
             <span className="italic">not rated</span>
           )}
@@ -74,7 +74,7 @@ export function CellReview({
           ))}
         </div>
       </fieldset>
-      <label htmlFor={noteId} className="mt-3 block text-xs text-zinc-600 dark:text-zinc-400">
+      <label htmlFor={noteId} className="mt-3 block text-xs text-muted">
         Why? (optional)
       </label>
       <input
@@ -83,9 +83,9 @@ export function CellReview({
         value={review.note}
         maxLength={NOTE_MAX_CHARS}
         onChange={(event) => onNoteChange(event.target.value)}
-        className="mt-1 w-full rounded-md border border-zinc-300 bg-transparent px-2 py-1 text-sm outline-none focus:border-zinc-500 dark:border-zinc-700 dark:focus:border-zinc-400"
+        className="mt-1 w-full border border-line bg-transparent px-2 py-1 text-sm focus:border-ink"
       />
-      <p className="mt-1 text-right text-[10px] text-zinc-500">
+      <p className="mt-1 text-right text-[10px] text-muted">
         {review.note.length} / {NOTE_MAX_CHARS}
       </p>
     </div>

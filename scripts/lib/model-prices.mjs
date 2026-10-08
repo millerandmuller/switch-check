@@ -55,3 +55,22 @@ export function renderReport(rows, { checkedOn, sourceUrl }) {
   lines.push("");
   return lines.join("\n");
 }
+
+// The same rows as data the app can read (config/model-prices.json). The
+// report above is for people; this is for the cost estimate on the page.
+// A price is never written without its source and the date it was read.
+export function renderPrices(rows, { checkedOn, sourceUrl }) {
+  const models = {};
+  for (const row of rows) {
+    models[row.id] = row.listed
+      ? { listed: true, input_per_million: row.inputPerMillion, output_per_million: row.outputPerMillion }
+      : { listed: false };
+  }
+  const file = {
+    note: "Written by npm run check-models. Prices are USD per million tokens, as published by OpenRouter on the date in checked_on.",
+    source_url: sourceUrl,
+    checked_on: checkedOn,
+    models,
+  };
+  return `${JSON.stringify(file, null, 2)}\n`;
+}

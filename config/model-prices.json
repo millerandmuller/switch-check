@@ -1,0 +1,27 @@
+{
+  "note": "Written by npm run check-models. Prices are USD per million tokens, as published by OpenRouter on the date in checked_on.",
+  "source_url": "https://openrouter.ai/api/v1/models",
+  "checked_on": "2026-10-08",
+  "models": {
+    "openai/gpt-6-sol": {
+      "listed": true,
+      "input_per_million": 2,
+      "output_per_million": 10
+    },
+    "openai/gpt-6-luna": {
+      "listed": true,
+      "input_per_million": 0.1,
+      "output_per_million": 0.5
+    },
+    "anthropic/claude-opus-5.5": {
+      "listed": true,
+      "input_per_million": 4,
+      "output_per_million": 20
+    },
+    "anthropic/claude-sonnet-5.5": {
+      "listed": true,
+      "input_per_million": 2,
+      "output_per_million": 10
+    }
+  }
+}

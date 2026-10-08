@@ -16,6 +16,8 @@ export type SampleResultCell =
     }
   | { status: "not tested"; reason: string };
 
+export type SampleOkCell = Extract<SampleResultCell, { status: "ok" }>;
+
 export type SampleResults = {
   run_date: string;
   models: ModelPair;
@@ -65,15 +67,42 @@ export function outputsFromSampleResults(results: SampleResults): PastedOutputs 
 
 // The "sample run" tag follows the text, like the SAMPLE tag on inputs: it
 // shows only while a cell still holds exactly what the run returned for that
-// cell, and the cell reads "pasted" once the text is edited. Returns the run
-// date for the tag, or null.
+// cell, and the cell reads "pasted" once the text is edited. Returns what the
+// run saved for the cell, or null.
+export function sampleRunCell(
+  results: SampleResults | null,
+  inputIndex: number,
+  side: ModelSide,
+  output: string,
+): SampleOkCell | null {
+  const cell = results?.results[inputIndex]?.[side];
+  if (!cell || cell.status !== "ok") return null;
+  return cell.output === output ? cell : null;
+}
+
+// The run date for the tag, or null.
 export function sampleRunDate(
   results: SampleResults | null,
   inputIndex: number,
   side: ModelSide,
   output: string,
 ): string | null {
-  const cell = results?.results[inputIndex]?.[side];
-  if (!cell || cell.status !== "ok") return null;
-  return cell.output === output ? results.run_date : null;
+  if (results === null) return null;
+  return sampleRunCell(results, inputIndex, side, output) === null ? null : results.run_date;
+}
+
+// One model's column as the saved run knows it: per input, what the run saved
+// for the cell, or null once the cell no longer holds it. Measured figures
+// belong to the model that was run, so a column under any other model has
+// none, whatever text it holds.
+export function sampleRunColumn(
+  results: SampleResults | null,
+  outputs: PastedOutputs,
+  side: ModelSide,
+  model: string,
+): (SampleOkCell | null)[] {
+  const sameModel = results !== null && results.models[side] === model;
+  return outputs.map((pair, inputIndex) =>
+    sameModel ? sampleRunCell(results, inputIndex, side, pair[side]) : null,
+  );
 }

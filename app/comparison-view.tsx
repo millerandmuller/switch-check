@@ -14,16 +14,19 @@ import {
   type Rating,
   type Reviews,
 } from "@/lib/comparison";
-import { sampleRunDate, type SampleResults } from "@/lib/sample-results";
+import { cellTimeText, type ModelPrices } from "@/lib/cost-speed";
+import { sampleRunCell, type SampleOkCell, type SampleResults } from "@/lib/sample-results";
 import { preview, sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
 import { CellReview, RatingLegend } from "./cell-review";
+import { CostSpeed } from "./cost-speed";
 import { RemovedNotice } from "./removed-notice";
 import { SampleTag } from "./sample-tag";
 
 // The comparison table, filled by hand or from the saved sample run. Nothing is
 // run here: no model is called, and the table shows only what the person
-// pasted or what one earlier, dated run returned. Speed and cost are not on
-// this screen yet. Once the comparison is
+// pasted or what one earlier, dated run returned. Cost and speed are shown for
+// that run only, each figure marked estimated, measured or not measured (see
+// lib/cost-speed.ts). Once the comparison is
 // shown, the person rates each output; the row result and the summary line
 // only count those ratings and never name a winner.
 
@@ -41,13 +44,19 @@ const SIDE_ROLES: Record<ModelSide, string> = {
 };
 
 // Says where an output came from: pasted by hand, or returned by the saved
-// sample run on the given date. The two are never shown the same way.
-function SourceTag({ sampleRunOn }: { sampleRunOn: string | null }) {
-  if (sampleRunOn !== null) {
+// sample run on the given date. The two are never shown the same way. Only an
+// output the run returned carries a response time: a pasted one was not timed.
+function SourceTag({ sampleRun }: { sampleRun: { date: string; cell: SampleOkCell } | null }) {
+  if (sampleRun !== null) {
     return (
-      <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
-        sample run · {sampleRunOn}
-      </span>
+      <>
+        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">
+          sample run · {sampleRun.date}
+        </span>
+        <span className="ml-2 text-[11px] text-zinc-600 dark:text-zinc-400">
+          {cellTimeText(sampleRun.cell)}
+        </span>
+      </>
     );
   }
   return (
@@ -61,11 +70,11 @@ function SourceTag({ sampleRunOn }: { sampleRunOn: string | null }) {
 // not tried cannot be judged.
 function ReadOnlyCell({
   output,
-  sampleRunOn,
+  sampleRun,
   review,
 }: {
   output: string;
-  sampleRunOn: string | null;
+  sampleRun: { date: string; cell: SampleOkCell } | null;
   review: React.ReactNode;
 }) {
   if (cellState(output) === "not tested") {
@@ -73,7 +82,7 @@ function ReadOnlyCell({
   }
   return (
     <>
-      <SourceTag sampleRunOn={sampleRunOn} />
+      <SourceTag sampleRun={sampleRun} />
       <p className="mt-2 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">{output}</p>
       {review}
     </>
@@ -86,6 +95,7 @@ export function ComparisonView({
   outputs,
   reviews,
   sampleResults,
+  modelPrices,
   removedCount,
   onOutputChange,
   onRatingChange,
@@ -98,6 +108,7 @@ export function ComparisonView({
   outputs: PastedOutputs;
   reviews: Reviews;
   sampleResults: SampleResults | null;
+  modelPrices: ModelPrices | null;
   // How many outputs the last edit of the draft removed from this table.
   removedCount: number;
   onOutputChange: (inputIndex: number, side: ModelSide, value: string) => void;
@@ -115,10 +126,14 @@ export function ComparisonView({
   const filled = filledCount(outputs);
   const refused = attempted && filled === 0;
 
-  const sampleRunOn = (inputIndex: number, side: ModelSide) =>
-    sampleRunDate(sampleResults, inputIndex, side, outputs[inputIndex][side]);
+  // What the saved run holds for a cell, while the cell still shows it.
+  function sampleRunFor(inputIndex: number, side: ModelSide) {
+    const cell = sampleRunCell(sampleResults, inputIndex, side, outputs[inputIndex][side]);
+    if (sampleResults === null || cell === null) return null;
+    return { date: sampleResults.run_date, cell };
+  }
   const anyFromSampleRun = outputs.some((_, index) =>
-    MODEL_SIDES.some((side) => sampleRunOn(index, side) !== null),
+    MODEL_SIDES.some((side) => sampleRunFor(index, side) !== null),
   );
 
   function loadSampleResults() {
@@ -170,6 +185,12 @@ export function ComparisonView({
           OpenRouter on {sampleResults.run_date}, shown exactly as returned.
         </p>
       )}
+      <CostSpeed
+        draft={draft}
+        outputs={outputs}
+        sampleResults={sampleResults}
+        prices={modelPrices}
+      />
       {showing && <RatingLegend />}
 
       <table className="mt-3 w-full table-fixed border-collapse text-left">
@@ -214,7 +235,7 @@ export function ComparisonView({
                     {showing ? (
                       <ReadOnlyCell
                         output={outputs[index][side]}
-                        sampleRunOn={sampleRunOn(index, side)}
+                        sampleRun={sampleRunFor(index, side)}
                         review={
                           <CellReview
                             cellId={`review-${position}-${side}`}

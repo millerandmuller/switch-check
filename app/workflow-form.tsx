@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ModelPrices } from "@/lib/cost-speed";
 import { ComparisonView } from "./comparison-view";
 import { ReadyPanel } from "./ready-panel";
 import { SampleTag } from "./sample-tag";
@@ -164,11 +165,13 @@ export function WorkflowForm({
   defaultPair,
   sample,
   sampleResults,
+  modelPrices,
 }: {
   candidates: string[];
   defaultPair: ModelPair;
   sample: SampleWorkflow;
   sampleResults: SampleResults | null;
+  modelPrices: ModelPrices | null;
 }) {
   const currentDefault = pick(candidates, defaultPair.current);
   const candidateDefault = pick(candidates, defaultPair.candidate);
@@ -270,6 +273,7 @@ export function WorkflowForm({
         outputs={outputs}
         reviews={reviews}
         sampleResults={sampleResults}
+        modelPrices={modelPrices}
         removedCount={removedCount}
         onLoadSampleResults={
           canLoadSampleResults(draft, sample, sampleResults) ? loadSampleResults : null

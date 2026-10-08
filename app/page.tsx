@@ -1,7 +1,8 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import candidatesConfig from "@/config/candidates.json";
 import sampleWorkflow from "@/demo-data/sample-email-triage.json";
+import type { ModelPrices } from "@/lib/cost-speed";
 import { newestResultsFileName, type SampleResults } from "@/lib/sample-results";
 import { WorkflowForm } from "./workflow-form";
 
@@ -14,8 +15,17 @@ function readSampleResults(): SampleResults | null {
   return JSON.parse(readFileSync(path.join(demoData, fileName), "utf8"));
 }
 
+// The published prices as `npm run check-models` last read them, with their
+// source and date. null when the check has never been run.
+function readModelPrices(): ModelPrices | null {
+  const file = path.join(process.cwd(), "config", "model-prices.json");
+  if (!existsSync(file)) return null;
+  return JSON.parse(readFileSync(file, "utf8"));
+}
+
 export default function Home() {
   const sampleResults = readSampleResults();
+  const modelPrices = readModelPrices();
   return (
     <main className="mx-auto w-full max-w-4xl px-6 py-12">
       <h1 className="text-3xl font-semibold tracking-tight">Switch Check</h1>
@@ -31,6 +41,7 @@ export default function Home() {
           defaultPair={candidatesConfig.default_pair}
           sample={sampleWorkflow}
           sampleResults={sampleResults}
+          modelPrices={modelPrices}
         />
       </div>
     </main>

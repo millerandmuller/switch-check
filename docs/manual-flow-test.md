@@ -246,6 +246,7 @@ have since been fixed and carry a status line; the rest are open.
 - **Expected:** already known and planned. It is on the list so the list is
   complete.
 - **Effect:** slows (the decision rests on ratings alone)
+- **Status:** Fixed on Day 14 (Oct 8, 2026) for the saved sample run: each model shows an estimated cost per 1,000 runs with the price source and date, and the measured response times of the run. Outputs pasted by hand read `not measured`.
 
 ### 14. Load sample results disappears with no reason given
 

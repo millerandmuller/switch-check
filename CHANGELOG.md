@@ -21,6 +21,12 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Added
 
+- **Cost and speed (Day 14, the Day 10 step).** With the sample results
+  loaded, each model shows an estimated cost per 1,000 runs and the response
+  times of the saved run. The cost is worked out from OpenRouter's published
+  price and the tokens the run used, and carries the price date and the run
+  date. The times are from one run. Outputs pasted by hand read `not measured`,
+  because Switch Check did not run them.
 - **Real sample results (Day 9, the Day 8 step).** `npm run sample-results`
   runs the sample workflow once on the default model pair through OpenRouter
   and saves the six outputs, with their token counts and response times, to
@@ -63,9 +69,9 @@ the fixes that came out of it. The app still does not call a model itself.
 
 - The app does not run models itself. Outputs are pasted by hand, or loaded
   from the one saved run of the sample.
-- No speed or cost figures are shown anywhere. The saved run holds the token
-  counts and response times, and the page does not show them.
-- 19 of the 22 issues from the manual flow test are open.
+- Cost and speed are shown for the saved sample run only. A person's own
+  pasted outputs have neither.
+- 18 of the 22 issues from the manual flow test are open.
 - There is no live deployment.
 - Nobody outside the project has used it yet.
 
@@ -73,8 +79,8 @@ the fixes that came out of it. The app still does not call a model itself.
 
 - Day 7's work was logged a day late, under Day 8, so Day 8's own step was
   built on Day 9.
-- Days 10 and 11 were not built or logged. Day 10's step (speed and cost) is
-  still open. Day 11's step (more test workflows) was not built.
+- Days 10 and 11 were not built or logged. Day 10's step (speed and cost) was
+  built on Day 14. Day 11's step (more test workflows) was not built.
 
 ## Week 1 (Sep 27 to Oct 1, 2026)
 

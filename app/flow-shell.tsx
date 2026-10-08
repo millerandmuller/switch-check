@@ -38,8 +38,9 @@ import {
   type WorkflowDraft,
 } from "@/lib/workflow";
 import { AskFirst } from "./ask-first";
-import { ComparisonView, cellKey } from "./comparison-view";
+import { ComparisonView } from "./comparison-view";
 import { InputsStep } from "./inputs-step";
+import { OutputsStep, cellKey } from "./outputs-step";
 import { SetupStep } from "./setup-step";
 import { StartStep } from "./start-step";
 import { StepBar } from "./step-bar";
@@ -96,7 +97,7 @@ const STEP_TITLES: Record<StepId, { title: string; job: string }> = {
   },
   outputs: {
     title: "Outputs",
-    job: "Run your prompt on each model yourself and paste what it returned. Nothing is run from this page.",
+    job: "Get both models' outputs for all three inputs, one task at a time. Nothing is run from this page.",
   },
   rate: {
     title: "Rate and result",
@@ -410,9 +411,22 @@ export function FlowShell({
           </>
         )}
 
-        {(step === "outputs" || step === "rate") && (
+        {step === "outputs" && (
+          <OutputsStep
+            draft={draft}
+            sample={sample}
+            outputs={outputs}
+            sampleResults={sampleResults}
+            removedCount={removedCount}
+            clearedCells={clearedCells}
+            notOfferedReason={notOfferedReason}
+            onLoadSampleResults={canLoad ? () => askOrDo("load results", pastedCount() > 0) : null}
+            onOutputChange={updateOutput}
+          />
+        )}
+
+        {step === "rate" && (
           <ComparisonView
-            mode={step === "outputs" ? "edit" : "shown"}
             draft={draft}
             sample={sample}
             outputs={outputs}
@@ -420,10 +434,6 @@ export function FlowShell({
             sampleResults={sampleResults}
             modelPrices={modelPrices}
             removedCount={removedCount}
-            onLoadSampleResults={canLoad ? () => askOrDo("load results", pastedCount() > 0) : null}
-            notOfferedReason={notOfferedReason}
-            clearedCells={clearedCells}
-            onOutputChange={updateOutput}
             onRatingChange={updateRating}
             onNoteChange={updateNote}
           />

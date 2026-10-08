@@ -96,6 +96,13 @@ export function draftFromSample(
   };
 }
 
+// The prompt as a model reads it: the input in place of every placeholder.
+// Split and join, not a pattern replace, so an input that itself contains
+// "{input}" or "$" characters is put in exactly as it is.
+export function filledPrompt(prompt: string, input: string): string {
+  return prompt.split(INPUT_PLACEHOLDER).join(input);
+}
+
 // A shortened input for places that only need to say which input this is. The
 // full text stays in the draft.
 export function preview(value: string, maxChars: number): string {

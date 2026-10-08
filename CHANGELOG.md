@@ -41,6 +41,14 @@ the fixes that came out of it. The app still does not call a model itself.
 - **The line about saving says what is true (Oct 8).** "Nothing is saved unless
   you choose to share the result" is replaced by "Nothing is saved. Reloading
   this page empties it." There is no way to share or save.
+- **Copy-ready prompts in the outputs step (Oct 8).** Getting the outputs is
+  now six tasks in a fixed order, one per input and model. Each task has a
+  **Copy the filled-in prompt** button that copies your prompt with that input
+  already in place of every `{input}`, the same text to read on the page, and
+  the box to paste the answer into. A line counts how many of the six are
+  pasted. If the browser does not allow copying, the text is shown selected to
+  copy by hand. You still run each prompt in your own tool: the page runs
+  nothing.
 
 ### Added
 

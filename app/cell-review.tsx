@@ -105,7 +105,7 @@ export function CellReview({
           maxLength={NOTE_MAX_CHARS}
           placeholder="One-line note, optional"
           onChange={(event) => onNoteChange(event.target.value)}
-          className="min-w-0 flex-1 rounded-full border-2 border-transparent bg-chip px-4 py-0.5 text-sm text-ink placeholder:text-muted focus:bg-white/60"
+          className="min-w-0 flex-1 rounded-full border-2 border-transparent bg-chip px-4 py-px text-sm text-ink placeholder:text-muted focus:bg-white/60"
         />
         <span className="text-xs text-muted">
           {review.note.length} / {NOTE_MAX_CHARS}

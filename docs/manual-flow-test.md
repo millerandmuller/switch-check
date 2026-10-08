@@ -348,6 +348,7 @@ have since been fixed and carry a status line; the rest are open.
 - **Expected:** a first-time reader is not left wondering whether the asterisks
   are a fault of the model or of the page.
 - **Effect:** cosmetic
+- **Status:** Fixed on Oct 8, 2026 and re-checked in the browser at 1440 x 900 on the built app: all six saved sample outputs show bold, numbered and bulleted lines and quotes as formatting, and each card has a Show raw / Show formatted link. Raw shows the stored characters in the mono face. The tag reads "formatted for reading" in the formatted view and "shown exactly as returned" only in the raw view; pasted outputs have the same two views and keep their `pasted` tag.
 
 ### 21. Keyboard focus is on nothing after each change of screen
 

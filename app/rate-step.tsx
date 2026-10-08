@@ -23,6 +23,7 @@ import {
 import { sampleRunColumn, type SampleOkCell, type SampleResults } from "@/lib/sample-results";
 import { sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/workflow";
 import { CellReview, RatingsDisclosure } from "./cell-review";
+import { FormattedOutput, RawOutput } from "./formatted-output";
 import { InputColumn } from "./input-column";
 import { InputTabs } from "./input-tabs";
 import { ModelSwitch } from "./model-switch";
@@ -44,7 +45,7 @@ import { labelClass, primaryButtonCompactClass } from "./ui";
 // alone.
 function FigureChip({ figure, note }: { figure: string; note: string }) {
   return (
-    <div className="flex min-w-0 flex-col rounded-2xl bg-chip px-2 py-0.5 leading-tight">
+    <div className="flex min-w-0 flex-col rounded-xl bg-chip px-2 py-px leading-tight">
       <b className="whitespace-nowrap font-display text-[1.05rem] font-semibold tabular-nums">{figure}</b>
       <span className="text-[11px] text-muted">{note}</span>
     </div>
@@ -91,6 +92,8 @@ function Panel({
   prices,
   runDate,
   hiddenOnPhone,
+  raw,
+  onToggleRaw,
   reviewCleared,
   review,
   switcher,
@@ -107,6 +110,9 @@ function Panel({
   runDate: string;
   // Below the side-by-side width only one model's panel is shown at a time.
   hiddenOnPhone: boolean;
+  // Whether this card shows the stored characters as they are, not formatted.
+  raw: boolean;
+  onToggleRaw: () => void;
   reviewCleared: boolean;
   review: React.ReactNode;
   // Below the side-by-side width: the switch between the two models.
@@ -120,7 +126,7 @@ function Panel({
     >
       {/* Role and model, then the two figures with their state words. Each
           part stays whole; a narrow column wraps between them, not inside. */}
-      <div className="flex flex-col gap-1 px-4 pb-1 pt-2.5">
+      <div className="flex flex-col gap-1 px-4 pb-1 pt-2">
         <h3
           {...{ [OUTPUT_HEADING]: side }}
           tabIndex={-1}
@@ -134,23 +140,40 @@ function Panel({
         <Figures column={column} price={prices?.models[model]} cell={cell} />
       </div>
 
+      {tested && (
+        <div className="flex items-baseline justify-between gap-3 px-5 leading-tight">
+          {/* The tag says what the view is: formatting is a display change,
+              so only the raw view is "exactly as returned". */}
+          <p className="text-[12.5px] font-medium text-muted">
+            {cell === null
+              ? raw
+                ? "pasted · shown exactly as pasted"
+                : "pasted · formatted for reading"
+              : raw
+                ? `sample run · ${runDate} · shown exactly as returned`
+                : `sample run · ${runDate} · formatted for reading`}
+          </p>
+          <button
+            type="button"
+            onClick={onToggleRaw}
+            className="flex-none cursor-pointer text-[12.5px] font-medium text-muted underline underline-offset-[3px] hover:text-ink"
+          >
+            {raw ? "Show formatted" : "Show raw"}
+          </button>
+        </div>
+      )}
       <div
         role="region"
         aria-label={`Output of ${model} for input ${position}`}
         tabIndex={0}
-        className="px-5 pb-3 pt-2 wide:min-h-[320px] wide:flex-[1_1_320px] wide:overflow-auto"
+        className="px-5 pb-2 pt-1 wide:min-h-[320px] wide:flex-[1_1_320px] wide:overflow-auto"
       >
         {tested ? (
-          <>
-            <p className={`${labelClass} mb-1.5`}>
-              {cell === null
-                ? "pasted · shown exactly as pasted"
-                : `sample run · ${runDate} · shown exactly as returned`}
-            </p>
-            <pre className="max-w-[72ch] whitespace-pre-wrap font-sans text-base leading-[1.7] [overflow-wrap:anywhere]">
-              {output}
-            </pre>
-          </>
+          raw ? (
+            <RawOutput text={output} />
+          ) : (
+            <FormattedOutput text={output} />
+          )
         ) : (
           <p className="italic text-muted">not tested</p>
         )}
@@ -235,6 +258,8 @@ export function RateStep({
 }) {
   // Which model's output shows below the side-by-side width.
   const [phoneSide, setPhoneSide] = useState<ModelSide>("current");
+  // Which cards show the stored characters instead of formatted text.
+  const [rawSides, setRawSides] = useState<Record<ModelSide, boolean>>({ current: false, candidate: false });
   // "What the ratings mean" is open until the first rating of the session.
   const [legendOpen, setLegendOpen] = useState(() => !anyRated(reviews));
   const inputCount = draft.inputs.length;
@@ -319,7 +344,7 @@ export function RateStep({
 
   return (
     <main className="relative flex w-full flex-1 flex-col px-gutter pb-2.5 pt-1">
-      <div className="panel flex flex-1 flex-col gap-1.5 p-2.5">
+      <div className="panel flex flex-1 flex-col gap-1 p-2.5">
         <section
           aria-labelledby="rate-heading"
           className="grid items-start gap-x-8 gap-y-1 px-1 wide:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
@@ -350,7 +375,7 @@ export function RateStep({
           {/* Two lines tall at every length, so rating never moves the panels. */}
           <p
             aria-live="polite"
-            className="min-h-[3rem] min-w-0 text-balance font-display text-[1.25rem] leading-[1.25]"
+            className="min-h-[2.9rem] min-w-0 text-balance font-display text-[1.25rem] leading-[1.2]"
           >
             <SummaryLine text={summaryLine(outputs, reviews)} />
           </p>
@@ -394,6 +419,8 @@ export function RateStep({
               prices={modelPrices}
               runDate={runDate}
               hiddenOnPhone={phoneSide !== side}
+              raw={rawSides[side]}
+              onToggleRaw={() => setRawSides((current) => ({ ...current, [side]: !current[side] }))}
               reviewCleared={clearedCells.includes(cellKey(selected, side))}
               switcher={
                 <ModelSwitch

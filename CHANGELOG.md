@@ -21,6 +21,20 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Changed
 
+- **Outputs read as formatted text, with the raw text one click away (Oct 8).**
+  Marks such as `**Priority:**`, numbered lines, `- ` bullets and `> `
+  quotes now show as bold text, numbered and bulleted items and quotes (issue
+  20 of the manual flow test). Each output card has a Show raw / Show
+  formatted link; raw shows the stored characters exactly, in the mono face.
+  The tag keeps to what is true: "formatted for reading" in the formatted
+  view, "shown exactly as returned" (or "as pasted") only in the raw view.
+  Formatting is display only: ratings, the removal rule, the check that a cell
+  still holds what the run returned and the cost figures all work on the
+  stored text. A new pure file, `lib/output-format.ts`, builds blocks that the
+  page turns into elements, never into HTML, and 12 new tests cover the six
+  saved outputs, unbalanced `**`, lines that only look like lists, empty
+  outputs and text with `<` and `&`.
+
 - **The rating screen says less at first glance (Oct 8).** The three inputs
   are pill tabs with a status dot and its word (not rated yet, better, same
   rating, worse, not tested), so colour is never the only signal. Cost and

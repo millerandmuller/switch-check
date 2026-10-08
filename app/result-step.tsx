@@ -86,7 +86,7 @@ export function ResultStep({
       <h2
         ref={headingRef}
         tabIndex={-1}
-        className="mt-1 font-display text-[2rem] font-semibold leading-tight tracking-[-0.02em] focus:outline-none"
+        className="mt-1 font-display text-[2rem] font-semibold leading-tight tracking-[-0.02em] focus:outline-none focus:shadow-none"
       >
         The result
       </h2>

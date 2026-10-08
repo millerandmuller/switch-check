@@ -16,7 +16,7 @@ export function StepHeading({
   return (
     <div className="max-w-[72ch]">
       <p className={labelClass}>Step {position} of 5</p>
-      <h2 ref={headingRef} tabIndex={-1} className="mt-1 font-display text-[2rem] font-semibold leading-tight tracking-[-0.02em] focus:outline-none">
+      <h2 ref={headingRef} tabIndex={-1} className="mt-1 font-display text-[2rem] font-semibold leading-tight tracking-[-0.02em] focus:outline-none focus:shadow-none">
         {title}
       </h2>
       <p className="mt-2 text-muted">{job}</p>

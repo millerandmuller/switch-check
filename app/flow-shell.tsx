@@ -410,17 +410,17 @@ export function FlowShell({
     <div className={`ground flex min-h-dvh flex-col ${screen === "rate" ? "wide:h-dvh" : ""}`}>
       {/* Decoration only: the name also stands in the header. */}
       {screen === "start" && (
-        <div aria-hidden className="wordmark">
-          Switch Check
+        <div aria-hidden className="wordmark-box">
+          <div className="wordmark">Switch Check</div>
         </div>
       )}
-      <header className={`relative flex flex-wrap items-center gap-x-7 gap-y-2.5 px-gutter ${screen === "rate" ? "py-2" : "py-3"}`}>
-        <h1 className="font-display text-[1.3rem] font-semibold tracking-[-0.01em]">
+      <header className={`relative flex flex-wrap items-center gap-x-7 gap-y-2 px-gutter wide:flex-nowrap ${screen === "rate" ? "py-1" : "py-3"}`}>
+        <h1 className="whitespace-nowrap font-display text-[1.3rem] font-semibold tracking-[-0.01em]">
           Switch Check <span className="font-light text-muted">your call</span>
         </h1>
         <StepBar steps={stepsInBar(step, facts)} fromExample={exampleSteps} onOpen={open} />
-        {screen !== "start" && (
-          <p className="text-[13.5px] text-muted wide:ml-auto">
+        {screen !== "start" && screen !== "rate" && (
+          <p className="text-[13px] leading-tight text-muted wide:ml-auto wide:max-w-[15rem] wide:text-right">
             Nothing is saved. Reloading this page empties it.
           </p>
         )}

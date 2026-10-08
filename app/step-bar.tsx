@@ -16,7 +16,7 @@ export function StepBar({
 }) {
   return (
     <nav aria-label="Steps">
-      <ol className="glass flex flex-wrap gap-0.5 rounded-full p-1">
+      <ol className="glass flex flex-wrap gap-0.5 rounded-full p-0.5 wide:flex-nowrap">
         {steps.map((step) => {
           const current = step.state === "current";
           const stateText =
@@ -33,8 +33,8 @@ export function StepBar({
                 }}
                 className={
                   current
-                    ? "rounded-full bg-accent px-4 py-1.5 text-[14.5px] font-semibold text-on-accent"
-                    : "rounded-full px-4 py-1.5 text-[14.5px] text-muted enabled:cursor-pointer enabled:hover:bg-accent/10 disabled:opacity-75"
+                    ? "rounded-full bg-accent px-3 py-1 text-[13.5px] font-semibold text-on-accent"
+                    : "rounded-full px-3 py-1 text-[13.5px] text-muted enabled:cursor-pointer enabled:hover:bg-accent/10 disabled:opacity-75"
                 }
               >
                 <span className={step.state === "done" ? "font-semibold text-ink" : undefined}>

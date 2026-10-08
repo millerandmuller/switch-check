@@ -12,7 +12,7 @@ export const primaryButtonClass =
 // The same button, shorter, for the footer of the rating screen where every
 // pixel of height goes to the outputs.
 export const primaryButtonCompactClass =
-  "cursor-pointer rounded-full bg-accent px-6 py-2 text-[15px] font-semibold text-on-accent shadow-[0_6px_20px_rgba(31,55,48,0.18)] hover:bg-accent/90";
+  "cursor-pointer rounded-full bg-accent px-6 py-1.5 text-[15px] font-semibold text-on-accent shadow-[0_6px_20px_rgba(31,55,48,0.18)] hover:bg-accent/90";
 
 export const secondaryButtonClass =
   "cursor-pointer rounded-full border border-accent/35 bg-chip px-4 py-2 text-sm font-semibold text-ink hover:border-accent hover:bg-accent/15";

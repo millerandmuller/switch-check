@@ -13,6 +13,7 @@ import {
   type Reviews,
 } from "@/lib/comparison";
 import {
+  NOT_RUN_REASON,
   costPer1000Runs,
   formatSeconds,
   formatUsd,
@@ -37,18 +38,20 @@ import { labelClass, primaryButtonCompactClass } from "./ui";
 // outputs were pasted or come from one earlier, dated run. The row result and
 // the summary line only count the person's ratings and never name a winner.
 
-// A figure with its state in the same line: never a bare number.
-function Figure({ value, state }: { value?: string; state: string }) {
+// One figure as a rounded chip: the figure large, its state word and unit
+// small beneath it, always together. A figure that was not measured says so in
+// the large line and gives its reason beneath, so a bare number never stands
+// alone.
+function FigureChip({ figure, note }: { figure: string; note: string }) {
   return (
-    <span className="whitespace-nowrap">
-      {value !== undefined && <b className="font-semibold tabular-nums">{value} </b>}
-      <span className="text-muted">{state}</span>
-    </span>
+    <div className="flex min-w-0 flex-col rounded-2xl bg-chip px-2 py-0.5 leading-tight">
+      <b className="whitespace-nowrap font-display text-[1.05rem] font-semibold tabular-nums">{figure}</b>
+      <span className="text-[11px] text-muted">{note}</span>
+    </div>
   );
 }
 
-// Cost and response time in the header of one output. When neither was
-// measured the header says so once; the reason is in the shared source line.
+// Cost and response time in the header of one output, as two chips.
 function Figures({
   column,
   price,
@@ -59,20 +62,19 @@ function Figures({
   cell: SampleOkCell | null;
 }) {
   const cost = costPer1000Runs(column, price);
-  if (cost.state === "not measured" && cell === null) return <Figure state="cost and time not measured" />;
   return (
-    <>
+    <div className="flex flex-wrap gap-1.5">
       {cost.state === "estimated" ? (
-        <Figure value={formatUsd(cost.usdPer1000Runs)} state="estimated, per 1,000 runs" />
+        <FigureChip figure={formatUsd(cost.usdPer1000Runs)} note="estimated · per 1,000 runs" />
       ) : (
-        <Figure state="cost not measured" />
+        <FigureChip figure="cost not measured" note={cost.reason} />
       )}
       {cell === null ? (
-        <Figure state="time not measured, this input" />
+        <FigureChip figure="time not measured" note={NOT_RUN_REASON} />
       ) : (
-        <Figure value={`${formatSeconds(cell.response_ms)} s`} state="measured, this input" />
+        <FigureChip figure={`${formatSeconds(cell.response_ms)} s`} note="measured · this input" />
       )}
-    </>
+    </div>
   );
 }
 
@@ -114,33 +116,33 @@ function Panel({
   return (
     <article
       aria-label={`${SIDE_ROLES[side]}, input ${position}`}
-      className={`card ${hiddenOnPhone ? "hidden wide:flex" : "flex"} min-h-0 min-w-0 flex-col wide:row-start-3`}
+      className={`card ${hiddenOnPhone ? "hidden wide:flex" : "flex"} min-w-0 flex-col`}
     >
       {/* Role and model, then the two figures with their state words. Each
           part stays whole; a narrow column wraps between them, not inside. */}
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0 border-b border-line px-4 py-2 text-[12.5px]">
+      <div className="flex flex-col gap-1 px-4 pb-1 pt-2.5">
         <h3
           {...{ [OUTPUT_HEADING]: side }}
           tabIndex={-1}
-          className="flex flex-wrap items-baseline gap-x-3"
+          className="flex flex-wrap items-baseline gap-x-2.5"
         >
-          <span className="text-[13px] font-semibold">{SIDE_ROLES[side]}</span>
-          <span className="font-mono [overflow-wrap:anywhere]">{model}</span>
+          <span className="font-display text-[1.05rem] font-semibold tracking-[-0.01em]">
+            {SIDE_ROLES[side]}
+          </span>
+          <span className="font-mono text-[12px] text-muted [overflow-wrap:anywhere]">{model}</span>
         </h3>
-        <span className="flex basis-full flex-wrap gap-x-4">
-          <Figures column={column} price={prices?.models[model]} cell={cell} />
-        </span>
+        <Figures column={column} price={prices?.models[model]} cell={cell} />
       </div>
 
       <div
         role="region"
         aria-label={`Output of ${model} for input ${position}`}
         tabIndex={0}
-        className="px-5 py-4 wide:min-h-[320px] wide:flex-[1_1_320px] wide:overflow-auto"
+        className="px-5 pb-3 pt-2 wide:min-h-[320px] wide:flex-[1_1_320px] wide:overflow-auto"
       >
         {tested ? (
           <>
-            <p className={`${labelClass} mb-3`}>
+            <p className={`${labelClass} mb-1.5`}>
               {cell === null
                 ? "pasted · shown exactly as pasted"
                 : `sample run · ${runDate} · shown exactly as returned`}
@@ -154,7 +156,7 @@ function Panel({
         )}
       </div>
 
-      <div className="border-t border-line px-4 pb-3 pt-2.5">
+      <div className="px-4 pb-2.5 pt-1.5">
         {switcher}
         {reviewCleared && (
           <p role="status" className="mb-2 text-sm font-semibold">
@@ -166,6 +168,19 @@ function Panel({
         {tested ? review : <p className="text-sm text-muted">Nothing to rate: no output was pasted.</p>}
       </div>
     </article>
+  );
+}
+
+// The summary line in two weights: the first sentence (what is counted, or
+// how many inputs still need a rating) in semibold, anything after it (what
+// is still missing, such as inputs not tested) in light.
+function SummaryLine({ text }: { text: string }) {
+  const [first, ...rest] = text.split(/(?<=\.)\s+/);
+  return (
+    <>
+      <span className="font-semibold">{first}</span>
+      {rest.length > 0 && <span className="font-light text-soft"> {rest.join(" ")}</span>}
+    </>
   );
 }
 
@@ -300,12 +315,55 @@ export function RateStep({
   );
   const input = draft.inputs[selected];
   const position = selected + 1;
+  const anyFigures = MODEL_SIDES.some((side) => columns[side].some((cell) => cell !== null));
 
   return (
-    <main className="relative flex min-h-0 w-full flex-1 flex-col px-gutter pb-3 pt-1">
-      <div className="panel flex min-h-0 flex-1 flex-col p-3">
-      <div className="flex min-h-0 flex-1 flex-col gap-3 wide:grid wide:grid-cols-[minmax(300px,25%)_minmax(0,1fr)_minmax(0,1fr)] wide:grid-rows-[auto_auto_1fr] wide:gap-y-2">
-      <div className="wide:col-span-3">
+    <main className="relative flex w-full flex-1 flex-col px-gutter pb-2.5 pt-1">
+      <div className="panel flex flex-1 flex-col gap-1.5 p-2.5">
+        <section
+          aria-labelledby="rate-heading"
+          className="grid items-start gap-x-8 gap-y-1 px-1 wide:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
+        >
+          <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-0 wide:col-span-2">
+            <h2
+              id="rate-heading"
+              ref={headingRef}
+              tabIndex={-1}
+              className={`${labelClass} font-semibold focus:outline-none focus:shadow-none`}
+            >
+              Step 5 of 5 · Rate the outputs
+            </h2>
+            <p className="text-[12.5px] text-muted">
+              Read each output and rate it. The line below counts your ratings and nothing else.
+              <span className="hidden wide:inline">
+                {" "}
+                Keys{" "}
+                {draft.inputs.map((_, index) => (
+                  <kbd key={index} className="mr-1 rounded-md bg-chip px-[5px] py-px font-mono text-xs">
+                    {index + 1}
+                  </kbd>
+                ))}
+                switch the input.
+              </span>
+            </p>
+          </div>
+          {/* Two lines tall at every length, so rating never moves the panels. */}
+          <p
+            aria-live="polite"
+            className="min-h-[3rem] min-w-0 text-balance font-display text-[1.25rem] leading-[1.25]"
+          >
+            <SummaryLine text={summaryLine(outputs, reviews)} />
+          </p>
+          <div className="min-w-0">
+            <RatingsDisclosure open={legendOpen} onToggle={setLegendOpen} />
+          </div>
+          {removedCount > 0 && (
+            <div className="wide:col-span-2">
+              <RemovedNotice count={removedCount} />
+            </div>
+          )}
+        </section>
+
         <InputTabs
           inputs={draft.inputs}
           sample={sample}
@@ -314,108 +372,81 @@ export function RateStep({
           selected={selected}
           onSelect={onSelect}
         />
-      </div>
 
-      <section
-        aria-labelledby="rate-heading"
-        className="grid items-start gap-x-8 gap-y-2 px-1 py-1 wide:col-span-3 wide:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]"
-      >
-        <div className="min-w-0">
-          <h2
-            id="rate-heading"
-            ref={headingRef}
-            tabIndex={-1}
-            className={`${labelClass} focus:outline-none`}
-          >
-            Step 5 of 5 · Rate the outputs
-          </h2>
-          {/* Two lines tall at every length, so rating never moves the panels. */}
-          <p
-            aria-live="polite"
-            className="mt-0.5 min-h-[2.6rem] text-balance font-display text-[1.05rem] leading-[1.3]"
-          >
-            {summaryLine(outputs, reviews)}
-          </p>
-          <p className="text-[12.5px] text-muted">
-            Read each output and rate it. The line above counts your ratings and nothing else.
-            <span className="hidden wide:inline">
-              {" "}
-              Keys{" "}
-              {draft.inputs.map((_, index) => (
-                <kbd key={index} className="mr-1 rounded-md bg-chip px-[5px] py-px font-mono text-xs">
-                  {index + 1}
-                </kbd>
-              ))}
-              switch the input.
-            </span>
-          </p>
-          <RemovedNotice count={removedCount} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-xs text-muted [overflow-wrap:anywhere]">{sourceLine}</p>
-          <RatingsDisclosure open={legendOpen} onToggle={setLegendOpen} />
-        </div>
-      </section>
-
-      {/* Keyed by the input, so each input starts scrolled to the top. */}
-      <InputColumn
-        key={`input-${selected}`}
-        prompt={draft.prompt}
-        input={input}
-        position={position}
-        sampleOf={sampleLabel(sample, input)}
-      />
-      {MODEL_SIDES.map((side) => (
-        <Panel
-          key={`${selected}-${side}`}
-          side={side}
-          model={modelFor(draft, side)}
-          position={position}
-          output={outputs[selected][side]}
-          column={columns[side]}
-          cell={columns[side][selected]}
-          prices={modelPrices}
-          runDate={runDate}
-          hiddenOnPhone={phoneSide !== side}
-          reviewCleared={clearedCells.includes(cellKey(selected, side))}
-          switcher={
-            <ModelSwitch
-              shown={phoneSide}
-              status={{ current: statusOf("current"), candidate: statusOf("candidate") }}
-              unratedNudge={nudgedInput === selected && unratedSide !== undefined ? unratedSide : null}
-              onShow={setPhoneSide}
-            />
-          }
-          review={
-            <CellReview
-              cellId={`review-${position}-${side}`}
+        <div className="flex flex-1 flex-col gap-3 wide:grid wide:grid-cols-[minmax(300px,25%)_minmax(0,1fr)_minmax(0,1fr)] wide:grid-rows-[1fr]">
+          {/* Keyed by the input, so each input starts scrolled to the top. */}
+          <InputColumn
+            key={`input-${selected}`}
+            prompt={draft.prompt}
+            input={input}
+            position={position}
+            sampleOf={sampleLabel(sample, input)}
+          />
+          {MODEL_SIDES.map((side) => (
+            <Panel
+              key={`${selected}-${side}`}
+              side={side}
               model={modelFor(draft, side)}
               position={position}
-              review={reviews[selected][side]}
-              onRatingChange={(rating) => rate(selected, side, rating)}
-              onNoteChange={(note) => onNoteChange(selected, side, note)}
+              output={outputs[selected][side]}
+              column={columns[side]}
+              cell={columns[side][selected]}
+              prices={modelPrices}
+              runDate={runDate}
+              hiddenOnPhone={phoneSide !== side}
+              reviewCleared={clearedCells.includes(cellKey(selected, side))}
+              switcher={
+                <ModelSwitch
+                  shown={phoneSide}
+                  status={{ current: statusOf("current"), candidate: statusOf("candidate") }}
+                  unratedNudge={nudgedInput === selected && unratedSide !== undefined ? unratedSide : null}
+                  onShow={setPhoneSide}
+                />
+              }
+              review={
+                <CellReview
+                  cellId={`review-${position}-${side}`}
+                  model={modelFor(draft, side)}
+                  position={position}
+                  review={reviews[selected][side]}
+                  onRatingChange={(rating) => rate(selected, side, rating)}
+                  onNoteChange={(note) => onNoteChange(selected, side, note)}
+                />
+              }
             />
-          }
-        />
-      ))}
+          ))}
+        </div>
 
-      {/* On wide screens this bar sits over the bottom of the input column, so
-          the two outputs keep the height. On a phone it ends the page. */}
-      <div className="flex h-[54px] items-center justify-between gap-3 px-5 py-2 wide:col-start-1 wide:row-start-3 wide:self-end">
-        <p className="text-sm text-muted">
-          Input {position} of {inputCount}
-        </p>
-        {/* One button for both labels, so keyboard focus stays on it when
-            the last input is reached. */}
-        <button
-          type="button"
-          onClick={last ? onSeeResult : goToNextInput}
-          className={primaryButtonCompactClass}
-        >
-          {last ? "See the result" : "Next input"}
-        </button>
-      </div>
-      </div>
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2 px-1">
+          {/* Where the figures above come from, closed until asked for. */}
+          <details className="min-w-0 max-w-[90ch] flex-1 basis-[22rem] self-center text-[13px] text-muted">
+            <summary className="cursor-pointer text-[13.5px] font-semibold text-ink">
+              How these figures were worked out
+            </summary>
+            <p className="mt-1.5 [overflow-wrap:anywhere]">
+              {sourceLine}
+              {anyFigures &&
+                " The cost is an estimate from a published price, not a bill. The times are from a single run and change from run to run."}
+            </p>
+          </details>
+          <p className="self-center text-[13px] text-muted wide:ml-auto">
+            Nothing is saved. Reloading this page empties it.
+          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-muted">
+              Input {position} of {inputCount}
+            </p>
+            {/* One button for both labels, so keyboard focus stays on it when
+                the last input is reached. */}
+            <button
+              type="button"
+              onClick={last ? onSeeResult : goToNextInput}
+              className={primaryButtonCompactClass}
+            >
+              {last ? "See the result" : "Next input"}
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   );

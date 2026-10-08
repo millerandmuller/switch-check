@@ -21,6 +21,20 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Changed
 
+- **The rating screen says less at first glance (Oct 8).** The three inputs
+  are pill tabs with a status dot and its word (not rated yet, better, same
+  rating, worse, not tested), so colour is never the only signal. Cost and
+  time are two rounded chips per model, the figure large with its state and
+  unit beneath it (estimated, per 1,000 runs; measured, this input), or "not
+  measured" with its reason. The shared source line moved into a closed
+  "How these figures were worked out" disclosure at the bottom, with
+  everything it said before plus that the cost is an estimate, not a bill.
+  The summary line has two weights, and each card heading shows the role and
+  the model id only. The line under the summary now says "The line below
+  counts your ratings", because it moved above the summary. The three
+  columns are kept. Reading area of one output at 100% zoom, before and after
+  rating: 484 and 500 px at 1440 x 900, 320 px at 1280 x 720.
+
 - **The Start screen is redrawn around the two choices (Oct 8).** The headline
   has two weights ("Should you switch models?" in semibold, "See for
   yourself." light), followed by the lead, the notice that nothing is saved,

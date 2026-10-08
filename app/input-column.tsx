@@ -33,7 +33,7 @@ export function InputColumn({
   return (
     <section
       aria-label={`Input ${position}`}
-      className="card flex min-h-0 min-w-0 flex-col wide:col-start-1 wide:row-start-3 wide:pb-[54px]"
+      className="card flex min-w-0 flex-col"
     >
       <details className="border-b border-line px-gutter py-2.5">
         <summary className="cursor-pointer text-[13.5px] font-semibold">

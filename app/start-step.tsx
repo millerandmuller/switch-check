@@ -34,7 +34,7 @@ export function StartStep({
       <h2
         ref={headingRef}
         tabIndex={-1}
-        className="text-balance text-center font-display text-[clamp(2.4rem,5.6vw,4.6rem)] font-semibold leading-[1.03] tracking-[-0.03em] focus:outline-none"
+        className="text-balance text-center font-display text-[clamp(2.4rem,5.6vw,4.6rem)] font-semibold leading-[1.03] tracking-[-0.03em] focus:outline-none focus:shadow-none"
       >
         {title} <span className="font-extralight text-soft">See for yourself.</span>
       </h2>

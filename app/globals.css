@@ -55,7 +55,10 @@
 /* In the base layer, so a utility class on an element can still override it. */
 @layer base {
   body {
-    background: var(--ground-base);
+    /* The ground stays put while a tall screen scrolls over it. */
+    background: var(--ground);
+    background-color: var(--ground-base);
+    background-attachment: fixed;
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: 16px;
@@ -73,14 +76,22 @@
 @layer components {
   .ground {
     position: relative;
-    background: var(--ground);
-    background-color: var(--ground-base);
-    overflow: clip;
+    /* Sideways only: a screen that is taller than the window must still
+       scroll, never be cut off. */
+    overflow-x: clip;
   }
 
   /* Without backdrop-filter the panel and cards are solid ivory, so nothing
      depends on blurring what is behind them. */
-  /* The name, very large and light, behind the content along the bottom. */
+  /* The name, very large and light, behind the content along the bottom.
+     Its box clips it, so the oversized text never adds scroll height. */
+  .wordmark-box {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
   .wordmark {
     position: absolute;
     left: 50%;

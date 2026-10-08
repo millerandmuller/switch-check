@@ -17,6 +17,19 @@ export function InputColumn({
   // The label of the sample email this input still is, or null.
   sampleOf: string | null;
 }) {
+  const inputText = (
+    <>
+      <p className={`${capsClass} mb-3 text-gold-text`}>
+        Input {position} · {input.length.toLocaleString("en-US")} of{" "}
+        {INPUT_MAX_CHARS.toLocaleString("en-US")} characters
+        {sampleOf !== null && <SampleTag label={sampleOf} />}
+      </p>
+      <pre className="whitespace-pre-wrap font-sans text-base leading-[1.7] [overflow-wrap:anywhere]">
+        {input}
+      </pre>
+    </>
+  );
+
   return (
     <section
       aria-label={`Input ${position}`}
@@ -30,20 +43,21 @@ export function InputColumn({
           {prompt}
         </pre>
       </details>
+      {/* Below the side-by-side width the text is closed, so the output comes
+          first; from 1,000 px it is always open and scrolls on its own. */}
+      <details className="px-gutter py-2.5 wide:hidden">
+        <summary className="cursor-pointer font-caps text-[12px] font-semibold uppercase tracking-[0.06em]">
+          Show the input
+        </summary>
+        <div className="mt-2">{inputText}</div>
+      </details>
       <div
         role="region"
         aria-label={`Text of input ${position}`}
         tabIndex={0}
-        className="px-gutter py-4 wide:min-h-[320px] wide:flex-[1_1_320px] wide:overflow-auto"
+        className="hidden px-gutter py-4 wide:block wide:min-h-[320px] wide:flex-[1_1_320px] wide:overflow-auto"
       >
-        <p className={`${capsClass} mb-3 text-gold-text`}>
-          Input {position} · {input.length.toLocaleString("en-US")} of{" "}
-          {INPUT_MAX_CHARS.toLocaleString("en-US")} characters
-          {sampleOf !== null && <SampleTag label={sampleOf} />}
-        </p>
-        <pre className="whitespace-pre-wrap font-sans text-base leading-[1.7] [overflow-wrap:anywhere]">
-          {input}
-        </pre>
+        {inputText}
       </div>
     </section>
   );

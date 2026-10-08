@@ -21,6 +21,14 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Changed
 
+- **Both outputs are hard to miss at phone width (Oct 8).** Below 1,000 px the
+  switch between the two models sits in the rating bar, next to the rating,
+  and shows for each model its rating or "not rated". If you press Next input
+  while the other model is unrated, the page shows that model and says so;
+  pressing Next input again moves on. Next input goes to the top of the next
+  input, and the input text is closed behind "Show the input", so the output
+  comes first.
+
 - **Focus, contrast and small points of clarity (Oct 8).** After Next input,
   keyboard focus moves to the heading of the first output, and the focus ring
   is 2 px in ink everywhere. Small gold labels are a darker gold (5.36:1 on

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   MODEL_SIDES,
+  RATINGS,
   cellState,
   modelFor,
   summaryLine,
@@ -23,6 +24,7 @@ import { sampleLabel, type SampleWorkflow, type WorkflowDraft } from "@/lib/work
 import { CellReview, RatingsDisclosure } from "./cell-review";
 import { InputColumn } from "./input-column";
 import { InputTabs } from "./input-tabs";
+import { ModelSwitch } from "./model-switch";
 import { SIDE_ROLES, cellKey } from "./outputs-step";
 import { RemovedNotice } from "./removed-notice";
 import { capsClass, primaryButtonCompactClass } from "./ui";
@@ -89,6 +91,7 @@ function Panel({
   hiddenOnPhone,
   reviewCleared,
   review,
+  switcher,
 }: {
   side: ModelSide;
   model: string;
@@ -104,6 +107,8 @@ function Panel({
   hiddenOnPhone: boolean;
   reviewCleared: boolean;
   review: React.ReactNode;
+  // Below the side-by-side width: the switch between the two models.
+  switcher: React.ReactNode;
 }) {
   const tested = cellState(output) !== "not tested";
   return (
@@ -150,6 +155,7 @@ function Panel({
       </div>
 
       <div className="border-t border-line bg-soft px-gutter pb-3 pt-2.5">
+        {switcher}
         {reviewCleared && (
           <p role="status" className="mb-2 text-sm font-bold">
             Your rating and note on this output were removed, because its text changed.
@@ -161,6 +167,10 @@ function Panel({
       </div>
     </article>
   );
+}
+
+function isNarrow(): boolean {
+  return window.matchMedia("(max-width: 999px)").matches;
 }
 
 function isTextField(target: EventTarget | null): boolean {
@@ -228,15 +238,46 @@ export function RateStep({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [inputCount, onSelect]);
 
-  // Next input moves focus to the heading of the first output shown, so the
-  // next Tab starts at the outputs, not back at the button.
+  // Below the side-by-side width: the input where Next input already pointed
+  // out an unrated model once, so a second press moves on.
+  const [nudgedInput, setNudgedInput] = useState<number | null>(null);
   const focusOutputAfterNext = useRef(false);
+  // Next input moves focus to the heading of the first output shown, so the
+  // next Tab starts at the outputs, not back at the button. On a phone the
+  // page also goes to the top of the next input.
   useEffect(() => {
     if (!focusOutputAfterNext.current) return;
     focusOutputAfterNext.current = false;
+    const narrow = isNarrow();
     const headings = [...document.querySelectorAll<HTMLElement>(`[${OUTPUT_HEADING}]`)];
-    headings.find((heading) => heading.offsetParent !== null)?.focus();
+    headings.find((heading) => heading.offsetParent !== null)?.focus({ preventScroll: narrow });
+    if (narrow) window.scrollTo(0, 0);
   }, [selected]);
+
+  // The model left unrated on the input on show, if any: the first tested
+  // output without a rating.
+  const unratedSide = MODEL_SIDES.find(
+    (side) => cellState(outputs[selected][side]) === "pasted" && reviews[selected][side].rating === null,
+  );
+
+  function goToNextInput() {
+    // Below 1,000 px one output shows at a time: say once that the other one
+    // is unrated before moving on, and show it.
+    if (isNarrow() && unratedSide !== undefined && nudgedInput !== selected) {
+      setNudgedInput(selected);
+      setPhoneSide(unratedSide);
+      focusOutputAfterNext.current = false;
+      return;
+    }
+    focusOutputAfterNext.current = true;
+    setPhoneSide("current");
+    onSelect(selected + 1);
+  }
+
+  const statusOf = (side: ModelSide): string => {
+    if (cellState(outputs[selected][side]) === "not tested") return "not tested";
+    return RATINGS.find((entry) => entry.value === reviews[selected][side].rating)?.label ?? "not rated";
+  };
 
   function rate(inputIndex: number, side: ModelSide, rating: Rating) {
     if (!anyRated(reviews)) setLegendOpen(false);
@@ -312,23 +353,6 @@ export function RateStep({
           <p className="text-xs text-muted [overflow-wrap:anywhere]">{sourceLine}</p>
           <RatingsDisclosure open={legendOpen} onToggle={setLegendOpen} />
         </div>
-        <div
-          role="group"
-          aria-label="Which model's output to show"
-          className="flex w-fit max-w-full flex-wrap gap-1 rounded-[22px] bg-soft p-1 wide:hidden"
-        >
-          {MODEL_SIDES.map((side) => (
-            <button
-              key={side}
-              type="button"
-              aria-pressed={phoneSide === side}
-              onClick={() => setPhoneSide(side)}
-              className={`cursor-pointer rounded-full px-4 py-2 text-sm ${phoneSide === side ? "bg-ink font-bold text-ground" : "text-muted"}`}
-            >
-              {SIDE_ROLES[side]}
-            </button>
-          ))}
-        </div>
       </section>
 
       {/* Keyed by the input, so each input starts scrolled to the top. */}
@@ -352,6 +376,14 @@ export function RateStep({
           runDate={runDate}
           hiddenOnPhone={phoneSide !== side}
           reviewCleared={clearedCells.includes(cellKey(selected, side))}
+          switcher={
+            <ModelSwitch
+              shown={phoneSide}
+              status={{ current: statusOf("current"), candidate: statusOf("candidate") }}
+              unratedNudge={nudgedInput === selected && unratedSide !== undefined ? unratedSide : null}
+              onShow={setPhoneSide}
+            />
+          }
           review={
             <CellReview
               cellId={`review-${position}-${side}`}
@@ -375,12 +407,7 @@ export function RateStep({
             the last input is reached. */}
         <button
           type="button"
-          onClick={last
-              ? onSeeResult
-              : () => {
-                  focusOutputAfterNext.current = true;
-                  onSelect(selected + 1);
-                }}
+          onClick={last ? onSeeResult : goToNextInput}
           className={primaryButtonCompactClass}
         >
           {last ? "See the result" : "Next input"}

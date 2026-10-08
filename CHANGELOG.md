@@ -21,6 +21,15 @@ the fixes that came out of it. The app still does not call a model itself.
 
 ### Changed
 
+- **The page says what will be removed before it removes it (Oct 8).** On
+  steps 2 and 3, as soon as the prompt, an input or a model differs from the
+  one your outputs were made with, a notice above the main button says how
+  many outputs, and how many ratings on them, continuing will remove. The
+  button then reads "Continue and remove 2 outputs", and "Undo my change"
+  puts the changed fields back with nothing removed. The "Use sample
+  workflow" question names the outputs and ratings it leads to removing. The
+  rule itself, and the notice on the next screen, are unchanged.
+
 - **Labels and notes now match the state (Oct 8).** An input whose rating of
   either model is missing reads "Not rated yet", and an untested one "Not
   tested", without naming the compared model. With nothing measured, the

@@ -263,3 +263,26 @@ export function inputsMissingRating(
     return sides.length === 0 ? [] : [{ index, sides }];
   });
 }
+
+// What continuing would remove if the draft goes from `before` (the one the
+// outputs were made with) to `after`: how many outputs, and how many of those
+// carry a rating or a note. It only counts what outputsAfterDraftChange
+// already removes; it adds no rule.
+export function removalOnDraftChange(
+  outputs: PastedOutputs,
+  reviews: Reviews,
+  before: WorkflowDraft,
+  after: WorkflowDraft,
+): { outputs: number; ratings: number } {
+  const kept = outputsAfterDraftChange(outputs, before, after);
+  const removed = outputs.flatMap((pair, index) =>
+    MODEL_SIDES.filter((side) => cellState(pair[side]) === "pasted" && kept[index][side] === "").map(
+      (side) => ({ index, side }),
+    ),
+  );
+  const ratings = removed.filter(({ index, side }) => {
+    const review = reviews[index][side];
+    return review.rating !== null || review.note !== "";
+  });
+  return { outputs: removed.length, ratings: ratings.length };
+}

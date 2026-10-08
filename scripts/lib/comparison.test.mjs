@@ -9,6 +9,7 @@ import {
   emptyReviews,
   inputsMissingRating,
   outputsAfterDraftChange,
+  removalOnDraftChange,
   reviewsAfterOutputChange,
   reviewsAfterOutputsReplaced,
   rowResult,
@@ -247,4 +248,32 @@ test("inputsMissingRating names tested outputs without a rating and skips output
   ]);
   reviews = withRating(withRating(reviews, 1, "current", "needs edits"), 2, "candidate", "not usable");
   assert.deepEqual(inputsMissingRating(outputs, reviews), []);
+});
+
+test("removalOnDraftChange counts the outputs and the ratings that continuing would remove", () => {
+  const before = { prompt: "p {input}", inputs: ["a", "b", "c"], currentModel: "m1", candidateModel: "m2" };
+  const outputs = [
+    { current: "x", candidate: "y" },
+    { current: "x", candidate: "" },
+    { current: "x", candidate: "y" },
+  ];
+  let reviews = withRating(emptyReviews(3), 0, "current", "usable");
+  reviews = withNote(reviews, 0, "candidate", "just a note");
+
+  assert.deepEqual(removalOnDraftChange(outputs, reviews, before, before), { outputs: 0, ratings: 0 });
+  // Input 1 changed: both its outputs go, and both carried a rating or a note.
+  assert.deepEqual(
+    removalOnDraftChange(outputs, reviews, before, { ...before, inputs: ["a2", "b", "c"] }),
+    { outputs: 2, ratings: 2 },
+  );
+  // Input 2 changed: its one output goes, an empty cell is not counted.
+  assert.deepEqual(
+    removalOnDraftChange(outputs, reviews, before, { ...before, inputs: ["a", "b2", "c"] }),
+    { outputs: 1, ratings: 0 },
+  );
+  // A new prompt removes every output.
+  assert.deepEqual(removalOnDraftChange(outputs, reviews, before, { ...before, prompt: "q {input}" }), {
+    outputs: 5,
+    ratings: 2,
+  });
 });

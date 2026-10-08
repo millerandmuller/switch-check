@@ -9,6 +9,7 @@ import {
   filledCount,
   outputsAfterDraftChange,
   reviewsAfterOutputChange,
+  removalOnDraftChange,
   reviewsAfterOutputsReplaced,
   rowResult,
   withNote,
@@ -46,6 +47,7 @@ import { SetupStep } from "./setup-step";
 import { StartStep } from "./start-step";
 import { StepBar } from "./step-bar";
 import { StepHeading } from "./step-heading";
+import { RemovalWarning, plural, removalSentence } from "./removal-warning";
 import { primaryButtonClass, problemClass } from "./ui";
 
 // A configured default that is not on the candidate list would leave a picker
@@ -168,6 +170,13 @@ export function FlowShell({
   };
   const filled = facts.filledOutputs;
   const total = cellCount(outputs);
+  // What continuing would remove right now: nothing until the outputs step was
+  // opened once, and nothing while the draft is the one the outputs belong to.
+  const noRemoval = { outputs: 0, ratings: 0 };
+  const removal =
+    comparedDraft === null ? noRemoval : removalOnDraftChange(outputs, reviews, comparedDraft, draft);
+  const continueLabel = (label: string) =>
+    removal.outputs === 0 ? label : `Continue and remove ${plural(removal.outputs, "output")}`;
 
   // Focus follows the step: after each change it sits on the new heading.
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -297,6 +306,23 @@ export function FlowShell({
     setClearedCells([]);
   }
 
+  // "Undo my change" puts back the fields of this step that the outputs were
+  // made with. Only the draft changes; no output was removed yet.
+  function undoSetupChange() {
+    if (comparedDraft === null) return;
+    setDraft((current) => ({
+      ...current,
+      prompt: comparedDraft.prompt,
+      currentModel: comparedDraft.currentModel,
+      candidateModel: comparedDraft.candidateModel,
+    }));
+  }
+
+  function undoInputsChange() {
+    if (comparedDraft === null) return;
+    setDraft((current) => ({ ...current, inputs: comparedDraft.inputs }));
+  }
+
   const actions: Record<Pending, () => void> = {
     "see example": seeExample,
     "empty draft": startOwnPrompt,
@@ -362,6 +388,23 @@ export function FlowShell({
   const position = stepsInBar(step, facts).findIndex((entry) => entry.id === step) + 1;
   const shown = (id: StepId) => (attempted.includes(id) ? problems : null);
   const ask = pending === null ? null : QUESTIONS[pending];
+  // The sample workflow also replaces what the outputs were made with, so it
+  // names what that removes when the person continues.
+  const sampleRemoval =
+    comparedDraft === null
+      ? noRemoval
+      : removalOnDraftChange(
+          outputs,
+          reviews,
+          comparedDraft,
+          draftFromSample(sample, currentDefault, candidateDefault),
+        );
+  const askQuestion =
+    ask === null
+      ? ""
+      : pending === "use sample" && sampleRemoval.outputs > 0
+        ? `${ask.question} Continuing afterwards also removes ${removalSentence(sampleRemoval)}.`
+        : ask.question;
 
   return (
     <div className={`flex min-h-dvh flex-col ${screen === "rate" ? "wide:h-dvh" : ""}`}>
@@ -396,7 +439,7 @@ export function FlowShell({
           />
           {ask !== null && (
             <AskFirst
-              question={ask.question}
+              question={askQuestion}
               replaceLabel={ask.replaceLabel}
               keepLabel={ask.keepLabel}
               onReplace={() => answer(true)}
@@ -411,7 +454,7 @@ export function FlowShell({
           {ask !== null && (
             <div className="px-gutter pb-4">
               <AskFirst
-                question={ask.question}
+                question={askQuestion}
                 replaceLabel={ask.replaceLabel}
                 keepLabel={ask.keepLabel}
                 onReplace={() => answer(true)}
@@ -448,7 +491,7 @@ export function FlowShell({
         />
         {ask !== null && (
           <AskFirst
-            question={ask.question}
+            question={askQuestion}
             replaceLabel={ask.replaceLabel}
             keepLabel={ask.keepLabel}
             onReplace={() => answer(true)}
@@ -480,8 +523,9 @@ export function FlowShell({
               onUseSample={() => askOrDo("use sample", hasTypedDraft(draft, sample))}
             />
             <StepFooter>
+              {removal.outputs > 0 && <RemovalWarning removal={removal} onUndo={undoSetupChange} />}
               <button type="button" onClick={() => continueTo("inputs")} className={primaryButtonClass}>
-                Continue to inputs
+                {continueLabel("Continue to inputs")}
               </button>
             </StepFooter>
           </>
@@ -501,8 +545,9 @@ export function FlowShell({
               }
             />
             <StepFooter>
+              {removal.outputs > 0 && <RemovalWarning removal={removal} onUndo={undoInputsChange} />}
               <button type="button" onClick={() => continueTo("outputs")} className={primaryButtonClass}>
-                Continue to outputs
+                {continueLabel("Continue to outputs")}
               </button>
             </StepFooter>
           </>

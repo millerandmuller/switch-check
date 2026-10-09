@@ -44,7 +44,11 @@ export function FormattedOutput({ text }: { text: string }) {
   return (
     <div className="max-w-[72ch] text-[15.5px] leading-[1.65]">
       {formatOutput(text).map((block, index) =>
-        block.kind === "quote" ? (
+        block.kind === "code" ? (
+          <pre key={index} className="mb-[0.8em] overflow-x-auto rounded-xl bg-chip px-3.5 py-2.5 font-mono text-[12.5px] leading-[1.6] last:mb-0" tabIndex={0}>
+            <code>{block.text}</code>
+          </pre>
+        ) : block.kind === "quote" ? (
           <blockquote key={index} className="mb-[0.8em] rounded-xl bg-chip px-3.5 py-2.5 last:mb-0">
             {block.blocks.map((inner, innerIndex) => (
               <Flat key={innerIndex} block={inner} />

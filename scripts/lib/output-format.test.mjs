@@ -3,17 +3,16 @@
 // never lose a word of it.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import { formatOutput, spansOf } from "../../lib/output-format.ts";
+import { EXAMPLES } from "../../lib/examples.ts";
 
-const DEMO_DATA = fileURLToPath(new URL("../../demo-data/", import.meta.url));
-
+// The answers of the three recorded examples: real model output, with bold
+// marks, numbered lists, quotes and fenced code.
 async function savedOutputs() {
-  const names = (await readdir(DEMO_DATA)).filter((name) => /^sample-results-.*\.json$/.test(name)).sort();
-  const saved = JSON.parse(await readFile(`${DEMO_DATA}${names.at(-1)}`, "utf8"));
-  return saved.results.flatMap((row) =>
-    ["current", "candidate"].map((side) => ({ label: `${row.input_label} / ${side}`, text: row[side].output })),
+  return EXAMPLES.flatMap((example) =>
+    example.events
+      .filter((event) => event.type === "cell" && event.cell.status === "answered")
+      .map((event) => ({ label: `${example.id} / ${event.modelId} / ${event.testCaseId}`, text: event.cell.text })),
   );
 }
 
@@ -21,9 +20,26 @@ async function savedOutputs() {
 function visibleText(blocks) {
   return blocks
     .flatMap((block) =>
-      block.kind === "quote"
-        ? [visibleText(block.blocks)]
-        : [(block.marker ? `${block.marker} ` : "") + block.spans.map((span) => span.text).join("")],
+      block.kind === "code"
+        ? [block.text]
+        : block.kind === "quote"
+          ? [visibleText(block.blocks)]
+          : [(block.marker ? `${block.marker} ` : "") + block.spans.map((span) => span.text).join("")],
+    )
+    .join("\n");
+}
+
+// The same, with code blocks left out. Code is shown exactly as returned, so a
+// `/**` opening a JSDoc comment is text the formatter must not touch, and only
+// prose may be checked for leftover bold marks.
+function proseText(blocks) {
+  return blocks
+    .flatMap((block) =>
+      block.kind === "code"
+        ? []
+        : block.kind === "quote"
+          ? [proseText(block.blocks)]
+          : [block.spans.map((span) => span.text).join("")],
     )
     .join("\n");
 }
@@ -31,6 +47,7 @@ function visibleText(blocks) {
 // The words of a text with the formatting marks taken out.
 function words(text) {
   return text
+    .replace(/^\s*```\S*\s*$/gm, "")
     .replace(/\*\*/g, "")
     .replace(/^\s*>\s?/gm, "")
     .replace(/^\s*(\d+\.|-)\s+/gm, "")
@@ -38,24 +55,24 @@ function words(text) {
     .filter(Boolean);
 }
 
-test("the saved run has six sample outputs", async () => {
-  assert.equal((await savedOutputs()).length, 6);
+test("the recorded examples hold real answers to format", async () => {
+  assert.ok((await savedOutputs()).length >= 27);
 });
 
-test("each of the six sample outputs reads as formatted text and loses no word", async () => {
+test("each recorded answer reads as formatted text and loses no word", async () => {
   for (const { label, text } of await savedOutputs()) {
     const blocks = formatOutput(text);
     assert.ok(blocks.length > 0, `${label}: no blocks`);
     const shown = visibleText(blocks);
-    assert.ok(!shown.includes("**"), `${label}: a ** mark is still shown`);
+    assert.ok(!proseText(blocks).includes("**"), `${label}: a ** mark is still shown in prose`);
+    assert.ok(formatOutput("A **bold** word").some((b) => b.spans?.some((s) => s.bold)), "the bold check would pass on nothing");
     // The marker of a numbered item is shown, so compare without markers.
     assert.deepEqual(words(shown), words(text), `${label}: words differ`);
   }
 });
 
-test("the first sample output opens with a bold numbered item", async () => {
-  const [{ text }] = await savedOutputs();
-  const [first] = formatOutput(text);
+test("a bold label inside a numbered item gives a numbered block with a bold span", () => {
+  const [first] = formatOutput("1. **Priority:** Urgent");
   assert.equal(first.kind, "numbered");
   assert.equal(first.marker, "1.");
   assert.deepEqual(first.spans, [
@@ -146,4 +163,32 @@ test("formatting leaves the stored text alone", () => {
   const copy = String(text);
   formatOutput(text);
   assert.equal(text, copy);
+});
+
+test("a fenced block of code is kept as written, indentation included", () => {
+  const text = "Here is the schema:\n```prisma\nmodel Task {\n  id String @id\n\n  title String\n}\n```\nThat is all.";
+  const blocks = formatOutput(text);
+  assert.deepEqual(blocks.map((b) => b.kind), ["paragraph", "code", "paragraph"]);
+  assert.equal(blocks[1].language, "prisma");
+  assert.equal(blocks[1].text, "model Task {\n  id String @id\n\n  title String\n}");
+});
+
+test("a fence that is never closed, as in a cut-off answer, still shows its code", () => {
+  const blocks = formatOutput("```ts\nconst a = 1;\nconst b =");
+  assert.deepEqual(blocks, [{ kind: "code", language: "ts", text: "const a = 1;\nconst b =" }]);
+});
+
+test("marks inside code are not formatting", () => {
+  const [block] = formatOutput("```\n**not bold**\n> not a quote\n- not a bullet\n```");
+  assert.equal(block.kind, "code");
+  assert.equal(block.text, "**not bold**\n> not a quote\n- not a bullet");
+});
+
+test("a fence line with text after the language is not a fence", () => {
+  assert.equal(formatOutput("```ts extra words")[0].kind, "paragraph");
+});
+
+test("html inside code is text", () => {
+  const [block] = formatOutput("```html\n<script>alert(1)</script>\n```");
+  assert.equal(block.text, "<script>alert(1)</script>");
 });

@@ -34,6 +34,9 @@ export type Services = {
   store: Store | null;
   // null when no model key is set: only cached runs can be served.
   deps: Deps | null;
+  // Which environment's daily counts to use. The store is shared between the
+  // live site and the previews, so the counts have to be kept apart.
+  scope: string;
   now: () => number;
   newRunId: () => string;
 };
@@ -110,7 +113,7 @@ export async function handleCheck(raw: unknown, visitor: string, services: Servi
     job = { task: request.task, models: request.models, current: request.current };
   }
 
-  const taken = await consumeCheck(store, visitor, services.now());
+  const taken = await consumeCheck(store, services.scope, visitor, services.now());
   if (!taken.ok) {
     if (taken.reason === "visitor") return reject(429, "limit", `Your free checks for today are used up. ${EXAMPLES_OFFER}`);
     if (taken.reason === "site") return reject(429, "limit", `Today's free runs are used up. ${EXAMPLES_OFFER}`);
@@ -197,7 +200,7 @@ export async function handleFollowup(raw: unknown, services: Services): Promise<
 }
 
 export async function handleStatus(visitor: string, services: Services): Promise<Limits & { keyed: boolean }> {
-  const limits = await peekLimits(services.store, visitor, services.now());
+  const limits = await peekLimits(services.store, services.scope, visitor, services.now());
   const keyed = services.deps !== null;
   return { ...limits, live: limits.live && keyed, keyed };
 }

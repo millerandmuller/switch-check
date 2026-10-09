@@ -4,11 +4,13 @@ import assert from "node:assert/strict";
 import { memoryStore, restStore, storeFromEnv } from "../../lib/server/store.ts";
 import {
   addToCache, cacheKey, claimFollowup, consumeCheck, dayKey, loadShapedPrompt, loadTicket, newTicketId, nextResetIso,
-  peekLimits, readCache, saveShapedPrompt, saveTicket, visitorId, writeCache,
+  peekLimits, readCache, saveShapedPrompt, saveTicket, siteLimitKey, visitorId, visitorLimitKey, writeCache,
 } from "../../lib/server/guard.ts";
+import { limitScope, limitSecret } from "../../lib/server/services.ts";
 import { LIMITS } from "../../lib/limits.ts";
 
 const DAY = Date.UTC(2026, 9, 9, 15, 30);
+const SCOPE = "production";
 
 test("memory: values expire, counts start at one and keep their first expiry", async () => {
   let t = 0;
@@ -96,53 +98,103 @@ test("a visitor is a keyed hash: stable, different per address and per secret, a
 test("a visitor gets five checks a day, then is refused without touching the site's count", async () => {
   const store = memoryStore(() => DAY);
   const results = [];
-  for (let n = 0; n < 6; n += 1) results.push(await consumeCheck(store, "v1", DAY));
+  for (let n = 0; n < 6; n += 1) results.push(await consumeCheck(store, SCOPE, "v1", DAY));
   assert.deepEqual(results.slice(0, 5).map((r) => r.ok), [true, true, true, true, true]);
   assert.deepEqual(results.map((r) => r.ok && r.visitorLeft), [4, 3, 2, 1, 0, false]);
   assert.deepEqual(results[5], { ok: false, reason: "visitor" });
-  assert.equal(await store.get(`limit:site:2026-10-09`), "5", "the refused sixth did not use a site check");
+  assert.equal(await store.get(siteLimitKey(SCOPE, "2026-10-09")), "5", "the refused sixth did not use a site check");
 });
 
-test("the site gets forty checks a day across visitors, then everyone is refused", async () => {
+test("the site's whole day is spent across visitors, then everyone is refused", async () => {
   const store = memoryStore(() => DAY);
   for (let n = 0; n < LIMITS.dailyChecksSite; n += 1) {
-    const result = await consumeCheck(store, `visitor-${n}`, DAY);
+    const result = await consumeCheck(store, SCOPE, `visitor-${n}`, DAY);
     assert.equal(result.ok, true, `check ${n + 1}`);
   }
-  assert.deepEqual(await consumeCheck(store, "visitor-new", DAY), { ok: false, reason: "site" });
+  assert.deepEqual(await consumeCheck(store, SCOPE, "visitor-new", DAY), { ok: false, reason: "site" });
+});
+
+// One store is shared by the live site and every preview. Before the scope
+// was part of the key, five checks run on a preview came off the live site's
+// allowance for that day.
+test("each environment counts on its own, in the same store", async () => {
+  const store = memoryStore(() => DAY);
+  for (let n = 0; n < LIMITS.dailyChecksVisitor; n += 1) {
+    assert.equal((await consumeCheck(store, "preview", "v1", DAY)).ok, true, `preview check ${n + 1}`);
+  }
+  assert.deepEqual(await consumeCheck(store, "preview", "v1", DAY), { ok: false, reason: "visitor" });
+
+  // The same visitor on the live site still has the whole day.
+  const live = await peekLimits(store, "production", "v1", DAY);
+  assert.deepEqual(
+    [live.live, live.visitorLeft, live.siteLeft],
+    [true, LIMITS.dailyChecksVisitor, LIMITS.dailyChecksSite],
+    "a preview spent the live site's day",
+  );
+  assert.equal((await consumeCheck(store, "production", "v1", DAY)).ok, true);
+  // And spending on the live site leaves the preview where it was.
+  assert.equal((await peekLimits(store, "preview", "v1", DAY)).visitorLeft, 0);
+});
+
+// With LIMIT_SALT set, the hash that stands in for an address no longer
+// depends on the model key, so rotating the key cannot reset everyone's day
+// and the live site and a preview no longer disagree about who a visitor is.
+test("the visitor hash is keyed by LIMIT_SALT when there is one, not by the model key", () => {
+  assert.equal(limitSecret({ LIMIT_SALT: "salt", OPENROUTER_API_KEY: "model-key" }), "salt");
+  assert.notEqual(limitSecret({ LIMIT_SALT: "salt", OPENROUTER_API_KEY: "model-key" }), "model-key");
+  // The same address keeps the same id when only the model key changes.
+  const withSalt = (key) => visitorId("203.0.113.9", limitSecret({ LIMIT_SALT: "salt", OPENROUTER_API_KEY: key }));
+  assert.equal(withSalt("key-one"), withSalt("key-two"));
+  // Without a salt it still falls back, and then the key does decide the id.
+  assert.equal(limitSecret({ OPENROUTER_API_KEY: "model-key" }), "model-key");
+  const noSalt = (key) => visitorId("203.0.113.9", limitSecret({ OPENROUTER_API_KEY: key }));
+  assert.notEqual(noSalt("key-one"), noSalt("key-two"));
+  // An empty value is not a salt.
+  assert.equal(limitSecret({ LIMIT_SALT: "", OPENROUTER_API_KEY: "model-key" }), "model-key");
+});
+
+test("the scope is in the key itself, and comes from the environment Vercel names", () => {
+  assert.equal(siteLimitKey("production", "2026-10-09"), "limit:production:site:2026-10-09");
+  assert.equal(visitorLimitKey("preview", "2026-10-09", "abc"), "limit:preview:v:2026-10-09:abc");
+  assert.notEqual(siteLimitKey("preview", "2026-10-09"), siteLimitKey("production", "2026-10-09"));
+  assert.equal(limitScope({ VERCEL_ENV: "production" }), "production");
+  assert.equal(limitScope({ VERCEL_ENV: "preview" }), "preview");
+  assert.equal(limitScope({}), "development");
+  // Anything unexpected goes in one bucket rather than making a key of its own.
+  assert.equal(limitScope({ VERCEL_ENV: "weird:value" }), "other");
 });
 
 test("a new day starts the counts again", async () => {
   const store = memoryStore(() => DAY);
-  for (let n = 0; n < 5; n += 1) await consumeCheck(store, "v1", DAY);
-  assert.equal((await consumeCheck(store, "v1", DAY)).ok, false);
-  assert.equal((await consumeCheck(store, "v1", DAY + 86_400_000)).ok, true);
+  for (let n = 0; n < 5; n += 1) await consumeCheck(store, SCOPE, "v1", DAY);
+  assert.equal((await consumeCheck(store, SCOPE, "v1", DAY)).ok, false);
+  assert.equal((await consumeCheck(store, SCOPE, "v1", DAY + 86_400_000)).ok, true);
 });
 
 test("no store, or a store that throws, means no live run", async () => {
-  assert.deepEqual(await consumeCheck(null, "v", DAY), { ok: false, reason: "unavailable" });
+  assert.deepEqual(await consumeCheck(null, SCOPE, "v", DAY), { ok: false, reason: "unavailable" });
   const broken = { get: async () => { throw new Error("down"); }, set: async () => { throw new Error("down"); }, setIfAbsent: async () => { throw new Error("down"); }, incr: async () => { throw new Error("down"); } };
-  assert.deepEqual(await consumeCheck(broken, "v", DAY), { ok: false, reason: "unavailable" });
-  assert.equal((await peekLimits(broken, "v", DAY)).live, false);
-  assert.equal((await peekLimits(null, "v", DAY)).live, false);
+  assert.deepEqual(await consumeCheck(broken, SCOPE, "v", DAY), { ok: false, reason: "unavailable" });
+  assert.equal((await peekLimits(broken, SCOPE, "v", DAY)).live, false);
+  assert.equal((await peekLimits(null, SCOPE, "v", DAY)).live, false);
   assert.equal(await readCache(broken, "k"), null);
   assert.equal(await loadTicket(broken, "abcdefgh1234"), null);
 });
 
 test("peeking shows what is left without taking a check", async () => {
   const store = memoryStore(() => DAY);
-  await consumeCheck(store, "v1", DAY);
-  await consumeCheck(store, "v1", DAY);
-  const left = await peekLimits(store, "v1", DAY);
+  await consumeCheck(store, SCOPE, "v1", DAY);
+  await consumeCheck(store, SCOPE, "v1", DAY);
+  const left = await peekLimits(store, SCOPE, "v1", DAY);
   assert.deepEqual(left, { live: true, visitorLeft: LIMITS.dailyChecksVisitor - 2, siteLeft: LIMITS.dailyChecksSite - 2, resetsAt: "2026-10-10T00:00:00.000Z" });
-  assert.deepEqual(await peekLimits(store, "v1", DAY), left);
+  assert.deepEqual(await peekLimits(store, SCOPE, "v1", DAY), left);
 });
 
 test("peeking says not live once the visitor or the site is out", async () => {
   const store = memoryStore(() => DAY);
-  for (let n = 0; n < 5; n += 1) await consumeCheck(store, "v1", DAY);
-  assert.equal((await peekLimits(store, "v1", DAY)).live, false);
-  assert.equal((await peekLimits(store, "v2", DAY)).live, true);
+  for (let n = 0; n < 5; n += 1) await consumeCheck(store, SCOPE, "v1", DAY);
+  assert.equal((await peekLimits(store, SCOPE, "v1", DAY)).live, false);
+  assert.equal((await peekLimits(store, SCOPE, "v2", DAY)).live, true);
 });
 
 test("the cache key is the task and the models, whitespace squashed, models in any order", () => {

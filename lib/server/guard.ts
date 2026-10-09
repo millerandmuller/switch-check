@@ -36,15 +36,26 @@ export type Consume =
   | { ok: true; visitorLeft: number; siteLeft: number }
   | { ok: false; reason: "visitor" | "site" | "unavailable" };
 
+// Where a day's counts live. The scope is the environment the run happened in.
+// A preview and the live site share one store, so without it a check run on a
+// preview came off the live site's allowance for that day.
+export function siteLimitKey(scope: string, day: string): string {
+  return `limit:${scope}:site:${day}`;
+}
+
+export function visitorLimitKey(scope: string, day: string, visitor: string): string {
+  return `limit:${scope}:v:${day}:${visitor}`;
+}
+
 // Takes one check from the visitor's allowance and the site's. The visitor's
 // count goes first, so a visitor who is out does not use up the site's.
-export async function consumeCheck(store: Store | null, visitor: string, nowMs: number): Promise<Consume> {
+export async function consumeCheck(store: Store | null, scope: string, visitor: string, nowMs: number): Promise<Consume> {
   if (store === null) return { ok: false, reason: "unavailable" };
   const day = dayKey(nowMs);
   try {
-    const visitorCount = await store.incr(`limit:v:${day}:${visitor}`, DAY_SECONDS);
+    const visitorCount = await store.incr(visitorLimitKey(scope, day, visitor), DAY_SECONDS);
     if (visitorCount > LIMITS.dailyChecksVisitor) return { ok: false, reason: "visitor" };
-    const siteCount = await store.incr(`limit:site:${day}`, DAY_SECONDS);
+    const siteCount = await store.incr(siteLimitKey(scope, day), DAY_SECONDS);
     if (siteCount > LIMITS.dailyChecksSite) return { ok: false, reason: "site" };
     return { ok: true, visitorLeft: LIMITS.dailyChecksVisitor - visitorCount, siteLeft: LIMITS.dailyChecksSite - siteCount };
   } catch {
@@ -53,13 +64,13 @@ export async function consumeCheck(store: Store | null, visitor: string, nowMs: 
 }
 
 // What is left today, without taking anything.
-export async function peekLimits(store: Store | null, visitor: string, nowMs: number): Promise<Limits> {
+export async function peekLimits(store: Store | null, scope: string, visitor: string, nowMs: number): Promise<Limits> {
   const resetsAt = nextResetIso(nowMs);
   if (store === null) return { live: false, visitorLeft: 0, siteLeft: 0, resetsAt };
   const day = dayKey(nowMs);
   try {
-    const visitorCount = Number((await store.get(`limit:v:${day}:${visitor}`)) ?? 0);
-    const siteCount = Number((await store.get(`limit:site:${day}`)) ?? 0);
+    const visitorCount = Number((await store.get(visitorLimitKey(scope, day, visitor))) ?? 0);
+    const siteCount = Number((await store.get(siteLimitKey(scope, day))) ?? 0);
     const visitorLeft = Math.max(0, LIMITS.dailyChecksVisitor - visitorCount);
     const siteLeft = Math.max(0, LIMITS.dailyChecksSite - siteCount);
     return { live: visitorLeft > 0 && siteLeft > 0, visitorLeft, siteLeft, resetsAt };

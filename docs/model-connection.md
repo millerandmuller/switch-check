@@ -175,17 +175,36 @@ This must be rerun and dated before each deploy.
 | --- | --- |
 | Function time limit | Pro plan, 300 s default and 800 s maximum, against the 60 s the route asks for and the 55 s it plans to use. |
 | Per-visitor cap | Proved on the deployment: 5 checks accepted, the 6th refused with 429 and "Your free checks for today are used up", and `visitorLeft` went 5 to 0. A refused check costs nothing: the site count stayed where it was, because the visitor's count is taken first. |
-| Daily site cap | Not proved end to end. Seeing it stop a run means spending all 30 of a day, and the counters are shared with production (see below). The code path is the same one the visitor cap proved, and `scripts/lib/guard.test.mjs` exhausts both. |
+| Daily site cap | Not proved end to end. Seeing it stop a run means spending a whole day of 30. The code path is the same one the visitor cap proved, and `scripts/lib/guard.test.mjs` exhausts both. |
 | Page at phone width | 384 px wide: one column, nothing clipped, and `scrollWidth` equals `clientWidth`, so there is no sideways scroll. The caps and the reasoning allowance read correctly in the notice. |
 | Recorded examples | The re-recorded time tracker loads, says "Recorded on", and shows the verdict and the "Cut off at the token limit" chip. |
 
-Two things this turned up. The limit keys (`limit:site:<day>`,
-`limit:v:<day>:<visitor>`) carry no environment prefix and Preview and
-Production share one store, so anything spent on a preview comes out of
-production's day. And the visitor hash is keyed by `LIMIT_SALT` or, without it,
-by the model key, so a preview without the model key counts a person as a
-different visitor than production does, and rotating the key would reset
-everyone's daily count.
+Two things this turned up, both since fixed.
+
+- **The counts were shared.** The limit keys carried no environment name, and
+  Preview and Production use one store, so five checks run on a preview came
+  off the live site's day. The keys are now `limit:<environment>:site:<day>`
+  and `limit:<environment>:v:<day>:<visitor>`, with the environment taken from
+  `VERCEL_ENV` (`limitScope` in `lib/server/services.ts`). A test in
+  `scripts/lib/guard.test.mjs` spends a preview visitor's whole allowance and
+  then checks the live site's is untouched, in the same store. Changing the
+  key shape starts both counts from zero once, which is why the live site has
+  its full day back.
+- **The visitor hash depended on the model key.** `limitSecret` falls back to
+  the model key when `LIMIT_SALT` is empty, so the two environments disagreed
+  about who a visitor was and rotating the key would have reset everyone's
+  day. `LIMIT_SALT` is now set for Production and for Preview, a different
+  freshly generated 64-character value in each, encrypted, and never written
+  anywhere outside Vercel. A test pins the precedence: with a salt set, the
+  same address keeps the same id across two different model keys; without one,
+  it does not.
+
+Still shared on purpose, and worth deciding on: the cache of finished runs
+(`cache:<version>:<hash>`) and the follow-up tickets have no environment name,
+so a run finished on a preview can be served to the live site when someone
+asks the very same task with the very same models inside 24 hours. Nothing has
+been served that way (the probe tasks all carried a timestamp, so no one will
+ever ask for them), but the path is open.
 
 ## 7. Not decided yet
 

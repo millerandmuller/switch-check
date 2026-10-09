@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { forThisVisitor, handleCheck, handleFollowup, handleStatus, isCacheable } from "../../lib/server/handlers.ts";
 import { addressKey, jsonResponse, readJsonBody, toResponse, visitorOf } from "../../lib/server/http.ts";
 import { memoryStore } from "../../lib/server/store.ts";
-import { cacheKey } from "../../lib/server/guard.ts";
+import { cacheKey, siteLimitKey, visitorLimitKey } from "../../lib/server/guard.ts";
 import { parseEventLine, replay, splitLines } from "../../lib/events.ts";
 import { LIMITS } from "../../lib/limits.ts";
 import { depsWith, judgeReplyFor, planBody, SONNET, LUNA, HAIKU, OPUS } from "./test-helpers.mjs";
@@ -25,9 +25,10 @@ const script = (extra = {}) => ({
 function setup(overrides = {}, scripted = script()) {
   const { deps, calls } = depsWith(scripted);
   let n = 0;
-  const services = { store: memoryStore(() => NOW), deps, now: () => NOW, newRunId: () => `run-${++n}`, ...overrides };
+  const services = { store: memoryStore(() => NOW), deps, scope: SCOPE, now: () => NOW, newRunId: () => `run-${++n}`, ...overrides };
   return { services, calls };
 }
+const SCOPE = "production";
 const body = { task: "Sort my tickets", models: [SONNET, LUNA, HAIKU], current: SONNET };
 
 async function drain(handled) {
@@ -53,8 +54,8 @@ test("a first check runs, sends a ticket before the end, and spends one of the v
   const types = events.map((e) => e.type);
   assert.ok(types.indexOf("ticket") < types.indexOf("done"));
   assert.ok(types.includes("verdict"));
-  assert.equal(await services.store.get("limit:v:2026-10-09:v1"), "1");
-  assert.equal(await services.store.get("limit:site:2026-10-09"), "1");
+  assert.equal(await services.store.get(visitorLimitKey(SCOPE, "2026-10-09", "v1")), "1");
+  assert.equal(await services.store.get(siteLimitKey(SCOPE, "2026-10-09")), "1");
 });
 
 test("asking the same thing again is answered from the cache: no model call, no check spent, labelled cached", async () => {
@@ -67,8 +68,8 @@ test("asking the same thing again is answered from the cache: no model call, no 
   assert.equal(again[0].source, "cached");
   assert.ok(!again.some((e) => e.type === "ticket"), "a cached run has no ticket, so nothing live can start from it");
   assert.equal(again.find((e) => e.type === "cell" && e.cell.status === "answered").cell.ms.state, "recorded");
-  assert.equal(await services.store.get("limit:v:2026-10-09:v2"), null);
-  assert.equal(await services.store.get("limit:site:2026-10-09"), "1");
+  assert.equal(await services.store.get(visitorLimitKey(SCOPE, "2026-10-09", "v2")), null);
+  assert.equal(await services.store.get(siteLimitKey(SCOPE, "2026-10-09")), "1");
 });
 
 test("a cached run is told this visitor's current model, and carries no stale verdict", async () => {
@@ -118,7 +119,7 @@ test("a visitor's sixth check of the day is refused, and no model is called for 
 
 test("when the whole site is out, the message says today's free runs are used up", async () => {
   const { services } = setup();
-  await services.store.set("limit:site:2026-10-09", String(LIMITS.dailyChecksSite), 100);
+  await services.store.set(siteLimitKey(SCOPE, "2026-10-09"), String(LIMITS.dailyChecksSite), 100);
   const handled = await handleCheck({ ...body, task: "Fresh" }, "v9", services);
   assert.equal(handled.status, 429);
   assert.match(handled.error, /^Today's free runs are used up\. Here are three recorded examples\./);
@@ -151,7 +152,7 @@ test("a repeat reuses the earlier prompt and checks with the person's test cases
   const plan = again.find((e) => e.type === "plan").plan;
   assert.deepEqual(plan.testCases.map((c) => c.edited ?? false), [true, false, false]);
   assert.equal(plan.testCases[0].input, "My own case");
-  assert.equal(await services.store.get("limit:v:2026-10-09:v1"), "2");
+  assert.equal(await services.store.get(visitorLimitKey(SCOPE, "2026-10-09", "v1")), "2");
   assert.equal(again[0].source, "live");
   assert.ok(again.some((e) => e.type === "ticket"), "a repeat can be extended and repeated again");
 });

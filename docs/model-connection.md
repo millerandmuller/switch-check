@@ -102,8 +102,10 @@ store behind the counts cannot be reached, or no key is set, live checks are
 refused and the three recorded examples are offered. "Run again" counts as a
 check.
 
-The route time of 60 seconds is what `maxDuration` asks for. The plan the
-project runs on was not looked up; a normal check took 9 to 30 seconds.
+The route time of 60 seconds is what `maxDuration` asks for, and the plan
+covers it with room to spare: the project is on **Pro**, and with fluid compute
+a function's default limit is 300 s and its maximum 800 s (Vercel's duration
+documentation, read 2026-10-09). A normal check took 9 to 30 seconds.
 
 ## 5. The spending limit, recomputed 2026-10-09
 
@@ -137,7 +139,7 @@ Worth watching: a single worst-case day of 30 checks ($22.75) is nearly the
 whole $23.96 left on the key. The cap is right against the $25 limit, but the
 balance, not the limit, is what runs out first.
 
-## 6. Credentials, checked 2026-10-09
+## 6. Credentials, checked 2026-10-09 (rerun before the first deploy)
 
 Each line is what the check found. The exact key was compared by the tools and
 never printed. The key starts with the OpenRouter prefix, so a copy of it in any
@@ -153,12 +155,37 @@ searched place would also have matched the prefix search.
 | The built site does not contain it | After `npm run build`: the exact key, the key prefix and the variable name each appear in 0 of the 24 files in `.next/static`, and the exact key in 0 files of the whole `.next` folder. |
 | The recorded examples contain no key | 0 matches for `Bearer` and the prefix in all three files. |
 | The key is read in one place | `lib/server/services.ts`, checked by `scripts/lib/server-boundary.test.mjs`. |
+| The deployed page does not contain it | On the preview deployment: 8 scripts and 617 KB of served JavaScript scanned, plus the HTML. The key shape, a bearer token and the variable name each appear 0 times. |
+
+Each of those searches was run with a control that finds something, so a zero
+means the search looked rather than that it failed. Example: the same search
+over tracked files finds the word "OpenRouter" in 11 of them.
 
 On Vercel: `OPENROUTER_API_KEY` is set for Production only; the four `KV_*`
 values and `REDIS_URL` are set for Production, Preview and Development
-(`vercel env ls`, names only, 2026-10-09). **Not checked:** anything in the
-provider dashboards beyond the key limit above, and the deployed page itself.
+(`vercel env ls`, names only, 2026-10-09). A preview therefore reports
+`keyed: false` and offers the recorded examples instead of running live, which
+is what the first preview showed. **Not checked:** anything in the provider
+dashboards beyond the key limit above, and the production deployment itself.
 This must be rerun and dated before each deploy.
+
+## 6a. What the first preview deployment showed, 2026-10-09
+
+| Check | Result |
+| --- | --- |
+| Function time limit | Pro plan, 300 s default and 800 s maximum, against the 60 s the route asks for and the 55 s it plans to use. |
+| Per-visitor cap | Proved on the deployment: 5 checks accepted, the 6th refused with 429 and "Your free checks for today are used up", and `visitorLeft` went 5 to 0. A refused check costs nothing: the site count stayed where it was, because the visitor's count is taken first. |
+| Daily site cap | Not proved end to end. Seeing it stop a run means spending all 30 of a day, and the counters are shared with production (see below). The code path is the same one the visitor cap proved, and `scripts/lib/guard.test.mjs` exhausts both. |
+| Page at phone width | 384 px wide: one column, nothing clipped, and `scrollWidth` equals `clientWidth`, so there is no sideways scroll. The caps and the reasoning allowance read correctly in the notice. |
+| Recorded examples | The re-recorded time tracker loads, says "Recorded on", and shows the verdict and the "Cut off at the token limit" chip. |
+
+Two things this turned up. The limit keys (`limit:site:<day>`,
+`limit:v:<day>:<visitor>`) carry no environment prefix and Preview and
+Production share one store, so anything spent on a preview comes out of
+production's day. And the visitor hash is keyed by `LIMIT_SALT` or, without it,
+by the model key, so a preview without the model key counts a person as a
+different visitor than production does, and rotating the key would reset
+everyone's daily count.
 
 ## 7. Not decided yet
 

@@ -10,6 +10,7 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import type { RunEvent } from "../events.ts";
 import { LIMITS } from "../limits.ts";
+import type { JudgeCase } from "../judging.ts";
 import type { TaskPlan } from "../run-types.ts";
 import type { FollowupKind } from "../request.ts";
 import type { Store } from "./store.ts";
@@ -81,12 +82,21 @@ export async function peekLimits(store: Store | null, scope: string, visitor: st
 
 // The cache key is the task and the chosen models, nothing else. Whitespace
 // runs are squashed and the models sorted, so the same ask is the same key.
-// The version changes when the prompts or the verdict rule do.
+// The version changes when the prompts or the verdict rule do. The scope is
+// the environment, for the same reason the daily counts carry it: one store
+// is shared, and a run finished on a preview must never be served as the live
+// site's own finished run.
 const CACHE_VERSION = "v1";
 
-export function cacheKey(task: string, models: string[]): string {
+export function cacheKey(scope: string, task: string, models: string[]): string {
   const normal = JSON.stringify({ task: task.trim().replace(/\s+/g, " "), models: [...models].sort() });
-  return `cache:${CACHE_VERSION}:${createHash("sha256").update(normal).digest("hex")}`;
+  return `cache:${scope}:${CACHE_VERSION}:${createHash("sha256").update(normal).digest("hex")}`;
+}
+
+// A ticket lets a finished run be extended and repeated, so it belongs to the
+// environment that ran it, exactly like the cache entry it points at.
+export function ticketKey(scope: string, id: string, part?: string): string {
+  return `ticket:${scope}:${id}${part === undefined ? "" : `:${part}`}`;
 }
 
 export type CacheEntry = { events: RunEvent[]; extra: RunEvent[] };
@@ -126,20 +136,23 @@ export type Ticket = {
   current: string;
   // The cache entry this run was stored under, or null for a repeat.
   cacheKey: string | null;
+  // The answers, kept only when no judge answered, so they can be marked
+  // again later without calling a single model a second time.
+  unjudged?: JudgeCase[];
 };
 
 export function newTicketId(): string {
   return randomBytes(16).toString("hex");
 }
 
-export async function saveTicket(store: Store, id: string, ticket: Ticket): Promise<void> {
-  await store.set(`ticket:${id}`, JSON.stringify(ticket), LIMITS.ticketSeconds);
+export async function saveTicket(store: Store, scope: string, id: string, ticket: Ticket): Promise<void> {
+  await store.set(ticketKey(scope, id), JSON.stringify(ticket), LIMITS.ticketSeconds);
 }
 
-export async function loadTicket(store: Store | null, id: string): Promise<Ticket | null> {
+export async function loadTicket(store: Store | null, scope: string, id: string): Promise<Ticket | null> {
   if (store === null) return null;
   try {
-    const raw = await store.get(`ticket:${id}`);
+    const raw = await store.get(ticketKey(scope, id));
     return raw === null ? null : (JSON.parse(raw) as Ticket);
   } catch {
     return null;
@@ -147,14 +160,14 @@ export async function loadTicket(store: Store | null, id: string): Promise<Ticke
 }
 
 // Each follow-up of a ticket can be started once. false means it already was.
-export async function claimFollowup(store: Store, id: string, kind: FollowupKind): Promise<boolean> {
-  return store.setIfAbsent(`ticket:${id}:${kind}`, "1", LIMITS.ticketSeconds);
+export async function claimFollowup(store: Store, scope: string, id: string, kind: FollowupKind): Promise<boolean> {
+  return store.setIfAbsent(ticketKey(scope, id, kind), "1", LIMITS.ticketSeconds);
 }
 
-export async function saveShapedPrompt(store: Store, id: string, prompt: string): Promise<void> {
-  await store.set(`ticket:${id}:shaped`, prompt, LIMITS.ticketSeconds);
+export async function saveShapedPrompt(store: Store, scope: string, id: string, prompt: string): Promise<void> {
+  await store.set(ticketKey(scope, id, "shaped"), prompt, LIMITS.ticketSeconds);
 }
 
-export async function loadShapedPrompt(store: Store, id: string): Promise<string | null> {
-  return store.get(`ticket:${id}:shaped`);
+export async function loadShapedPrompt(store: Store, scope: string, id: string): Promise<string | null> {
+  return store.get(ticketKey(scope, id, "shaped"));
 }

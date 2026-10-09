@@ -8,8 +8,12 @@ export type CheckRequest =
   | { kind: "fresh"; task: string; models: string[]; current: string }
   | { kind: "rerun"; ticket: string; testCases: string[] };
 
-export type FollowupKind = "words" | "shape" | "variant";
-export const FOLLOWUP_KINDS: readonly FollowupKind[] = ["words", "shape", "variant"];
+// "judge" marks the answers of a finished run again, on the answers already
+// shown, without calling a candidate model. It names no model, because it
+// does not run one.
+export type FollowupKind = "words" | "shape" | "variant" | "judge";
+export const FOLLOWUP_KINDS: readonly FollowupKind[] = ["words", "shape", "variant", "judge"];
+export const MODEL_FREE_KINDS: readonly FollowupKind[] = ["judge"];
 
 export type FollowupRequest = { ticket: string; kind: FollowupKind; model: string };
 
@@ -83,6 +87,9 @@ export function parseFollowupRequest(body: unknown): Parsed<FollowupRequest> {
   }
   if (typeof kind !== "string" || !(FOLLOWUP_KINDS as readonly string[]).includes(kind)) {
     return { ok: false, error: "That follow-up is not offered." };
+  }
+  if ((MODEL_FREE_KINDS as readonly string[]).includes(kind)) {
+    return { ok: true, value: { ticket, kind: kind as FollowupKind, model: "" } };
   }
   if (typeof model !== "string" || model === "") return { ok: false, error: "A model is needed." };
   return { ok: true, value: { ticket, kind: kind as FollowupKind, model } };

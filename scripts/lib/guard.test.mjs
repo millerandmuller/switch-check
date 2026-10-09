@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { memoryStore, restStore, storeFromEnv } from "../../lib/server/store.ts";
 import {
   addToCache, cacheKey, claimFollowup, consumeCheck, dayKey, loadShapedPrompt, loadTicket, newTicketId, nextResetIso,
-  peekLimits, readCache, saveShapedPrompt, saveTicket, siteLimitKey, visitorId, visitorLimitKey, writeCache,
+  peekLimits, readCache, saveShapedPrompt, saveTicket, siteLimitKey, ticketKey, visitorId, visitorLimitKey, writeCache,
 } from "../../lib/server/guard.ts";
 import { limitScope, limitSecret } from "../../lib/server/services.ts";
 import { LIMITS } from "../../lib/limits.ts";
@@ -153,6 +153,24 @@ test("the visitor hash is keyed by LIMIT_SALT when there is one, not by the mode
   assert.equal(limitSecret({ LIMIT_SALT: "", OPENROUTER_API_KEY: "model-key" }), "model-key");
 });
 
+// The cache and the tickets share the store with the limits, so they carry
+// the environment for the same reason: a preview must not hand the live site
+// a finished run, or claim a follow-up on its behalf.
+test("the cache and the ticket keys carry the environment as well", async () => {
+  assert.equal(ticketKey("production", "abc"), "ticket:production:abc");
+  assert.equal(ticketKey("preview", "abc", "words"), "ticket:preview:abc:words");
+  assert.notEqual(ticketKey("preview", "abc"), ticketKey("production", "abc"));
+  const store = memoryStore(() => DAY);
+  const ticket = { task: "t", plan: { prompt: "p", testCases: [], checks: [], additions: ["a"], taskClass: "one-response" }, models: ["m/one"], current: "m/one", cacheKey: null };
+  await saveTicket(store, "preview", "abc12345", ticket);
+  assert.notEqual(await loadTicket(store, "preview", "abc12345"), null);
+  assert.equal(await loadTicket(store, "production", "abc12345"), null, "a preview ticket was readable on the live site");
+  // A follow-up claimed on a preview leaves the live site's claim free.
+  assert.equal(await claimFollowup(store, "preview", "abc12345", "words"), true);
+  assert.equal(await claimFollowup(store, "preview", "abc12345", "words"), false);
+  assert.equal(await claimFollowup(store, "production", "abc12345", "words"), true);
+});
+
 test("the scope is in the key itself, and comes from the environment Vercel names", () => {
   assert.equal(siteLimitKey("production", "2026-10-09"), "limit:production:site:2026-10-09");
   assert.equal(visitorLimitKey("preview", "2026-10-09", "abc"), "limit:preview:v:2026-10-09:abc");
@@ -178,7 +196,7 @@ test("no store, or a store that throws, means no live run", async () => {
   assert.equal((await peekLimits(broken, SCOPE, "v", DAY)).live, false);
   assert.equal((await peekLimits(null, SCOPE, "v", DAY)).live, false);
   assert.equal(await readCache(broken, "k"), null);
-  assert.equal(await loadTicket(broken, "abcdefgh1234"), null);
+  assert.equal(await loadTicket(broken, SCOPE, "abcdefgh1234"), null);
 });
 
 test("peeking shows what is left without taking a check", async () => {
@@ -198,18 +216,21 @@ test("peeking says not live once the visitor or the site is out", async () => {
 });
 
 test("the cache key is the task and the models, whitespace squashed, models in any order", () => {
-  const a = cacheKey("Sort my  emails\n", ["m/two", "m/one"]);
-  assert.equal(a, cacheKey("  Sort my emails", ["m/one", "m/two"]));
-  assert.notEqual(a, cacheKey("Sort my emails.", ["m/one", "m/two"]));
-  assert.notEqual(a, cacheKey("Sort my emails", ["m/one", "m/three"]));
-  assert.notEqual(a, cacheKey("sort my emails", ["m/one", "m/two"]), "case matters to a task");
-  assert.match(a, /^cache:v1:[0-9a-f]{64}$/);
+  const a = cacheKey(SCOPE, "Sort my  emails\n", ["m/two", "m/one"]);
+  assert.equal(a, cacheKey(SCOPE, "  Sort my emails", ["m/one", "m/two"]));
+  assert.notEqual(a, cacheKey(SCOPE, "Sort my emails.", ["m/one", "m/two"]));
+  assert.notEqual(a, cacheKey(SCOPE, "Sort my emails", ["m/one", "m/three"]));
+  assert.notEqual(a, cacheKey(SCOPE, "sort my emails", ["m/one", "m/two"]), "case matters to a task");
+  assert.match(a, /^cache:production:v1:[0-9a-f]{64}$/);
+  // A preview must never be handed the live site's finished run, or the other way round.
+  assert.notEqual(a, cacheKey("preview", "Sort my  emails\n", ["m/two", "m/one"]));
+  assert.match(cacheKey("preview", "x", ["m/one"]), /^cache:preview:v1:/);
 });
 
 test("a cached run is kept for 24 hours and follow-ups are added to it", async () => {
   let t = 0;
   const store = memoryStore(() => t);
-  const key = cacheKey("task", ["a", "b"]);
+  const key = cacheKey(SCOPE, "task", ["a", "b"]);
   assert.equal(await readCache(store, key), null);
   await writeCache(store, key, { events: [{ type: "done", totalMs: 1 }], extra: [] });
   await addToCache(store, key, [{ type: "shape", model: "a", prompt: "p {input}" }]);
@@ -231,13 +252,13 @@ test("a ticket keeps the run for an hour, each follow-up can be claimed once, id
   assert.match(id, /^[0-9a-f]{32}$/);
   assert.notEqual(id, newTicketId());
   const ticket = { task: "task", plan: { prompt: "{input}" }, models: ["a", "b"], current: "a", cacheKey: null };
-  await saveTicket(store, id, ticket);
-  assert.deepEqual(await loadTicket(store, id), ticket);
-  assert.equal(await claimFollowup(store, id, "words"), true);
-  assert.equal(await claimFollowup(store, id, "words"), false);
-  assert.equal(await claimFollowup(store, id, "shape"), true);
-  await saveShapedPrompt(store, id, "Shaped {input}");
-  assert.equal(await loadShapedPrompt(store, id), "Shaped {input}");
+  await saveTicket(store, SCOPE, id, ticket);
+  assert.deepEqual(await loadTicket(store, SCOPE, id), ticket);
+  assert.equal(await claimFollowup(store, SCOPE, id, "words"), true);
+  assert.equal(await claimFollowup(store, SCOPE, id, "words"), false);
+  assert.equal(await claimFollowup(store, SCOPE, id, "shape"), true);
+  await saveShapedPrompt(store, SCOPE, id, "Shaped {input}");
+  assert.equal(await loadShapedPrompt(store, SCOPE, id), "Shaped {input}");
   t = LIMITS.ticketSeconds * 1000;
-  assert.equal(await loadTicket(store, id), null);
+  assert.equal(await loadTicket(store, SCOPE, id), null);
 });

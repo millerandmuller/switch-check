@@ -137,6 +137,8 @@ export function ResultsGrid({
   gridStartedAt,
   judging,
   onSet,
+  onJudgeAgain,
+  judgeAgainState,
 }: {
   state: RunState;
   summaries: ModelSummary[];
@@ -144,6 +146,9 @@ export function ResultsGrid({
   gridStartedAt: number | null;
   judging: boolean;
   onSet: (modelId: string, testCaseId: string, checkId: string, pass: boolean) => void;
+  // Absent when there is nothing to judge again, such as on a recording.
+  onJudgeAgain?: () => void;
+  judgeAgainState?: "ready" | "running" | "used";
 }) {
   const plan = state.plan;
   if (plan === null || state.models.length === 0) return null;
@@ -246,13 +251,27 @@ export function ResultsGrid({
         </ol>
         <p className="mt-2 text-[12.5px] leading-snug text-muted">
           {state.judge?.label ?? "Not judged yet"}. State: judged.{anySet ? " * means you set that result." : ""}
-          {state.judgeFailed !== null && (
-            <>
-              {" "}
-              The judge did not answer ({state.judgeFailed}). Every check is unset: set each one yourself and the verdict follows.
-            </>
-          )}
         </p>
+        {state.judgeFailed !== null && (
+          <div className="mt-2 rounded-xl bg-chip px-3 py-2 text-[13px] leading-snug">
+            <p>
+              <span className="font-semibold">No judge answered, so nothing is marked.</span> The answers above are real and were kept. Set
+              each check yourself and the verdict follows, or try the judges again.
+            </p>
+            <p className="mt-1 text-[12px] text-muted">What went wrong: {state.judgeFailed}</p>
+            {onJudgeAgain !== undefined && (
+              <button
+                type="button"
+                onClick={onJudgeAgain}
+                disabled={judgeAgainState !== "ready"}
+                className="mt-2 cursor-pointer rounded-full bg-ink px-3 py-1 text-[13px] font-semibold text-paper disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {judgeAgainState === "running" ? "Judging again…" : judgeAgainState === "used" ? "Already tried once" : "Try judging again"}
+              </button>
+            )}
+            {judgeAgainState === "used" && <p className="mt-1 text-[12px] text-muted">One retry per check. The answers are not run again either way.</p>}
+          </div>
+        )}
       </div>
     </section>
   );

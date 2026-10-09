@@ -1,29 +1,35 @@
 // The run, stage by stage, against a fake model and a fixed clock.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { inCompletionOrder, runCheck, runPromptTest, runShape, wordsTemplate } from "../../lib/server/pipeline.ts";
+import { casesToJudge, inCompletionOrder, runCheck, runJudgeAgain, runPromptTest, runShape, wordsTemplate } from "../../lib/server/pipeline.ts";
 import { buildShapePrompt, buildWriterPrompt, writePlan } from "../../lib/server/writer.ts";
-import { replay } from "../../lib/events.ts";
+import { initialState, reduce, replay } from "../../lib/events.ts";
 import { computeVerdict } from "../../lib/verdict.ts";
 import { toRunData } from "../../lib/events.ts";
 import { LIMITS } from "../../lib/limits.ts";
+import { routeBudgetMs } from "../../lib/server/deps.ts";
 import { candidates, prices, depsWith, judgeReplyFor, planBody, SONNET, LUNA, HAIKU } from "./test-helpers.mjs";
 
 const WRITER = "google/gemini-3.8-flash";
+const JUDGE1 = "google/gemini-2.5-flash";
+const JUDGE2 = "google/gemini-3.8-flash";
+const JUDGE3 = "mistralai/mistral-medium-3.1";
 
-// The writer and the first judge are the same model, so tell them apart by
-// what they were asked.
+// One override per seat: `judge` is the first judge, `judge2` the second and
+// `last` the third. The writer is also the second judge, so that entry is
+// told apart by what it was asked.
 function script(overrides = {}) {
   return {
     [WRITER]: (request) => {
       if (request.prompt.startsWith("You prepare a fair test")) return overrides.writer ? overrides.writer(request) : JSON.stringify(planBody());
-      if (request.prompt.startsWith("You are marking answers")) return overrides.judge ? overrides.judge(request) : judgeReplyFor(request);
+      if (request.prompt.startsWith("You are marking answers")) return overrides.judge2 ? overrides.judge2(request) : judgeReplyFor(request);
       return JSON.stringify({ prompt: "Shaped for you.\n{input}" });
     },
     [SONNET]: (request) => (overrides.sonnet ? overrides.sonnet(request) : "Sonnet answer"),
     [LUNA]: (request) => (overrides.luna ? overrides.luna(request) : "Luna answer"),
     [HAIKU]: (request) => (overrides.haiku ? overrides.haiku(request) : "Haiku answer"),
-    "x-ai/grok-4.7": (request) => (overrides.grok ? overrides.grok(request) : judgeReplyFor(request)),
+    [JUDGE1]: (request) => (overrides.judge ? overrides.judge(request) : judgeReplyFor(request)),
+    [JUDGE3]: (request) => (overrides.last ? overrides.last(request) : judgeReplyFor(request)),
   };
 }
 
@@ -64,7 +70,7 @@ test("the start event names the models, the writer and the judge", async () => {
   const { deps } = depsWith(script());
   const [start] = await collect(runCheck(deps, job, "run-1"));
   assert.deepEqual([start.runId, start.source, start.writer, start.current], ["run-1", "live", "Gemini 3.8 Flash", SONNET]);
-  assert.equal(start.judge.id, "google/gemini-3.8-flash");
+  assert.equal(start.judge.id, JUDGE1);
   assert.match(start.judge.label, /model names hidden, answer order shuffled/);
 });
 
@@ -132,7 +138,7 @@ test("a call that throws is a not-tested cell, never a crashed run", async () =>
 });
 
 test("when the judge fails, the checks stay unset and no verdict is claimed", async () => {
-  const { deps } = depsWith(script({ judge: () => "I cannot judge this.", grok: () => "Neither can I." }));
+  const { deps } = depsWith(script({ judge: () => "I cannot judge this.", judge2: () => "Nor can I.", last: () => "Neither can I." }));
   const events = await collect(runCheck(deps, job, "run-1"));
   assert.ok(events.some((e) => e.type === "judge-failed"));
   assert.ok(!events.some((e) => e.type === "verdict"));
@@ -144,10 +150,10 @@ test("when the judge fails, the checks stay unset and no verdict is claimed", as
 test("a judge that fails hands over to the next judge, and the page names the one that ran", async () => {
   const { deps, calls } = depsWith(script({ judge: () => "not json" }));
   const events = await collect(runCheck(deps, job, "run-1"));
-  assert.ok(calls.some((c) => c.model === "x-ai/grok-4.7"));
+  assert.ok(calls.some((c) => c.model === JUDGE2 && c.prompt.startsWith("You are marking answers")));
   const used = events.find((e) => e.type === "judge-used").judge;
-  assert.equal(used.id, "x-ai/grok-4.7");
-  assert.match(events.find((e) => e.type === "verdict").verdict.evidence, /judged by Grok 4\.7/);
+  assert.equal(used.id, JUDGE2);
+  assert.match(events.find((e) => e.type === "verdict").verdict.evidence, /judged by Gemini 3\.8 Flash/);
 });
 
 test("if the writer cannot produce a usable test, the run ends with a plain error", async () => {
@@ -282,8 +288,8 @@ test("the writer's prompt states every rule the page depends on", () => {
 test("a judge reply that leaves checks unset hands over to the next judge, and the fuller answer is kept", async () => {
   const { deps, calls } = depsWith(script({ judge: () => JSON.stringify({ verdicts: [] }) }));
   const events = await collect(runCheck(deps, job, "run-1"));
-  assert.ok(calls.some((c) => c.model === "x-ai/grok-4.7"), "the second judge was tried");
-  assert.equal(events.find((e) => e.type === "judge-used").judge.id, "x-ai/grok-4.7");
+  assert.ok(calls.some((c) => c.model === JUDGE2 && c.prompt.startsWith("You are marking answers")), "the second judge was tried");
+  assert.equal(events.find((e) => e.type === "judge-used").judge.id, JUDGE2);
   assert.ok(events.some((e) => e.type === "verdict"));
 });
 
@@ -293,7 +299,7 @@ test("if every judge leaves some checks unset, the one that left fewest is used 
     full.verdicts = full.verdicts.slice(1);
     return JSON.stringify(full);
   };
-  const { deps } = depsWith(script({ judge: partial, grok: partial }));
+  const { deps } = depsWith(script({ judge: partial, judge2: partial, last: partial }));
   const events = await collect(runCheck(deps, job, "run-1"));
   const state = replay(events);
   assert.ok(events.some((e) => e.type === "judged"));
@@ -327,7 +333,7 @@ test("a slow first judge cannot take the second judge's share of the time", asyn
       // allowance to divide: with all 55 s a single attempt cannot use it up.
       if (request.prompt.startsWith("You prepare a fair test")) clock.t += 20_000;
       // The first judge takes every millisecond it is given and answers nothing.
-      if (request.model === "google/gemini-3.8-flash" && request.prompt.startsWith("You are marking answers")) {
+      if (request.model === JUDGE1 && request.prompt.startsWith("You are marking answers")) {
         clock.t += request.timeoutMs;
         return { status: "failed", reason: `No answer within ${Math.round(request.timeoutMs / 1000)} seconds.`, timedOut: true, ms: request.timeoutMs };
       }
@@ -336,17 +342,18 @@ test("a slow first judge cannot take the second judge's share of the time", asyn
   };
   const events = await collect(runCheck(deps, job, "run-1"));
   const judgeCalls = seen.filter((c) => c.prompt.startsWith("You are marking answers"));
-  assert.equal(judgeCalls.length, 2, "the second judge was never tried");
-  assert.ok(judgeCalls[0].timeoutMs <= judgeCalls[1].timeoutMs, "the first attempt took more than it left the second");
-  assert.equal(events.find((e) => e.type === "judge-used")?.judge.id, "x-ai/grok-4.7");
+  assert.equal(judgeCalls.length, 2, "the next judge was never tried");
+  assert.ok(judgeCalls[0].timeoutMs <= LIMITS.judgeAttemptMs, `the first attempt was given ${judgeCalls[0].timeoutMs} ms, past the per-attempt cap`);
+  assert.ok(judgeCalls[0].timeoutMs <= judgeCalls[1].timeoutMs, "the first attempt took more than it left the next");
+  assert.equal(events.find((e) => e.type === "judge-used")?.judge.id, JUDGE2);
   assert.ok(events.some((e) => e.type === "judged"));
   assert.ok(events.some((e) => e.type === "verdict"), "a verdict, not a run with no judgement");
 });
 
 // If every judge does fail, the brief asks for the checks to be there unset
 // for the person to set, not for the run to end empty.
-test("when both judges fail the checks are left unset for the person, with the reason", async () => {
-  const { deps } = depsWith(script({ judge: () => "not json at all", grok: () => "nor this" }));
+test("when every judge fails the checks are left unset for the person, with the reason", async () => {
+  const { deps } = depsWith(script({ judge: () => "not json at all", judge2: () => "nor this", last: () => "nor this either" }));
   const events = await collect(runCheck(deps, job, "run-1"));
   assert.ok(events.some((e) => e.type === "judge-failed"), "the reason is said");
   const state = replay(events);
@@ -357,9 +364,66 @@ test("when both judges fail the checks are left unset for the person, with the r
   assert.equal(events.at(-1).type, "done");
 });
 
+// Three judges, each capped, so a judge that goes quiet costs its own share
+// and nothing more. Before the cap one judge used 41.8 s of a 44 s window on
+// production and the run ended with no judgement at all.
+test("every judge is tried, each inside the per-attempt cap, when they all go quiet", async () => {
+  const clock = { t: 1_000_000 };
+  const base = depsWith(script());
+  const seen = [];
+  const deps = {
+    ...base.deps,
+    now: () => clock.t,
+    complete: async (request) => {
+      seen.push(request);
+      if (!request.prompt.startsWith("You are marking answers")) return base.deps.complete(request);
+      clock.t += request.timeoutMs;
+      return { status: "failed", reason: `No answer within ${Math.round(request.timeoutMs / 1000)} seconds.`, timedOut: true, ms: request.timeoutMs };
+    },
+  };
+  const events = await collect(runCheck(deps, job, "run-1"));
+  const judgeCalls = seen.filter((c) => c.prompt.startsWith("You are marking answers"));
+  assert.equal(judgeCalls.length, candidates.judges.length, "not every judge was tried");
+  for (const call of judgeCalls) assert.ok(call.timeoutMs <= LIMITS.judgeAttemptMs, `an attempt was given ${call.timeoutMs} ms`);
+  const spent = judgeCalls.reduce((sum, c) => sum + c.timeoutMs, 0);
+  assert.ok(spent <= routeBudgetMs(), `the attempts together asked for ${spent} ms of a ${routeBudgetMs()} ms route`);
+  // And the person is left something to work with, not an empty page.
+  assert.ok(events.some((e) => e.type === "judge-failed"));
+  const state = replay(events);
+  const results = Object.values(state.judged).flatMap((byCase) => Object.values(byCase).flat());
+  assert.ok(results.length > 0 && results.every((r) => r.pass === null));
+});
+
+// The answers are already on the page, so judging them again must not call a
+// candidate model even once.
+test("judging again marks the answers already shown and runs no model", async () => {
+  const { deps, calls } = depsWith(script());
+  const first = await collect(runCheck(deps, job, "run-1"));
+  const state = replay(first);
+  const cases = casesToJudge(state.plan, state.cells, job.models);
+  const before = calls.length;
+  const events = await collect(runJudgeAgain(deps, { plan: state.plan, cases, models: job.models }));
+  const added = calls.slice(before);
+  assert.ok(added.length > 0, "nothing was called at all");
+  assert.ok(added.every((c) => c.prompt.startsWith("You are marking answers")), "a candidate model was called again");
+  assert.ok(!added.some((c) => job.models.includes(c.model) && !c.prompt.startsWith("You are marking answers")));
+  assert.equal(events.filter((e) => e.type === "judged").length, 9);
+  assert.equal(events.filter((e) => e.type === "judge-used").length, 1);
+});
+
+// A judge answering after an earlier failure clears the "no judge answered"
+// line, so the page does not keep saying it next to fresh marks.
+test("a judge answering later clears the failure the page was showing", () => {
+  const failed = reduce(reduce(initialState(), { type: "plan", plan: { ...planBody(), testCases: [{ id: "t1", input: "i" }], checks: [{ id: "c1", question: "q?" }], additions: ["a"] } }), { type: "judge-failed", reason: "No answer within 12 seconds." });
+  assert.equal(failed.judgeFailed, "No answer within 12 seconds.");
+  const judged = reduce(failed, { type: "judge-used", judge: { id: "j/one", name: "J One", label: "Judged by J One" } });
+  assert.equal(judged.judgeFailed, null, "the page would keep saying no judge answered");
+  assert.equal(judged.judge.name, "J One");
+});
+
 test("the judge that left fewer checks unset wins over the first one", async () => {
   const drop = (n) => (request) => { const full = JSON.parse(judgeReplyFor(request)); full.verdicts = full.verdicts.slice(n); return JSON.stringify(full); };
-  const { deps } = depsWith(script({ judge: drop(3), grok: drop(1) }));
+  const { deps } = depsWith(script({ judge: drop(3), judge2: drop(2), last: drop(1) }));
   const events = await collect(runCheck(deps, job, "run-1"));
-  assert.equal(events.find((e) => e.type === "judge-used").judge.id, "x-ai/grok-4.7");
+  assert.equal(events.find((e) => e.type === "judge-used").judge.id, JUDGE3);
 });

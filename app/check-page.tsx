@@ -133,6 +133,24 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
     [handle],
   );
 
+  // Marking the answers again after every judge went quiet. It calls no
+  // candidate model: the server marks the answers it already has.
+  const [judgeAgain, setJudgeAgain] = useState<"ready" | "running" | "used">("ready");
+  const runJudgeAgain = useCallback(
+    async (ticket: string) => {
+      setJudgeAgain("running");
+      try {
+        const response = await fetch("/api/followup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket, kind: "judge" }) });
+        const outcome = await readRun(response, handle);
+        if (outcome.kind === "refused") handle({ type: "judge-failed", reason: outcome.error });
+      } catch {
+        handle({ type: "judge-failed", reason: "The connection dropped before the judges answered." });
+      }
+      setJudgeAgain("used");
+    },
+    [handle],
+  );
+
   const runFollowup = useCallback(
     async (kind: "words" | "shape" | "variant", model: string, ticket: string) => {
       // Follow-ups do not replace the run, so they do not abort it.
@@ -327,6 +345,8 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
                 gridStartedAt={stageStarts.grid ?? null}
                 judging={judging}
                 onSet={(modelId, testCaseId, checkId, pass) => dispatch({ type: "set-check", modelId, testCaseId, checkId, pass })}
+                onJudgeAgain={state.ticket === null ? undefined : () => void runJudgeAgain(state.ticket as string)}
+                judgeAgainState={judgeAgain}
               />
               {state.plan !== null && (
                 <WordsCompare state={state} summaries={summaries} config={config} startedAt={followStarts.words ?? null} waitingForVerdict={recommended === null} />

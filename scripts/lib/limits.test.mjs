@@ -3,6 +3,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { billedOutputTokens, LIMITS, limitsNotice, privacyNotice } from "../../lib/limits.ts";
 import { routeBudgetMs } from "../../lib/server/deps.ts";
+import { candidates } from "./test-helpers.mjs";
 
 test("a run uses at most four models and needs at least two", () => {
   assert.equal(LIMITS.maxModels, 4);
@@ -29,14 +30,28 @@ test("hidden reasoning has its own allowance, at least Anthropic's minimum", () 
 // P3: a slow step before the model calls must not shorten theirs, so each
 // step has its own allowance and the three together fit the route's.
 test("each step is promised a share, and the shares are exactly the route's allowance", () => {
-  assert.equal(LIMITS.writerBudgetMs, 25_000);
+  assert.equal(LIMITS.writerBudgetMs, 22_000);
   assert.equal(LIMITS.gridBudgetMs, 18_000);
-  assert.equal(LIMITS.judgeBudgetMs, 12_000);
+  assert.equal(LIMITS.judgeBudgetMs, 15_000);
   // Exactly, not merely within: a share that cannot be met is not a promise,
   // and a share left over is time a visitor waited for nothing.
   assert.equal(LIMITS.writerBudgetMs + LIMITS.gridBudgetMs + LIMITS.judgeBudgetMs, routeBudgetMs());
   // The writing step may be tried twice, so its share covers two slow tries.
   assert.ok(LIMITS.writerBudgetMs >= 2 * 11_000);
+});
+
+// A judge that goes quiet must cost its own attempt and nothing more, so the
+// judges after it still get a turn inside the same minute.
+test("one judging attempt is capped, and every judge fits inside the judging share", () => {
+  assert.equal(LIMITS.judgeAttemptMs, 12_000);
+  assert.ok(LIMITS.judgeAttemptMs < LIMITS.judgeBudgetMs * 2, "one attempt may not swallow the share");
+  const judges = candidates.judges.length;
+  assert.equal(judges, 3);
+  // With only the promised share, each judge still gets a turn worth taking.
+  assert.ok(Math.floor(LIMITS.judgeBudgetMs / judges) >= 5_000, "the last judge would be refused for want of time");
+  // With the share plus what the steps before it usually leave, every judge
+  // gets a full capped attempt.
+  assert.ok(judges * LIMITS.judgeAttemptMs <= routeBudgetMs() - LIMITS.gridBudgetMs, "three full attempts do not fit");
 });
 
 test("the task box takes 2,000 characters", () => {

@@ -10,6 +10,7 @@
 
 import { asRecordedEvents, initialState, reduce, type RunEvent, type RunState } from "../events.ts";
 import { parseCheckRequest, parseFollowupRequest } from "../request.ts";
+import type { JudgeCase } from "../judging.ts";
 import type { TaskPlan } from "../run-types.ts";
 import type { Deps } from "./deps.ts";
 import {
@@ -27,7 +28,7 @@ import {
   writeCache,
   type Limits,
 } from "./guard.ts";
-import { runCheck, runPromptTest, runShape, wordsTemplate } from "./pipeline.ts";
+import { casesToJudge, runCheck, runJudgeAgain, runPromptTest, runShape, wordsTemplate } from "./pipeline.ts";
 import type { Store } from "./store.ts";
 
 export type Services = {
@@ -88,7 +89,7 @@ export async function handleCheck(raw: unknown, visitor: string, services: Servi
   const request = parsed.value;
 
   // A repeat of the same ask is answered from the cache: no model, no count.
-  const key = request.kind === "fresh" ? cacheKey(request.task, request.models) : null;
+  const key = request.kind === "fresh" ? cacheKey(services.scope, request.task, request.models) : null;
   if (request.kind === "fresh" && key !== null) {
     const cached = await readCache(store, key);
     if (cached !== null) {
@@ -101,7 +102,7 @@ export async function handleCheck(raw: unknown, visitor: string, services: Servi
 
   let job: { task: string; models: string[]; current: string; plan?: TaskPlan };
   if (request.kind === "rerun") {
-    const ticket = await loadTicket(store, request.ticket);
+    const ticket = await loadTicket(store, services.scope, request.ticket);
     if (ticket === null) return reject(410, "gone", "This run can no longer be repeated. Start a new check.");
     const testCases = ticket.plan.testCases.map((testCase, index) => ({
       id: testCase.id,
@@ -146,7 +147,10 @@ async function* liveCheck(
       // ask for the follow-ups the moment the verdict lands.
       const id = newTicketId();
       try {
-        await saveTicket(store, id, { task: job.task, plan: state.plan, models: job.models, current: job.current, cacheKey: key });
+        // When no judge answered, the answers go with the ticket so they can
+        // be marked again later without running a single model again.
+        const unjudged = state.judgeFailed === null ? undefined : casesToJudge(state.plan, state.cells, job.models);
+        await saveTicket(store, services.scope, id, { task: job.task, plan: state.plan, models: job.models, current: job.current, cacheKey: key, unjudged });
         yield { type: "ticket", id };
       } catch {
         // No ticket: the run is complete, only the follow-ups are unavailable.
@@ -166,33 +170,38 @@ export async function handleFollowup(raw: unknown, services: Services): Promise<
   const { ticket: ticketId, kind, model } = parsed.value;
   if (deps === null || store === null) return reject(503, "unavailable", "Live runs are paused.");
 
-  const ticket = await loadTicket(store, ticketId);
+  const ticket = await loadTicket(store, services.scope, ticketId);
   if (ticket === null) return reject(410, "gone", "This run can no longer be extended. Start a new check.");
-  if (!ticket.models.includes(model)) return reject(400, "input", "That model was not part of this run.");
+  if (kind !== "judge" && !ticket.models.includes(model)) return reject(400, "input", "That model was not part of this run.");
+  if (kind === "judge" && (ticket.unjudged === undefined || ticket.unjudged.length === 0)) {
+    return reject(409, "used", "There is nothing left to judge for this check.");
+  }
 
   let shaped: string | null = null;
   if (kind === "variant") {
-    shaped = await loadShapedPrompt(store, ticketId);
+    shaped = await loadShapedPrompt(store, services.scope, ticketId);
     if (shaped === null) return reject(409, "used", "There is no shaped prompt to test yet.");
   }
-  if (!(await claimFollowup(store, ticketId, kind))) return reject(409, "used", "That has already been run for this check.");
+  if (!(await claimFollowup(store, services.scope, ticketId, kind))) return reject(409, "used", "That has already been run for this check.");
 
   async function* stream(): AsyncGenerator<RunEvent> {
     const collected: RunEvent[] = [];
     const run =
-      kind === "words"
-        ? runPromptTest(deps as Deps, { kind: "words", template: wordsTemplate(ticket!.task), plan: ticket!.plan, model, models: ticket!.models })
-        : kind === "shape"
-          ? runShape(deps as Deps, { plan: ticket!.plan, model })
-          : runPromptTest(deps as Deps, { kind: "variant", template: shaped as string, plan: ticket!.plan, model, models: ticket!.models });
+      kind === "judge"
+        ? runJudgeAgain(deps as Deps, { plan: ticket!.plan, cases: ticket!.unjudged as JudgeCase[], models: ticket!.models })
+        : kind === "words"
+          ? runPromptTest(deps as Deps, { kind: "words", template: wordsTemplate(ticket!.task), plan: ticket!.plan, model, models: ticket!.models })
+          : kind === "shape"
+            ? runShape(deps as Deps, { plan: ticket!.plan, model })
+            : runPromptTest(deps as Deps, { kind: "variant", template: shaped as string, plan: ticket!.plan, model, models: ticket!.models });
     for await (const event of run) {
-      if (event.type === "shape") await saveShapedPrompt(store as Store, ticketId, event.prompt);
+      if (event.type === "shape") await saveShapedPrompt(store as Store, services.scope, ticketId, event.prompt);
       collected.push(event);
       yield event;
     }
     // Your words and the shaped prompt join the cached run. Testing the shaped
     // prompt stays live only.
-    if (ticket!.cacheKey !== null && kind !== "variant" && !collected.some((event) => event.type === "followup-failed")) {
+    if (ticket!.cacheKey !== null && kind !== "variant" && kind !== "judge" && !collected.some((event) => event.type === "followup-failed")) {
       await addToCache(store, ticket!.cacheKey, collected);
     }
   }

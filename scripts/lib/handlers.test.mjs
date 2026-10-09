@@ -170,6 +170,49 @@ test("a follow-up needs a real ticket and a model that was in the run", async ()
   assert.equal((await handleFollowup({ ticket, kind: "nope", model: LUNA }, services)).status, 400);
 });
 
+// When no judge answered, the answers are kept with the ticket so they can be
+// marked again later. Nothing else about the run is run a second time.
+test("judging again marks the kept answers, calls no candidate model, and is offered once", async () => {
+  // Every judge is silent during the run, then they come back.
+  let judgingWorks = false;
+  const asJudge = (request) => (judgingWorks ? judgeReplyFor(request) : "not a judgement at all");
+  const { services, calls } = setup({}, {
+    [WRITER]: (request) => {
+      if (request.prompt.startsWith("You prepare a fair test")) return JSON.stringify(planBody());
+      if (request.prompt.startsWith("You are marking answers")) return asJudge(request);
+      return JSON.stringify({ prompt: "Shaped.\n{input}" });
+    },
+    [SONNET]: () => "Sonnet answer", [LUNA]: () => "Luna answer", [HAIKU]: () => "Haiku answer", [OPUS]: () => "Opus answer",
+    "google/gemini-2.5-flash": asJudge,
+    "mistralai/mistral-medium-3.1": asJudge,
+  });
+  const events = await drain(await handleCheck(body, "v1", services));
+  assert.ok(events.some((e) => e.type === "judge-failed"), "the run should have ended with no judgement");
+  const ticket = events.find((e) => e.type === "ticket").id;
+
+  judgingWorks = true;
+  const modelCalls = () => calls.filter((c) => body.models.includes(c.model)).length;
+  const before = modelCalls();
+  assert.equal(before, 9, "the run itself should have called three models on three cases");
+  const again = await drain(await handleFollowup({ ticket, kind: "judge" }, services));
+  assert.ok(again.some((e) => e.type === "judge-used"), "no judge answered the second time either");
+  assert.equal(again.filter((e) => e.type === "judged").length, 9, "every answer should have been marked");
+  assert.equal(modelCalls(), before, "a candidate model was run again");
+
+  // Once per check, like every other follow-up.
+  const twice = await handleFollowup({ ticket, kind: "judge" }, services);
+  assert.deepEqual([twice.status, twice.reason], [409, "used"]);
+});
+
+test("judging again is refused when the run was judged, and needs a live key and a store", async () => {
+  const { services } = setup();
+  const ticket = await liveRun(services);
+  const judged = await handleFollowup({ ticket, kind: "judge" }, services);
+  assert.deepEqual([judged.status, judged.reason], [409, "used"], "there was nothing left unjudged");
+  assert.equal((await handleFollowup({ ticket, kind: "judge" }, { ...services, deps: null })).status, 503);
+  assert.equal((await handleFollowup({ ticket, kind: "judge" }, { ...services, store: null })).status, 503);
+});
+
 test("each follow-up can be started once per check", async () => {
   const { services } = setup();
   const ticket = await liveRun(services);
@@ -225,7 +268,7 @@ test("the status says what is left today and whether live runs are on", async ()
 test("the cache key the handler uses is the one guard.ts defines", async () => {
   const { services } = setup();
   await drain(await handleCheck(body, "v1", services));
-  assert.ok(await services.store.get(cacheKey(body.task, body.models)));
+  assert.ok(await services.store.get(cacheKey(SCOPE, body.task, body.models)));
 });
 
 test("the response is a stream of json lines the page can read back", async () => {

@@ -3,6 +3,103 @@
 What changed in Switch Check, newest first. Days are the days of the Early
 AI-Dopters 30-Day Community Hackathon.
 
+## Week 3, so far (Oct 9, 2026, Day 15)
+
+The first tester stopped at the fourth step, where the page asked for six
+outputs pasted in from other tools. The app now runs the models itself, and
+the five steps are one page.
+
+### Decided
+
+- **One build for every feature, not one feature a day.** The whole rebuild
+  went in as a single round, so the response to the review is itself fast.
+  The daily changes after it are smaller.
+- **The tool now says what to do.** The old rule that it never suggests a
+  decision is dropped. The verdict is still only as strong as the evidence
+  line under it says, and every result is a control the person can flip.
+- **A verdict that one judged result could change is "test more".** With a
+  tolerance of one check, a model exactly one behind the best, or a cheaper
+  model exactly two behind, is one flipped result from the other answer. So
+  "switch" and "stay" appear when the cheap model ties or beats the best, or
+  is clearly behind. This follows from the rule as written and is pinned by
+  tests (`scripts/lib/verdict.test.mjs`).
+- **Gemini 3.8 Flash writes the test and judges.** It judged the same answers
+  in 3 to 5 seconds against 12 to 16 for Grok 4.7, and agreed with Grok 4.6 on
+  the one set both marked. The cost is that one model writes the checks and
+  marks the answers, so the evidence line says so. Grok 4.7 is the second
+  choice if the first judge fails. The page names whichever judge ran.
+- **Reasoning is set to low for every model.** Some models cannot switch it
+  off (Sonnet, Opus, Gemini, Grok refused it). A model that spends all 600
+  tokens reasoning is shown as not tested, with that reason.
+- **Two smaller candidates added:** Claude Haiku 5.5 and DeepSeek V4.1 Flash,
+  both with dated prices (2026-10-09). Writer and judges have dated prices too.
+- **Writing the prompt and the test cases is one call, so one stage line.**
+  The brief listed two; with one call they would share a timer.
+- **Provider names in coloured marks, not logos.** The what-changed page
+  paraphrases the first tester and does not name them.
+
+### Added
+
+- **A server route that runs the whole check** and streams it: writing, the
+  grid with a timer in every cell, judging, the verdict. Starts from the old
+  sample runner. Failed calls are "not tested" with the reason.
+- **The prompt writer** (prompt, three test cases, three to five checks, task
+  class, and for a project the slice tested and the slice not tested).
+- **The blind judge** (shuffled letters, no names, quotes checked against the
+  answer) and **the verdict rule** with its sentence, each with tests.
+- **Your words against the written prompt**, **a prompt shaped for the
+  recommended model with Test it**, **flip any check**, **edit a test case and
+  run again** (with a note when the verdict changes).
+- **Three recorded examples**, run once with the real code, labelled as
+  recorded, used when the limit is reached or the provider is down.
+- **Spending limits:** 5 checks per visitor and 40 per site per day, the caps
+  as constants with tests, a 24-hour cache, fail closed when the store is
+  unreachable. `/what-changed` and a new README.
+- Fenced code in answers now shows as code in the formatter.
+
+### Fixed
+
+- **Hidden reasoning no longer eats the answer.** A reasoning model used to
+  get one 600-token cap for its thinking and its answer together, so on some
+  open-ended wording it spent the lot on thinking and the cell read "not
+  tested", which made the verdict "test more". Reasoning now has its own
+  1,024-token allowance on top of the answer's 600, asked for as a hard
+  budget and not as an effort: measured against the API, `effort: "low"` let
+  DeepSeek V4.1 Flash spend 600 of 600 and then 1,624 of 1,624 tokens on
+  thinking and return nothing, while a 1,024-token budget had it stop at 873
+  and answer. The reasoning tokens are billed as output and stay inside the
+  cost figure, and the page says the allowance is there. A model that still
+  writes no answer gets a cell that says where its tokens went.
+- **Each step of a run is promised its own slice of the minute.** Writing the
+  test took 4 to 11 seconds live and shared one run-wide deadline with the
+  model calls, so a slow writer could leave them a few seconds and turn every
+  cell into "not tested". The writing step now gets 25 seconds, the model
+  calls 18 and the judge 12 — adding up to the route's whole allowance, with
+  each step also getting what the steps before it left unused.
+
+### Changed
+
+- **One page replaces the five steps.** Removed: the step flow, the paste
+  step, the protection for pasted work, the sample-results tag system, the
+  rating screens. Kept: the look, `FigureChip` (now takes a figure with its
+  state, so a number cannot be drawn without one), the formatter, dated
+  prices, the "not tested is never worse" rule.
+- **Response times are measured after the whole answer is read.** The first
+  version of the new runner stopped the clock when headers arrived, which
+  under-counted by a factor of two to three. Found by comparing with wall time.
+- A cached run is shown with the visitor's own "model you use today", and the
+  verdict is worked out again for it.
+
+### Missed
+
+- No second pass of tuning yet. The writer and judge were tuned against a handful of
+  live runs; the checks are sometimes easy, and a ceiling of 12 of 12
+  for every model is common on simple tasks.
+- Not yet tried by anyone outside. Getting five community members to run a
+  check on a task of their own is the first job of the next days.
+- The narrow-screen layout was reasoned from the CSS (the grid scrolls
+  sideways), not looked at on a phone.
+
 ## Week 2 (Oct 2 to Oct 8, 2026)
 
 The week went into making one comparison complete on screen: real outputs for

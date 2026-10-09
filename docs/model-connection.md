@@ -1,167 +1,166 @@
 # Model connection
 
-Decided on 2026-10-08 (Day 14). This note records how Switch Check will reach
-the two models it compares, the limits on a run, and what was checked for
-exposed keys. Nothing in it is built yet: today the app calls no model.
+First written 2026-10-08 (Day 14) as a plan. Rewritten 2026-10-09 (Day 15) now
+that it is built, and the settings, costs and caps were recomputed later the
+same day once hidden reasoning was given its own billed allowance. It records
+how Switch Check reaches the models, the limits on a run, what the limits cost
+at worst, and what was checked for exposed keys.
 
-## 1. The decision
+## 1. How it works
 
-Switch Check will call both models through OpenRouter. The calls will be made
-from the server, with one API key held in the server environment variable
-`OPENROUTER_API_KEY`. The key is never sent to the browser.
+Every model call goes through OpenRouter, from the server, with one key held in
+the server environment variable `OPENROUTER_API_KEY`. The key is read in one
+place (`lib/server/services.ts`), passed to `lib/server/openrouter.ts`, and
+travels only in the `Authorization` header. It is never sent to the browser. A
+test fails if client code mentions it or any server file.
 
-Pasting outputs by hand stays as the fallback. It is the only path that
-exists today, and it remains for any output the app could not get itself.
+Calls made per full check (up to): 1 writer, up to 12 candidate calls (4 models
+by 3 test cases), 1 judge (a second only if the first fails), then, once the
+verdict is in, 3 calls and 1 judge for "your words as typed", 1 writer call for
+the shaped prompt, and 3 calls and 1 judge if the person presses Test it.
 
-The key is the project owner's, so her OpenRouter account pays for testers'
-runs.
+Models: the candidates, the writer and the judges are in
+`config/candidates.json`; every one has a dated price in
+`config/model-prices.json`, written by `npm run check-models` (last run
+2026-10-09, 8 of 8 listed). Candidates: Claude Haiku 5.5, Sonnet 5.5, Opus 5.5,
+GPT-6 Luna, GPT-6 Sol, DeepSeek V4.1 Flash. Writer: Gemini 3.8 Flash. Judges, in
+order: Gemini 3.8 Flash, Grok 4.7. A test checks the two files agree.
 
-## 2. Why OpenRouter
+## 2. Settings that were found by trying, 2026-10-09
 
-- **The candidate list and the prices already come from there.**
-  `npm run check-models` reads OpenRouter's public model list and writes
-  [`models-checked.md`](models-checked.md). The candidate ids are in
-  [`config/candidates.json`](../config/candidates.json).
-- **The sample run already went through it.** The run of 2026-10-03 made six
-  calls and all six answered. The outputs, token counts and response times are
-  in
-  [`demo-data/sample-results-2026-10-03.json`](../demo-data/sample-results-2026-10-03.json).
-  That run was made by a script on one computer
-  ([`scripts/run-sample.mjs`](../scripts/run-sample.mjs)), not by the app.
-- **One key and one request format cover both providers.** The script sends
-  the same request to an Anthropic model and an OpenAI model and changes only
-  the model id ([`scripts/lib/sample-run.mjs`](../scripts/lib/sample-run.mjs)).
-- **A test is cheap at these prices.** One complete test of the default pair
-  costs about $0.012 (section 5).
+- **Reasoning gets its own allowance, asked for as a budget.** Every call sends
+  `reasoning: { max_tokens: 1024, exclude: true }` with `max_tokens` set to the
+  call's own allowance plus that 1,024. The same request for every model keeps
+  the comparison fair.
+- **An effort is a hint; only a budget bounds anything.** With
+  `effort: low` and one 600-token cap covering thinking and answer together,
+  DeepSeek V4.1 Flash spent 600 of 600 tokens thinking and returned nothing,
+  then 1,624 of 1,624 and returned nothing again. Under a 1,024-token budget
+  the same model stopped at 873 and answered. Measured on one logic puzzle
+  against all six models plus both helpers.
+- **`effort: none` is not available.** `GET /api/v1/models` reports per model
+  `{ mandatory, default_enabled, supported_efforts, default_effort }`. Sonnet
+  5.5, Gemini 3.8 Flash and Grok 4.7 are `mandatory: true` and reject it; only
+  GPT-6 Luna lists `none` among its efforts. The earlier note that
+  `enabled: false` is refused by four of the eight models still holds.
+- **1,024 is the floor for the budget, not a choice.** It is Anthropic's
+  minimum, and Anthropic requires `max_tokens` strictly above the budget, so a
+  600-token cap with any reasoning request was already malformed for Claude.
+- **The budget is not honoured everywhere.** OpenRouter converts a budget to an
+  effort for a model that advertises efforts only, which puts the cap back out
+  of reach: in the re-recorded time-tracker example, Claude Haiku 5.5 spent all
+  1,624 tokens thinking on the "your words as typed" follow-up, whose prompt is
+  the person's own text with no instruction to be brief. Grok 4.7 was measured
+  at 1,117 against a 1,024 budget. Such a cell is "not tested" and says where
+  the tokens went. This is reduced, not solved.
+- **Reasoning tokens are billed as output** and are already inside
+  `usage.completion_tokens`, with the breakdown at
+  `usage.completion_tokens_details.reasoning_tokens`. The cost figure uses
+  `completion_tokens`, so hidden thinking is paid for in what the page shows.
+- **Time is read after the whole body.** OpenRouter can send headers before the
+  model finishes, so a clock stopped at the headers under-counted by two to
+  three times.
+- **Judge speed, and its tail.** Gemini 3.8 Flash: 2.7 to 4.7 s for nine to
+  twelve answers, but on the same prompt replayed four times it returned in
+  2.8, 2.9, 3.7 and 12.2 s, and once took 46 s and timed out. Grok 4.7 and 4.6:
+  12 to 16 s. Gemini 3.7 Flash was quicker still but marked a deliberately
+  flawed check as passed for every answer, so it was not used. One attempt may
+  now use only its share of the judging time, so a stall like that leaves the
+  second judge its own, and if both fail the checks are there unset to set.
 
-## 3. What was considered and not chosen
+## 3. Prices
 
-- **Calling each provider directly.** Two keys, two request formats and two
-  price sources to keep in step.
-- **Each tester brings their own key.** A tester would need an OpenRouter
-  account and would have to type a key into someone else's site. The goal is
-  completed tests, and both of those are reasons to stop before finishing one.
-- **Paste-only.** It works today and it stays. But the person has to run both
-  models themselves, six times, before there is anything to compare.
+Checked on 2026-10-09 against https://openrouter.ai/api/v1/models, in US
+dollars per million tokens. See `docs/models-checked.md` for the table. They
+change; the date is part of every cost figure on the page.
 
-## 4. Prices
+## 4. Limits
 
-Checked on 2026-10-08 against OpenRouter's live model list
-(https://openrouter.ai/api/v1/models). Prices are US dollars per million
-tokens, as published by OpenRouter.
+All are constants in `lib/limits.ts`, each with a test.
 
-| Model id | Input / 1M tokens | Output / 1M tokens | Checked |
-| --- | --- | --- | --- |
-| `openai/gpt-6-sol` | $2.00 | $10.00 | 2026-10-08 |
-| `openai/gpt-6-luna` | $0.10 | $0.50 | 2026-10-08 |
-| `anthropic/claude-opus-5.5` | $4.00 | $20.00 | 2026-10-08 |
-| `anthropic/claude-sonnet-5.5` | $2.00 | $10.00 | 2026-10-08 |
+| Limit | Value |
+| --- | --- |
+| Models per run | 2 to 4, from the candidate list |
+| Test cases | exactly 3, up to 1,200 characters each |
+| Checks | 3 to 5 |
+| Task | 2,000 characters |
+| Answer per candidate call | 600 tokens |
+| Hidden reasoning per call | 1,024 tokens on top, billed as output |
+| Asked of the provider per candidate call | 1,624 tokens (`max_tokens`) |
+| Writer / judge output | 3,000 / 4,000 tokens, plus the same 1,024 |
+| Wait per call | 45 seconds, then "not tested" |
+| Route | 60 seconds total; the run plans for 55 |
+| Share of those 55 seconds | writing 25, the model calls 18, judging 12, each starting when its step starts and also getting what earlier steps left |
+| Share of the judging time per attempt | its own fraction of what is left, so the second judge keeps its own |
+| Checks per visitor per UTC day | 5 |
+| Checks for the whole site per UTC day | 30 |
+| A finished check, same task and same models | served again for 24 hours, no new run, no check spent |
+| Follow-ups of a check | each of the three once, only with a ticket from a finished live check, kept 1 hour |
 
-Prices change. The date is part of the number, and `npm run check-models`
-re-reads them and rewrites [`models-checked.md`](models-checked.md).
+A visitor is a keyed hash of their address; the address is not stored. If the
+store behind the counts cannot be reached, or no key is set, live checks are
+refused and the three recorded examples are offered. "Run again" counts as a
+check.
 
-## 5. What one test costs
+The route time of 60 seconds is what `maxDuration` asks for. The plan the
+project runs on was not looked up; a normal check took 9 to 30 seconds.
 
-One test is six calls: two models on three inputs. For the default pair this
-is an **estimate of about $0.012**, from the prices checked on 2026-10-08 and
-the tokens the sample run of 2026-10-03 used.
+## 5. The spending limit, recomputed 2026-10-09
 
-| Model | Input tokens (3 calls) | Output tokens (3 calls) | Cost |
-| --- | --- | --- | --- |
-| `anthropic/claude-sonnet-5.5` | 696 | 1,036 | 696 × $2.00 / 1M + 1,036 × $10.00 / 1M = $0.011752 |
-| `openai/gpt-6-luna` | 454 | 512 | 454 × $0.10 / 1M + 512 × $0.50 / 1M = $0.000301 |
-| Both | | | $0.012053 |
+Read from OpenRouter itself (`GET /api/v1/key`): the key has a credit **limit
+of $25**, with no reset, **$1.04 used** and **$23.96 left** after all the
+testing of this build (the live runs, the reasoning probes and three
+re-recordings). The limit is the one that holds even if the app's own checks
+fail.
 
-It is an estimate and not a bill: the tokens are from one run of one made-up
-workflow, and another prompt or longer inputs will use more.
+**Worst case for one full check: about $0.76**, up from $0.42, because hidden
+reasoning is billed as output on top of each call's own allowance. The bound
+counts, per call, 1,624 output tokens for a candidate, 4,024 for the writer and
+5,024 for a judge. It assumes the four most expensive candidates answering
+every case at the cap, both judges running, the person pressing Test it, and
+input at 3 characters per token, which over-counts. The parts: the twelve
+candidate calls $0.244, the writer $0.016, both judges $0.112, "your words" and
+its judges $0.185, the shaped prompt $0.016, Test it and its judges $0.185.
 
-## 6. Model access, checked today
+**$25 pays for 32 worst-case checks.** A day of 40 would have been **$30.33**,
+over the limit, so **the site cap was lowered from 40 to 30 a day** ($22.75 at
+worst). The per-visitor cap stays at 5, which is $3.79 at worst for one person.
+A test (`scripts/lib/models.test.mjs`) recomputes all of this from the caps and
+the shipped prices and fails if a day could reach the limit.
 
-`npm run check-models` was run on 2026-10-08. OpenRouter lists **4 of the 4
-candidates**. **No price differs** from the check of 2026-09-28. Only the
-date in [`models-checked.md`](models-checked.md) changed.
+**Typical is far below the worst case.** Three live open-ended checks on the
+three default models, measured call by call at the shipped prices: $0.0218,
+$0.0094 and $0.0189, mean **$0.017** for the writing, the nine candidate calls
+and the judge. The follow-ups roughly double that when a person uses them.
 
-The check reads a public list. It shows that the models are offered and at
-what price. It does not make a call, so it does not show that the key may use
-each model. The last evidence for that is the sample run of 2026-10-03, for
-the default pair only.
+Worth watching: a single worst-case day of 30 checks ($22.75) is nearly the
+whole $23.96 left on the key. The cap is right against the $25 limit, but the
+balance, not the limit, is what runs out first.
 
-What happens if a model is missing:
+## 6. Credentials, checked 2026-10-09
 
-- **Today.** The app calls nothing. The pickers offer the ids in
-  `config/candidates.json`. `npm run check-models` marks an id that is not on
-  OpenRouter's list as NOT LISTED and exits with an error.
-- **From Day 15, when the app is planned to run models.** A call that fails,
-  times out or returns no text is shown as `not tested` with the reason, never
-  as a worse output. The other cells still finish. The person can paste that
-  output by hand. This is the rule `scripts/run-sample.mjs` already follows.
-
-## 7. Limits
-
-These are decided here and planned for Day 15. None is built yet.
-
-| Limit | Value | Why |
-| --- | --- | --- |
-| Models | exactly two per test, picked from the ids in `config/candidates.json` | the goal is a two-model comparison |
-| Inputs | three, up to 4,000 characters each | already enforced by the form |
-| Calls per test | six (two models × three inputs), single turn, text only | |
-| Output length | 600 tokens per call | the value the sample run of 2026-10-03 used |
-| Wait per call | 45 seconds, then `not tested` | from the plan for Day 15 |
-| Spending | a credit limit of $5 set on the key in OpenRouter | the one limit that holds even if the app's own checks fail |
-
-The $5 credit limit is set by hand in the OpenRouter dashboard. It was not
-set or verified as part of this note.
-
-Limits of the path itself:
-
-- Only models that OpenRouter lists can be compared.
-- One prompt and one answer per call. No chats, images or files.
-- Prices are a dated reading and can change.
-- Response times vary from run to run.
-
-**Worst case for one test, an estimate of about $0.08.** The two most
-expensive candidates at the prices checked on 2026-10-08, with 600 output
-tokens on every call. **Assumption:** about 1,500 input tokens per call, for
-a full-length input plus the prompt.
-
-| Model | Per call | Three calls |
-| --- | --- | --- |
-| `anthropic/claude-opus-5.5` | 1,500 × $4.00 / 1M + 600 × $20.00 / 1M = $0.018 | $0.054 |
-| `openai/gpt-6-sol` | 1,500 × $2.00 / 1M + 600 × $10.00 / 1M = $0.009 | $0.027 |
-| Both | | $0.081 |
-
-At that rate $5 covers about 60 worst-case tests ($5 / $0.081 = 61).
-
-## 8. Credentials
-
-Checked on 2026-10-08. Each line is what the check found, not what is
-intended. The searches look for `sk-or-`, the start of every OpenRouter key,
-and separately for the exact value of the local key. The exact value was
-compared by the tools and was never printed.
+Each line is what the check found. The exact key was compared by the tools and
+never printed. The key starts with the OpenRouter prefix, so a copy of it in any
+searched place would also have matched the prefix search.
 
 | Check | Found |
 | --- | --- |
-| `.env.local` is ignored by git | Yes, by the `.env*` rule in `.gitignore`. `.env.example` is the only tracked env file. |
-| `.env.local` was never committed | `git log --all --full-history -- .env.local` is empty, across all 13 commits and every branch. No other `.env` file is in the history. |
-| No key in any tracked file | The exact key: 0 files. The string `sk-or-`: 1 file, `scripts/lib/sample-results.test.mjs`, where those six characters are the pattern of a test that fails if a key is saved in the results. Nothing follows them. It is not a key. |
-| No key anywhere in the history | `git log -p --all`: the exact key 0 times, `sk-or-` once, in the same test line. No commit message contains it. |
-| No `NEXT_PUBLIC_` variable holds a key | No tracked file names a `NEXT_PUBLIC_` variable, and `.env.local` holds one variable, `OPENROUTER_API_KEY`. |
-| The key is not read by the app | `OPENROUTER_API_KEY` is read in one place, `scripts/run-sample.mjs`, a script run by hand. Nothing under `app/` or `lib/` reads an environment variable. |
-| The built site does not contain it | After `npm run build`, `sk-or-`, the name `OPENROUTER_API_KEY` and the exact key each appear in 0 of the 23 files in `.next/static`. The exact key is in 0 files of the whole `.next` folder. |
-| `.env.example` has the name and no value | The line reads `OPENROUTER_API_KEY=` with nothing after it. |
-| The saved results contain no key | 0 matches in both files in `demo-data/`, for `sk-or-`, the exact key and the word `Bearer`. |
-| This note and the other notes contain no key | 0 matches for the exact key in this file, in the two untracked files in this folder, and in the planning notes kept outside this repository. |
+| `.env.local` is ignored by git | Yes, by the `.env*` rule. `.env.example` is the only env file tracked, with names and no values. |
+| `.env.local` was never committed | `git log --all --full-history -- .env.local` is empty. |
+| No key in any tracked file | The exact key: 0 files. The OpenRouter key prefix: 1 file, this note, where it describes the check. |
+| No key in the history | `git log -p --all`: the exact key 0 times. |
+| No `NEXT_PUBLIC_` variable | 0 matches in `app`, `lib`, `config`, `scripts` and `.env.example`. |
+| The built site does not contain it | After `npm run build`: the exact key, the key prefix and the variable name each appear in 0 of the 24 files in `.next/static`, and the exact key in 0 files of the whole `.next` folder. |
+| The recorded examples contain no key | 0 matches for `Bearer` and the prefix in all three files. |
+| The key is read in one place | `lib/server/services.ts`, checked by `scripts/lib/server-boundary.test.mjs`. |
 
-The searches were shown to be able to find a key: the local key does start
-with `sk-or-`, so a copy of it in any searched place would have matched.
+On Vercel: `OPENROUTER_API_KEY` is set for Production only; the four `KV_*`
+values and `REDIS_URL` are set for Production, Preview and Development
+(`vercel env ls`, names only, 2026-10-09). **Not checked:** anything in the
+provider dashboards beyond the key limit above, and the deployed page itself.
+This must be rerun and dated before each deploy.
 
-Not covered by these checks: the key's settings in the OpenRouter dashboard,
-and any hosting environment. There is no deployment yet.
+## 7. Not decided yet
 
-## 9. Not decided yet
-
-- A cap on tests per person or per day.
-- What the page tells a person before their prompt and inputs are sent to
-  OpenRouter and on to the model's provider.
-
-Day 15 and Day 21 take these.
+- Whether to raise the limits once real use is seen.
+- Whether a command-line or agent entry point should sit on the same route.

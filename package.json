@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "check-models": "node scripts/check-models.mjs",
-    "sample-results": "node scripts/run-sample.mjs",
-    "test": "node --test scripts/lib/*.test.mjs"
+    "record-examples": "node --env-file=.env.local scripts/record-examples.mjs",
+    "test": "NODE_NO_WARNINGS=1 node --test scripts/lib/*.test.mjs"
   },
   "dependencies": {
     "next": "16.3.6",

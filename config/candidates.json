@@ -1,10 +1,80 @@
 {
-  "note": "Candidate models for the first comparison. Ids are OpenRouter model ids. Max 4 (see SPEC). Verified against the live list by scripts/check-models.mjs.",
+  "note": "Models the page offers, and the models that write the test material and judge the answers. Ids are OpenRouter model ids; names are OpenRouter's, without the provider prefix. Every id must have a dated price in model-prices.json (npm run check-models writes it). At most six candidates; a run uses at most four.",
   "candidates": [
-    "openai/gpt-6-sol",
-    "openai/gpt-6-luna",
-    "anthropic/claude-opus-5.5",
-    "anthropic/claude-sonnet-5.5"
+    {
+      "id": "anthropic/claude-haiku-5.5",
+      "name": "Claude Haiku 5.5",
+      "provider": "Anthropic"
+    },
+    {
+      "id": "anthropic/claude-sonnet-5.5",
+      "name": "Claude Sonnet 5.5",
+      "provider": "Anthropic"
+    },
+    {
+      "id": "anthropic/claude-opus-5.5",
+      "name": "Claude Opus 5.5",
+      "provider": "Anthropic"
+    },
+    {
+      "id": "openai/gpt-6-luna",
+      "name": "GPT-6 Luna",
+      "provider": "OpenAI"
+    },
+    {
+      "id": "openai/gpt-6-sol",
+      "name": "GPT-6 Sol",
+      "provider": "OpenAI"
+    },
+    {
+      "id": "deepseek/deepseek-v4.1-flash",
+      "name": "DeepSeek V4.1 Flash",
+      "provider": "DeepSeek"
+    }
   ],
-  "default_pair": { "current": "anthropic/claude-sonnet-5.5", "candidate": "openai/gpt-6-luna" }
+  "default_models": [
+    "anthropic/claude-sonnet-5.5",
+    "openai/gpt-6-luna",
+    "anthropic/claude-haiku-5.5"
+  ],
+  "default_current": "anthropic/claude-sonnet-5.5",
+  "writer": {
+    "id": "google/gemini-3.8-flash",
+    "name": "Gemini 3.8 Flash",
+    "provider": "Google"
+  },
+  "judges": [
+    {
+      "id": "google/gemini-3.8-flash",
+      "name": "Gemini 3.8 Flash",
+      "provider": "Google"
+    },
+    {
+      "id": "x-ai/grok-4.7",
+      "name": "Grok 4.7",
+      "provider": "SpaceXAI"
+    }
+  ],
+  "providers": {
+    "Anthropic": {
+      "background": "#f3d9c7",
+      "text": "#6e3417"
+    },
+    "OpenAI": {
+      "background": "#cfe8dc",
+      "text": "#17503c"
+    },
+    "DeepSeek": {
+      "background": "#d3dcf3",
+      "text": "#26397a"
+    },
+    "Google": {
+      "background": "#e9e1b8",
+      "text": "#5a4b0c"
+    },
+    "SpaceXAI": {
+      "background": "#dcdcdc",
+      "text": "#2b2b2b"
+    }
+  }
 }

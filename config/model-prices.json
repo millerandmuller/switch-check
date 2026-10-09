@@ -1,27 +1,47 @@
 {
   "note": "Written by npm run check-models. Prices are USD per million tokens, as published by OpenRouter on the date in checked_on.",
   "source_url": "https://openrouter.ai/api/v1/models",
-  "checked_on": "2026-10-08",
+  "checked_on": "2026-10-09",
   "models": {
-    "openai/gpt-6-sol": {
-      "listed": true,
-      "input_per_million": 2,
-      "output_per_million": 10
-    },
-    "openai/gpt-6-luna": {
+    "anthropic/claude-haiku-5.5": {
       "listed": true,
       "input_per_million": 0.1,
       "output_per_million": 0.5
+    },
+    "anthropic/claude-sonnet-5.5": {
+      "listed": true,
+      "input_per_million": 2,
+      "output_per_million": 10
     },
     "anthropic/claude-opus-5.5": {
       "listed": true,
       "input_per_million": 4,
       "output_per_million": 20
     },
-    "anthropic/claude-sonnet-5.5": {
+    "openai/gpt-6-luna": {
+      "listed": true,
+      "input_per_million": 0.1,
+      "output_per_million": 0.5
+    },
+    "openai/gpt-6-sol": {
       "listed": true,
       "input_per_million": 2,
       "output_per_million": 10
+    },
+    "deepseek/deepseek-v4.1-flash": {
+      "listed": true,
+      "input_per_million": 0.3,
+      "output_per_million": 1.2
+    },
+    "google/gemini-3.8-flash": {
+      "listed": true,
+      "input_per_million": 0.75,
+      "output_per_million": 3.75
+    },
+    "x-ai/grok-4.7": {
+      "listed": true,
+      "input_per_million": 2,
+      "output_per_million": 6
     }
   }
 }

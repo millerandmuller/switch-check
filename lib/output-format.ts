@@ -9,6 +9,8 @@
 //   1. item       a number, a dot, a space, then text
 //   - item        a dash, a space, then text
 //   > quote       a greater-than sign at the start of a line
+//   ```lang       a fenced block of code, up to the closing ``` (or the end of
+//                 the answer, which a cut-off answer never closes)
 // Everything else, including a lone ** or a line like "-5 degrees", stays
 // plain text exactly as written.
 
@@ -19,7 +21,11 @@ export type FlatBlock =
   | { kind: "numbered"; marker: string; spans: Span[] }
   | { kind: "bulleted"; spans: Span[] };
 
-export type Block = FlatBlock | { kind: "quote"; blocks: FlatBlock[] };
+export type Block =
+  | FlatBlock
+  | { kind: "quote"; blocks: FlatBlock[] }
+  // Lines kept exactly as written, indentation included.
+  | { kind: "code"; language: string; text: string };
 
 // A pair of ** with text between that neither starts nor ends in a space.
 const BOLD = /\*\*(?=\S)(.+?)(?<=\S)\*\*/g;
@@ -54,11 +60,31 @@ function flatBlockOf(line: string): FlatBlock {
 }
 
 const QUOTE_MARK = /^\s*>\s?/;
+const FENCE = /^\s*```([\w+#.-]*)\s*$/;
 
 export function formatOutput(text: string): Block[] {
   const blocks: Block[] = [];
   let quote: FlatBlock[] | null = null;
+  let code: { language: string; lines: string[] } | null = null;
+  const closeCode = () => {
+    if (code === null) return;
+    // Blank lines at the end of a block are not part of the code.
+    while (code.lines.length > 0 && code.lines[code.lines.length - 1].trim() === "") code.lines.pop();
+    blocks.push({ kind: "code", language: code.language, text: code.lines.join("\n") });
+    code = null;
+  };
   for (const rawLine of text.split(/\r?\n/)) {
+    const fence = FENCE.exec(rawLine);
+    if (code !== null) {
+      if (fence !== null && fence[1] === "") closeCode();
+      else code.lines.push(rawLine.trimEnd());
+      continue;
+    }
+    if (fence !== null) {
+      quote = null;
+      code = { language: fence[1], lines: [] };
+      continue;
+    }
     const quoted = QUOTE_MARK.test(rawLine);
     const line = (quoted ? rawLine.replace(QUOTE_MARK, "") : rawLine).trimEnd();
     if (!quoted) quote = null;
@@ -73,5 +99,6 @@ export function formatOutput(text: string): Block[] {
     }
     blocks.push(flatBlockOf(line));
   }
+  closeCode();
   return blocks;
 }

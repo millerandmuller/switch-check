@@ -1,6 +1,7 @@
 // Reads OpenRouter's live model list and writes docs/models-checked.md (for
-// people) and config/model-prices.json (for the app) for the candidate models
-// in config/candidates.json.
+// people) and config/model-prices.json (for the app) for every model the app
+// can call: the candidates, the prompt writer and the judges, all listed in
+// config/candidates.json.
 // The models endpoint is public, so no API key is needed or read here.
 import { readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -26,9 +27,10 @@ async function fetchModels() {
 }
 
 async function main() {
-  const { candidates } = JSON.parse(await readFile(candidatesPath, "utf8"));
+  const config = JSON.parse(await readFile(candidatesPath, "utf8"));
+  const ids = [...new Set([...config.candidates, config.writer, ...config.judges].map((model) => model.id))];
   const models = await fetchModels();
-  const rows = resolveCandidates(models, candidates);
+  const rows = resolveCandidates(models, ids);
   const reading = { checkedOn: localDate(), sourceUrl: SOURCE_URL };
   await writeFile(reportPath, renderReport(rows, reading));
   await writeFile(pricesPath, renderPrices(rows, reading));

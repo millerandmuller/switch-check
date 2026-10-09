@@ -1,0 +1,722 @@
+{
+ "id": "triage",
+ "title": "Triage customer emails",
+ "task": "Triage my customer emails: give each one a priority, a category and a short draft reply.",
+ "models": [
+  "anthropic/claude-sonnet-5.5",
+  "openai/gpt-6-luna",
+  "anthropic/claude-haiku-5.5"
+ ],
+ "current": "anthropic/claude-sonnet-5.5",
+ "recorded_on": "2026-10-09T20:07:22.822Z",
+ "note": "One real run of this task through the same code the page uses. Answers, times and token counts are as returned. Nothing in this file was edited by hand.",
+ "check_ms": 10983,
+ "verdict_decision": "switch",
+ "events": [
+  {
+   "type": "start",
+   "runId": "recorded-triage",
+   "source": "live",
+   "at": "2026-10-09T20:07:22.822Z",
+   "models": [
+    "anthropic/claude-sonnet-5.5",
+    "openai/gpt-6-luna",
+    "anthropic/claude-haiku-5.5"
+   ],
+   "current": "anthropic/claude-sonnet-5.5",
+   "writer": "Gemini 3.8 Flash",
+   "judge": {
+    "id": "google/gemini-3.8-flash",
+    "name": "Gemini 3.8 Flash",
+    "label": "Judged by Gemini 3.8 Flash, model names hidden, answer order shuffled"
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "plan",
+   "state": "start",
+   "ms": 1
+  },
+  {
+   "type": "stage",
+   "stage": "plan",
+   "state": "done",
+   "ms": 5766
+  },
+  {
+   "type": "plan",
+   "plan": {
+    "prompt": "Triage the following customer email. Provide:\n1. Priority (choose one: High, Medium, Low)\n2. Category (e.g., Billing, Technical Support, General Inquiry, Cancellation)\n3. A short, professional draft reply (under 75 words)\n\nKeep the total response under 150 words.\n\n{input}",
+    "additions": [
+     "Constrained priority choices to High, Medium, or Low.",
+     "Provided example categories.",
+     "Set a length limit of under 75 words for the draft reply.",
+     "Set an overall length limit of 150 words."
+    ],
+    "testCases": [
+     {
+      "id": "t1",
+      "input": "Hi, I noticed a double charge on my account this morning for my monthly subscription. Can you please refund the extra payment as soon as possible? Thanks, Sarah."
+     },
+     {
+      "id": "t2",
+      "input": "Our entire marketing team lost access to the workspace twenty minutes before our product launch webinar. Nobody can log in and we're getting 500 errors. Please help immediately!"
+     },
+     {
+      "id": "t3",
+      "input": "Hey there, love the tool so far. Just wondering if you have an affiliate program or if you sponsor tech newsletters? Also noticed a small typo on your pricing page under the enterprise tier FAQ."
+     }
+    ],
+    "checks": [
+     {
+      "id": "c1",
+      "question": "Does the response explicitly include labels for priority, category, and draft reply?"
+     },
+     {
+      "id": "c2",
+      "question": "Is the priority set to one of High, Medium, or Low?"
+     },
+     {
+      "id": "c3",
+      "question": "Does the draft reply directly address the core issue raised in the email without inventing unmentioned facts?"
+     },
+     {
+      "id": "c4",
+      "question": "Is the draft reply professional in tone and under 75 words?"
+     }
+    ],
+    "taskClass": "one-response"
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "grid",
+   "state": "start",
+   "ms": 5767
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "**1. Priority:** High\n\n**2. Category:** Billing\n\n**3. Draft Reply:**\n\nHi Sarah,\n\nThank you for letting us know, and I'm sorry for the trouble with your subscription. I've flagged the duplicate charge on your account for review. Once confirmed, the extra payment will be refunded to your original payment method, typically within 5–7 business days. We'll follow up as soon as the refund is processed.\n\nBest regards,\n[Your Name]\nCustomer Support",
+    "ms": {
+     "value": 1999,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 162,
+    "outputTokens": 161,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "**1. Priority:** Low\n\n**2. Category:** General Inquiry (Partnerships/Affiliate, plus minor website feedback)\n\n**3. Draft Reply:**\n\nHi there,\n\nThank you for the kind words, and we're glad you're enjoying the tool! We don't currently have details to share on affiliate or sponsorship opportunities, but I've forwarded your question to our partnerships team, who can respond directly. Thanks also for flagging the typo on our pricing page. We've passed it along to our web team for correction.\n\nBest regards,\n[Name]",
+    "ms": {
+     "value": 1999,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 175,
+    "outputTokens": 185,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "**1. Priority:** High\n\n**2. Category:** Technical Support (Outage / Access Issue)\n\n**3. Draft Reply:**\n\nSubject: Urgent: Workspace Access Issue\n\nHi there,\n\nI'm sorry about the disruption, especially with your launch webinar starting soon. We've escalated this to our engineering team as a top priority. Could you please send us your workspace name and the exact error message or time it began? We'll update you as soon as we have a resolution.\n\nBest regards,\n[Your Name]",
+    "ms": {
+     "value": 2000,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 163,
+    "outputTokens": 168,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "**Priority:** High  \n**Category:** Technical Support  \n\n**Draft reply:** We’re sorry your team is unable to access the workspace, especially so close to your launch webinar. We’re treating this as urgent and escalating the 500 errors to our technical team now. Please share your workspace name and the approximate time the issue began. We’ll update you as soon as we have more information.",
+    "ms": {
+     "value": 2200,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 100,
+    "outputTokens": 110,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "1. **Priority:** Medium  \n2. **Category:** Billing  \n3. **Draft reply:** Hi Sarah, I’m sorry about the duplicate charge. We’ll review the payments on your account and refund the extra charge if confirmed. We’ll follow up as soon as possible. Thank you for letting us know.",
+    "ms": {
+     "value": 2421,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 101,
+    "outputTokens": 131,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "**1. Priority:** High\n\nDuplicate charges affect the customer's finances directly and should be resolved quickly to prevent frustration, overdraft fees, or a chargeback.\n\n**2. Category:** Billing\n\n**3. Draft Reply:**\n\nHi Sarah,\n\nThank you for flagging this, and I'm sorry for the inconvenience. I'm reviewing your account now to confirm the duplicate charge. Once verified, I'll issue a refund for the extra payment right away. Refunds typically appear within 3–5 business days, depending on your bank.\n\nI'll update you as soon as it's processed. Please let me know if you have any questions in the meantime.\n\nBest regards,\n[Your Name]\n[Company] Support",
+    "ms": {
+     "value": 2577,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 162,
+    "outputTokens": 238,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "1. **Priority:** Low  \n2. **Category:** General Inquiry / Website Feedback  \n3. **Draft reply:** Thanks for the kind words! We’ll check on our affiliate and newsletter sponsorship options and get back to you. We also appreciate you flagging the typo on the enterprise pricing FAQ—we’ll review and correct it.",
+    "ms": {
+     "value": 2865,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 107,
+    "outputTokens": 140,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "**1. Priority:** Low\n\n**2. Category:** General Inquiry (Partnerships/Marketing, plus minor website feedback)\n\n**3. Draft Reply:**\n\nHi there,\n\nThank you so much for the kind words, we're thrilled you're enjoying the tool!\n\nRegarding your questions: [insert affiliate program details or link, or note that none is currently offered]. For newsletter sponsorships, [insert details or forward to the marketing team].\n\nWe also appreciate you flagging the typo on our pricing page. We'll get it corrected right away.\n\nBest regards,\n[Name]\n[Company] Support\n\n*Internal note: Route the partnership questions to Marketing and the typo to the web team.*",
+    "ms": {
+     "value": 2876,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 175,
+    "outputTokens": 231,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "**1. Priority:** High\n\n**2. Category:** Technical Support (Outage / Access Issue)\n\n**3. Draft Reply:**\n\nSubject: Urgent: Investigating Your Workspace Access Issue\n\nHi [Name],\n\nThank you for alerting us. We understand the urgency with your webinar starting shortly. I've escalated this to our engineering team as a critical incident.\n\nTo speed up diagnosis, please send your workspace URL and a screenshot of the error, if possible. I'll update you within 10 minutes.\n\nSincerely,\n[Your Name]\n[Company] Support\n\n**Note:** Escalate immediately and check for any ongoing platform incidents or recent deployments.",
+    "ms": {
+     "value": 2930,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 163,
+    "outputTokens": 228,
+    "truncated": false
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "grid",
+   "state": "done",
+   "ms": 2930
+  },
+  {
+   "type": "stage",
+   "stage": "judge",
+   "state": "start",
+   "ms": 8697
+  },
+  {
+   "type": "judge-used",
+   "judge": {
+    "id": "google/gemini-3.8-flash",
+    "name": "Gemini 3.8 Flash",
+    "label": "Judged by Gemini 3.8 Flash, model names hidden, answer order shuffled"
+   }
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "stage",
+   "stage": "judge",
+   "state": "done",
+   "ms": 2270
+  },
+  {
+   "type": "stage",
+   "stage": "verdict",
+   "state": "start",
+   "ms": 10983
+  },
+  {
+   "type": "verdict",
+   "verdict": {
+    "decision": "switch",
+    "model": "openai/gpt-6-luna",
+    "reason": "Switch to GPT-6 Luna. It passed 12 of 12 checks, the same as Claude Sonnet 5.5, at an estimated 97% lower cost per 1,000 runs. Every model passed the same number, so the cheapest is the pick.",
+    "evidence": "Three test cases, written by Gemini 3.8 Flash, one run, judged by Gemini 3.8 Flash. Enough to point, not to prove.",
+    "figures": [
+     {
+      "label": "GPT-6 Luna checks passed",
+      "text": "12 of 12",
+      "state": "judged"
+     },
+     {
+      "label": "GPT-6 Luna cost",
+      "text": "$0.07",
+      "state": "estimated",
+      "note": "per 1,000 runs, OpenRouter price checked 2026-10-09"
+     },
+     {
+      "label": "Claude Sonnet 5.5 cost",
+      "text": "$2.66",
+      "state": "estimated",
+      "note": "per 1,000 runs, OpenRouter price checked 2026-10-09"
+     },
+     {
+      "label": "Saving against Claude Sonnet 5.5",
+      "text": "97%",
+      "state": "estimated",
+      "note": "per 1,000 runs"
+     },
+     {
+      "label": "Claude Sonnet 5.5 checks passed",
+      "text": "12 of 12",
+      "state": "judged"
+     }
+    ]
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "verdict",
+   "state": "done",
+   "ms": 0
+  },
+  {
+   "type": "done",
+   "totalMs": 10983
+  },
+  {
+   "type": "followup-start",
+   "kind": "words",
+   "model": "openai/gpt-6-luna"
+  },
+  {
+   "type": "followup-cell",
+   "kind": "words",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "- **Priority:** Critical / P1 — active outage during a product launch\n- **Category:** Login/access issue; server errors\n- **Draft reply:** “I’m sorry—losing access right before your launch is urgent. We’re escalating this to our incident team now. Please send your workspace name or URL and any request IDs or screenshots of the 500 errors. We’ll update you as soon as we have more information.”",
+    "ms": {
+     "value": 2088,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 58,
+    "outputTokens": 132,
+    "truncated": false
+   }
+  },
+  {
+   "type": "shape",
+   "model": "openai/gpt-6-luna",
+   "prompt": "# Instruction\nTriage the incoming customer email provided below.\n\n## Tasks\n1. Priority: Classify urgency strictly as High, Medium, or Low.\n2. Category: Determine the primary topic (e.g., Billing, Technical Support, General Inquiry, Cancellation).\n3. Draft Reply: Write a concise, professional response to the customer (maximum 75 words).\n\n## Constraints\n- The entire output must remain strictly under 150 words.\n\n## Input Email\n<customer_email>\n{input}\n</customer_email>\n\n## Output Format\nPriority: [High/Medium/Low]\nCategory: [Assigned Category]\nDraft Reply: [Response text]"
+  },
+  {
+   "type": "followup-cell",
+   "kind": "words",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "- **Priority:** High  \n- **Category:** Billing — duplicate charge/refund  \n- **Draft reply:** Hi Sarah, I’m sorry about the duplicate charge. We’ll review the payments on your account and, if the extra charge is confirmed, arrange a refund. We’ll update you as soon as possible. Thanks for letting us know.",
+    "ms": {
+     "value": 2450,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 59,
+    "outputTokens": 152,
+    "truncated": false
+   }
+  },
+  {
+   "type": "followup-cell",
+   "kind": "words",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "**Priority:** Low  \n**Category:** Partnerships / Website feedback  \n**Draft reply:**  \nThanks for reaching out—and for the kind words! We’ll check the typo on the enterprise pricing FAQ. If you can share the exact wording or a screenshot, that’ll help us find it quickly. We’re also happy to learn more about your newsletter and explore whether there’s a fit for an affiliate or sponsorship partnership. Could you send a few details about your audience and sponsorship options?",
+    "ms": {
+     "value": 4176,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 65,
+    "outputTokens": 293,
+    "truncated": false
+   }
+  },
+  {
+   "type": "followup-judged",
+   "kind": "words",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "followup-judged",
+   "kind": "words",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": false,
+     "quote": "- **Priority:** Critical / P1 — active outage during a product launch",
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "followup-judged",
+   "kind": "words",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "followup-done",
+   "kind": "words"
+  }
+ ]
+}

@@ -1,0 +1,719 @@
+{
+ "id": "classify",
+ "title": "Sort support tickets",
+ "task": "Tell me whether each support ticket is about billing, a bug, or a feature request.",
+ "models": [
+  "anthropic/claude-sonnet-5.5",
+  "openai/gpt-6-luna",
+  "anthropic/claude-haiku-5.5"
+ ],
+ "current": "anthropic/claude-sonnet-5.5",
+ "recorded_on": "2026-10-09T20:07:40.011Z",
+ "note": "One real run of this task through the same code the page uses. Answers, times and token counts are as returned. Nothing in this file was edited by hand.",
+ "check_ms": 8190,
+ "verdict_decision": "switch",
+ "events": [
+  {
+   "type": "start",
+   "runId": "recorded-classify",
+   "source": "live",
+   "at": "2026-10-09T20:07:40.011Z",
+   "models": [
+    "anthropic/claude-sonnet-5.5",
+    "openai/gpt-6-luna",
+    "anthropic/claude-haiku-5.5"
+   ],
+   "current": "anthropic/claude-sonnet-5.5",
+   "writer": "Gemini 3.8 Flash",
+   "judge": {
+    "id": "google/gemini-3.8-flash",
+    "name": "Gemini 3.8 Flash",
+    "label": "Judged by Gemini 3.8 Flash, model names hidden, answer order shuffled"
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "plan",
+   "state": "start",
+   "ms": 0
+  },
+  {
+   "type": "stage",
+   "stage": "plan",
+   "state": "done",
+   "ms": 3616
+  },
+  {
+   "type": "plan",
+   "plan": {
+    "prompt": "Classify the following support ticket into exactly one of these three categories: billing, a bug, or a feature request. Provide the chosen category and a brief one-sentence explanation for your choice.\n\n{input}",
+    "additions": [
+     "Restricted the output to exactly one of the three specified categories.",
+     "Requested a brief one-sentence explanation alongside the category."
+    ],
+    "testCases": [
+     {
+      "id": "t1",
+      "input": "Hi, I noticed an extra charge of $15 on my credit card statement from yesterday that does not match my monthly subscription fee. Can you please check why I was charged twice and issue a refund?"
+     },
+     {
+      "id": "t2",
+      "input": "Every time I try to export my project to PDF, the application crashes and throws error code 504. It started happening right after the latest update."
+     },
+     {
+      "id": "t3",
+      "input": "Would it be possible to add dark mode to the mobile app? The bright background hurts my eyes when working at night, and it would be great to have an auto-switch based on system settings."
+     }
+    ],
+    "checks": [
+     {
+      "id": "c1",
+      "question": "Does the response explicitly identify exactly one category from the three allowed options (billing, bug, or feature request)?"
+     },
+     {
+      "id": "c2",
+      "question": "Is the selected category correct for the given ticket?"
+     },
+     {
+      "id": "c3",
+      "question": "Does the response provide a brief rationale explaining why the ticket belongs in that category?"
+     },
+     {
+      "id": "c4",
+      "question": "Does the response avoid inventing additional categories outside the three provided?"
+     }
+    ],
+    "taskClass": "one-response"
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "grid",
+   "state": "start",
+   "ms": 3616
+  },
+  {
+   "type": "cell",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "**Billing** — The customer is asking about an unexpected charge and requesting a refund.",
+    "ms": {
+     "value": 1115,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 85,
+    "outputTokens": 37,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "**Category:** Feature request\n\n**Explanation:** The customer is asking for a new capability (dark mode with automatic switching based on system settings) that the app does not currently have, rather than reporting a problem or a billing issue.",
+    "ms": {
+     "value": 1391,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 121,
+    "outputTokens": 72,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "**a bug** — The PDF export crashes with error code 504, indicating a software malfunction after the update.",
+    "ms": {
+     "value": 1415,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 75,
+    "outputTokens": 51,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "**Category:** Bug\n\n**Explanation:** The user reports that the application crashes with a specific error code (504) when exporting to PDF, and the problem began after a recent update, which indicates unintended defective behavior.",
+    "ms": {
+     "value": 1451,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 105,
+    "outputTokens": 70,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "**Category:** Billing\n\n**Explanation:** The customer is reporting an unexpected $15 charge that doesn't match their subscription fee and is requesting a refund, which is a payment and charge issue.",
+    "ms": {
+     "value": 1479,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 129,
+    "outputTokens": 67,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "**Category:** Feature request\n\n**Explanation:** The user is asking for a new capability (dark mode with auto-switching based on system settings) that doesn't currently exist, rather than reporting a malfunction or a payment issue.",
+    "ms": {
+     "value": 1642,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 121,
+    "outputTokens": 74,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "**Category:** Billing\n\n**Explanation:** The customer is reporting an unexpected duplicate charge on their credit card and asking for a refund, which is a payment and account charge issue.",
+    "ms": {
+     "value": 1692,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 129,
+    "outputTokens": 61,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "**Feature request** — The user is asking for dark mode and automatic switching based on system settings to be added to the mobile app.",
+    "ms": {
+     "value": 1737,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 84,
+    "outputTokens": 45,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "**Category:** Bug\n\n**Explanation:** The PDF export crashes with error code 504 after a recent update, which means existing functionality has stopped working as intended, so it's a defect rather than a billing issue or a request for something new.",
+    "ms": {
+     "value": 1860,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 105,
+    "outputTokens": 75,
+    "truncated": false
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "grid",
+   "state": "done",
+   "ms": 1861
+  },
+  {
+   "type": "stage",
+   "stage": "judge",
+   "state": "start",
+   "ms": 5477
+  },
+  {
+   "type": "judge-used",
+   "judge": {
+    "id": "google/gemini-3.8-flash",
+    "name": "Gemini 3.8 Flash",
+    "label": "Judged by Gemini 3.8 Flash, model names hidden, answer order shuffled"
+   }
+  },
+  {
+   "type": "judged",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "stage",
+   "stage": "judge",
+   "state": "done",
+   "ms": 2712
+  },
+  {
+   "type": "stage",
+   "stage": "verdict",
+   "state": "start",
+   "ms": 8190
+  },
+  {
+   "type": "verdict",
+   "verdict": {
+    "decision": "switch",
+    "model": "openai/gpt-6-luna",
+    "reason": "Switch to GPT-6 Luna. It passed 12 of 12 checks, the same as Claude Sonnet 5.5, at an estimated 97% lower cost per 1,000 runs. Every model passed the same number, so the cheapest is the pick.",
+    "evidence": "Three test cases, written by Gemini 3.8 Flash, one run, judged by Gemini 3.8 Flash. Enough to point, not to prove.",
+    "figures": [
+     {
+      "label": "GPT-6 Luna checks passed",
+      "text": "12 of 12",
+      "state": "judged"
+     },
+     {
+      "label": "GPT-6 Luna cost",
+      "text": "$0.03",
+      "state": "estimated",
+      "note": "per 1,000 runs, OpenRouter price checked 2026-10-09"
+     },
+     {
+      "label": "Claude Sonnet 5.5 cost",
+      "text": "$0.94",
+      "state": "estimated",
+      "note": "per 1,000 runs, OpenRouter price checked 2026-10-09"
+     },
+     {
+      "label": "Saving against Claude Sonnet 5.5",
+      "text": "97%",
+      "state": "estimated",
+      "note": "per 1,000 runs"
+     },
+     {
+      "label": "Claude Sonnet 5.5 checks passed",
+      "text": "12 of 12",
+      "state": "judged"
+     }
+    ]
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "verdict",
+   "state": "done",
+   "ms": 0
+  },
+  {
+   "type": "done",
+   "totalMs": 8190
+  },
+  {
+   "type": "followup-start",
+   "kind": "words",
+   "model": "openai/gpt-6-luna"
+  },
+  {
+   "type": "followup-cell",
+   "kind": "words",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "Billing.",
+    "ms": {
+     "value": 937,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 64,
+    "outputTokens": 20,
+    "truncated": false
+   }
+  },
+  {
+   "type": "followup-cell",
+   "kind": "words",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "Bug.",
+    "ms": {
+     "value": 1157,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 54,
+    "outputTokens": 20,
+    "truncated": false
+   }
+  },
+  {
+   "type": "followup-cell",
+   "kind": "words",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "Feature request.",
+    "ms": {
+     "value": 1522,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 63,
+    "outputTokens": 23,
+    "truncated": false
+   }
+  },
+  {
+   "type": "shape",
+   "model": "openai/gpt-6-luna",
+   "prompt": "# TASK\nClassify the support ticket provided below into exactly one of three categories:\n- billing\n- bug\n- feature request\n\n# INPUT TICKET\n```ticket\n{input}\n```\n\n# OUTPUT FORMAT\nProvide your response in the following format:\nCategory: [billing | bug | feature request]\nExplanation: [A brief one-sentence explanation for your choice]"
+  },
+  {
+   "type": "followup-judged",
+   "kind": "words",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": false,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "followup-judged",
+   "kind": "words",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": false,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "followup-judged",
+   "kind": "words",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": false,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c4",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "followup-done",
+   "kind": "words"
+  }
+ ]
+}

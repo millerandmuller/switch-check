@@ -1,0 +1,576 @@
+{
+ "id": "time-tracker",
+ "title": "Build a time tracker",
+ "task": "I want to build a Next.js app where my team can track the time they spend on tasks, a bit like Jira crossed with Notion.",
+ "models": [
+  "anthropic/claude-sonnet-5.5",
+  "openai/gpt-6-luna",
+  "anthropic/claude-haiku-5.5"
+ ],
+ "current": "anthropic/claude-sonnet-5.5",
+ "recorded_on": "2026-10-09T20:07:51.765Z",
+ "note": "One real run of this task through the same code the page uses. Answers, times and token counts are as returned. Nothing in this file was edited by hand.",
+ "check_ms": 26335,
+ "verdict_decision": "switch",
+ "events": [
+  {
+   "type": "start",
+   "runId": "recorded-time-tracker",
+   "source": "live",
+   "at": "2026-10-09T20:07:51.765Z",
+   "models": [
+    "anthropic/claude-sonnet-5.5",
+    "openai/gpt-6-luna",
+    "anthropic/claude-haiku-5.5"
+   ],
+   "current": "anthropic/claude-sonnet-5.5",
+   "writer": "Gemini 3.8 Flash",
+   "judge": {
+    "id": "google/gemini-3.8-flash",
+    "name": "Gemini 3.8 Flash",
+    "label": "Judged by Gemini 3.8 Flash, model names hidden, answer order shuffled"
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "plan",
+   "state": "start",
+   "ms": 0
+  },
+  {
+   "type": "stage",
+   "stage": "plan",
+   "state": "done",
+   "ms": 4836
+  },
+  {
+   "type": "plan",
+   "plan": {
+    "prompt": "I am building a Next.js app where my team can track the time they spend on tasks, designed like a cross between Jira and Notion.\n\nWrite a TypeScript data interface or type definitions representing a single task based on the requirements below. Keep your code clean, practical, and strictly under 25 lines of code.\n\n{input}",
+    "additions": [
+     "Restricted the scope to a TypeScript data model slice under 25 lines.",
+     "Specified that the model must combine block-style content with time-tracking entries."
+    ],
+    "testCases": [
+     {
+      "id": "t1",
+      "input": "We need basic task metadata (title, status, assignee) with Notion-style content blocks and a list of time entries with user, duration in minutes, and date."
+     },
+     {
+      "id": "t2",
+      "input": "We need a task model where time can either be logged manually as a fixed duration or tracked live with an ongoing timer, alongside hierarchical Notion-style nested subtasks."
+     },
+     {
+      "id": "t3",
+      "input": "We need a lightweight task record that treats work sessions as time intervals (start time and end time) rather than total minutes, with dynamic custom property fields."
+     }
+    ],
+    "checks": [
+     {
+      "id": "c1",
+      "question": "Does the response provide valid TypeScript type or interface declarations in 25 lines of code or fewer?"
+     },
+     {
+      "id": "c2",
+      "question": "Does the definition include fields specifically addressing the time-tracking mechanism described in the input?"
+     },
+     {
+      "id": "c3",
+      "question": "Does the definition include structured task content or property fields reflecting the Notion-style flexibility described in the input?"
+     }
+    ],
+    "taskClass": "project",
+    "slice": {
+     "tested": "Define the core TypeScript data model for a task with Notion-like structured blocks and Jira-like time-logging entries.",
+     "notTested": "All Next.js pages, API routes, user interfaces, and database persistence code are excluded."
+    }
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "grid",
+   "state": "start",
+   "ms": 4836
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "```typescript\nexport type TaskStatus = \"todo\" | \"in_progress\" | \"done\";\n\nexport interface TimeSession {\n  id: string;\n  start: Date;\n  end: Date | null; // null while the session is still running\n}\n\nexport type CustomPropertyValue = string | number | boolean | Date | string[] | null;\n\nexport interface Task {\n  id: string;\n  title: string;\n  status: TaskStatus;\n  sessions: TimeSession[];\n  customProperties: Record<string, CustomPropertyValue>;\n  createdAt: Date;\n  updatedAt: Date;\n}\n```",
+    "ms": {
+     "value": 1752,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 149,
+    "outputTokens": 194,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "```typescript\nexport type TaskStatus = \"todo\" | \"in_progress\" | \"done\";\n\nexport type TimeEntry =\n  | { type: \"manual\"; id: string; durationMs: number; loggedAt: Date; note?: string }\n  | { type: \"timer\"; id: string; startedAt: Date; endedAt?: Date; note?: string };\n\nexport interface Task {\n  id: string;\n  title: string;\n  status: TaskStatus;\n  parentId: string | null; // null for top-level tasks\n  subtasks: Task[]; // Notion-style nested children\n  timeEntries: TimeEntry[];\n  createdAt: Date;\n  updatedAt: Date;\n}\n```",
+    "ms": {
+     "value": 1799,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 157,
+    "outputTokens": 225,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "```typescript\nexport type TaskStatus = \"todo\" | \"in_progress\" | \"in_review\" | \"done\";\n\nexport interface User {\n  id: string;\n  name: string;\n  email: string;\n}\n\nexport interface ContentBlock {\n  id: string;\n  type: \"paragraph\" | \"heading\" | \"bulleted_list\" | \"code\" | \"checklist\";\n  content: string;\n  checked?: boolean; // only for checklist blocks\n}\n\nexport interface TimeEntry {\n  id: string;\n  userId: User[\"id\"];\n  durationMinutes: number;\n  date: string; // ISO 8601, e.g. \"2025-01-15\"\n}\n\nexport interface Task {\n  id: string;\n  title: string;\n  status: TaskStatus;\n  assignee: User | null;\n  blocks: ContentBlock[];\n  timeEntries: TimeEntry[];\n}\n```",
+    "ms": {
+     "value": 1831,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 149,
+    "outputTokens": 281,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "```ts\nexport interface WorkSession {\n  startAt: string; // ISO 8601 timestamp\n  endAt: string | null; // null while the session is active\n}\n\nexport interface Task {\n  id: string;\n  title: string;\n  description?: string;\n  status: string;\n  assigneeId?: string;\n  sessions: WorkSession[];\n  customFields: Record<string, unknown>;\n}\n```",
+    "ms": {
+     "value": 3075,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 101,
+    "outputTokens": 211,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "```ts\ntype TaskStatus = \"backlog\" | \"in_progress\" | \"done\";\n\ninterface User {\n  id: string;\n  name: string;\n}\n\ntype ContentBlock =\n  | { type: \"paragraph\"; text: string }\n  | { type: \"heading\"; level: 1 | 2 | 3; text: string }\n  | { type: \"todo\"; text: string; checked: boolean }\n  | { type: \"bullet\"; text: string };\n\ninterface TimeEntry {\n  user: User;\n  durationMinutes: number;\n  date: string; // ISO 8601\n}\n\ninterface Task {\n  id: string;\n  title: string;\n  status: TaskStatus;\n  assignee: User | null;\n  content: ContentBlock[];\n  timeEntries: TimeEntry[];\n}\n```",
+    "ms": {
+     "value": 3092,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 105,
+    "outputTokens": 289,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "answered",
+    "text": "```typescript\nexport type TaskStatus = \"backlog\" | \"todo\" | \"in_progress\" | \"in_review\" | \"done\";\n\nexport type ContentBlock =\n  | { id: string; type: \"paragraph\" | \"heading\" | \"quote\"; text: string }\n  | { id: string; type: \"todo\"; text: string; checked: boolean }\n  | { id: string; type: \"code\"; text: string; language?: string };\n\nexport interface TimeEntry {\n  id: string;\n  userId: string;\n  durationMinutes: number;\n  date: string; // ISO 8601, e.g. \"2025-01-31\"\n}\n\nexport interface Task {\n  id: string;\n  title: string;\n  status: TaskStatus;\n  assigneeId: string | null;\n  content: ContentBlock[];\n  timeEntries: TimeEntry[];\n  createdAt: string; // ISO 8601\n  updatedAt: string; // ISO 8601\n}\n```\n\n**Design notes:**\n\n- **`ContentBlock` is a discriminated union**, so TypeScript narrows on `type`. For example, `checked` is only available on `\"todo\"` blocks and `language` only on `\"code\"` blocks. You can add new block types (image, callout, etc.) without touching the existing ones.\n- **Dates are ISO strings**, not `Date` objects. This keeps the type safe to serialize across Next.js server/client boundaries, API routes, and JSON storage.\n- **`assigneeId` is nullable** to support unassigned tasks. It references a user by ID rather than embedding the user, which avoids stale data. You can resolve it to a full user object where needed.\n- **Total time** is deliberately not stored, since it can be derived with `timeEntries.reduce((sum, e) => sum + e.durationMinutes, 0)`, which avoids it going out of sync.",
+    "ms": {
+     "value": 5793,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 149,
+    "outputTokens": 595,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "```ts\ntype TimeTracking =\n  | { mode: \"manual\"; durationSeconds: number }\n  | { mode: \"live\"; startedAt: string; elapsedBeforeStartSeconds?: number };\n\ninterface Task {\n  id: string;\n  title: string;\n  description?: string;\n  timeTracking?: TimeTracking;\n  subtasks: Task[];\n}\n```",
+    "ms": {
+     "value": 6429,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 103,
+    "outputTokens": 394,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "answered",
+    "text": "```ts\nexport type TaskStatus = \"todo\" | \"in_progress\" | \"in_review\" | \"done\";\n\n/** One work session. `end` is null while the timer is still running. */\nexport interface TimeEntry {\n  id: string;\n  userId: string;\n  start: string; // ISO 8601 UTC, e.g. \"2025-01-15T09:30:00Z\"\n  end: string | null;\n  note?: string;\n}\n\nexport type CustomPropertyValue = string | number | boolean | string[] | null;\n\nexport interface Task {\n  id: string;\n  title: string;\n  status: TaskStatus;\n  assigneeIds: string[];\n  timeEntries: TimeEntry[];\n  /** Keyed by property definition ID, so renaming a property doesn't break data. */\n  customProperties: Record<string, CustomPropertyValue>;\n  createdAt: string;\n  updatedAt: string;\n}\n```\n\n**Design notes**\n\n- **Intervals instead of minutes:** Each `TimeEntry` stores only `start` and `end`. Duration is derived (`end - start`), so it can't drift out of sync, and you can still query by date range, detect overlaps, or build timesheets and calendar views.\n- **Running timers:** `end: null` means a session is in progress, so you don't need a separate `isRunning` flag.\n- **ISO strings instead of `Date`:** They survive JSON serialization and the Next.js server/client boundary (Server Components, API routes) without conversion surprises.\n- **Dynamic custom fields:** `customProperties` is a flexible map of values. Keep a separate `PropertyDefinition` type (name, type, select options) at the project or workspace level to validate and render these fields, much like Notion database columns.",
+    "ms": {
+     "value": 8969,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 149,
+    "outputTokens": 1266,
+    "truncated": false
+   }
+  },
+  {
+   "type": "cell",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "answered",
+    "text": "```ts\nexport type TaskStatus = \"todo\" | \"in_progress\" | \"in_review\" | \"done\";\ninterface BaseEntry { id: string; userId: string; note?: string }\nexport interface ManualEntry extends BaseEntry {\n  kind: \"manual\";\n  date: string; // ISO date the work happened\n  durationSec",
+    "ms": {
+     "value": 18957,
+     "state": "measured",
+     "note": "this run"
+    },
+    "inputTokens": 157,
+    "outputTokens": 1624,
+    "truncated": true
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "grid",
+   "state": "done",
+   "ms": 18958
+  },
+  {
+   "type": "stage",
+   "stage": "judge",
+   "state": "start",
+   "ms": 23794
+  },
+  {
+   "type": "judge-used",
+   "judge": {
+    "id": "google/gemini-3.8-flash",
+    "name": "Gemini 3.8 Flash",
+    "label": "Judged by Gemini 3.8 Flash, model names hidden, answer order shuffled"
+   }
+  },
+  {
+   "type": "judged",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "openai/gpt-6-luna",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": false,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": false,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": false,
+     "quote": "export type TaskStatus = \"todo\" | \"in_progress\" | \"in_review\" | \"done\";",
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-sonnet-5.5",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t1",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t2",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "judged",
+   "modelId": "anthropic/claude-haiku-5.5",
+   "testCaseId": "t3",
+   "results": [
+    {
+     "checkId": "c1",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c2",
+     "pass": true,
+     "changedByUser": false
+    },
+    {
+     "checkId": "c3",
+     "pass": true,
+     "changedByUser": false
+    }
+   ]
+  },
+  {
+   "type": "stage",
+   "stage": "judge",
+   "state": "done",
+   "ms": 2540
+  },
+  {
+   "type": "stage",
+   "stage": "verdict",
+   "state": "start",
+   "ms": 26335
+  },
+  {
+   "type": "verdict",
+   "verdict": {
+    "decision": "switch",
+    "model": "anthropic/claude-haiku-5.5",
+    "reason": "Switch to Claude Haiku 5.5. It passed 9 of 9 checks, 3 more than Claude Sonnet 5.5, at an estimated 99% lower cost per 1,000 runs.",
+    "evidence": "Three test cases, written by Gemini 3.8 Flash, one run, judged by Gemini 3.8 Flash. 1 answer was cut off at the token limit and marked as far as they were written. Enough to point, not to prove.",
+    "figures": [
+     {
+      "label": "Claude Haiku 5.5 checks passed",
+      "text": "9 of 9",
+      "state": "judged"
+     },
+     {
+      "label": "Claude Haiku 5.5 cost",
+      "text": "$0.13",
+      "state": "estimated",
+      "note": "per 1,000 runs, OpenRouter price checked 2026-10-09"
+     },
+     {
+      "label": "Claude Sonnet 5.5 cost",
+      "text": "$11.92",
+      "state": "estimated",
+      "note": "per 1,000 runs, OpenRouter price checked 2026-10-09"
+     },
+     {
+      "label": "Saving against Claude Sonnet 5.5",
+      "text": "99%",
+      "state": "estimated",
+      "note": "per 1,000 runs"
+     },
+     {
+      "label": "Claude Sonnet 5.5 checks passed",
+      "text": "6 of 9",
+      "state": "judged"
+     }
+    ],
+    "quote": {
+     "modelId": "anthropic/claude-sonnet-5.5",
+     "checkQuestion": "Does the definition include structured task content or property fields reflecting the Notion-style flexibility described in the input?",
+     "line": "export type TaskStatus = \"todo\" | \"in_progress\" | \"in_review\" | \"done\";"
+    }
+   }
+  },
+  {
+   "type": "stage",
+   "stage": "verdict",
+   "state": "done",
+   "ms": 0
+  },
+  {
+   "type": "done",
+   "totalMs": 26335
+  },
+  {
+   "type": "followup-start",
+   "kind": "words",
+   "model": "anthropic/claude-haiku-5.5"
+  },
+  {
+   "type": "shape",
+   "model": "anthropic/claude-haiku-5.5",
+   "prompt": "You are an expert TypeScript developer building a Next.js application that blends Jira's task tracking with Notion's workspace style.\n\n<task>\nWrite a TypeScript data interface or type definitions representing a single task based on the provided requirements.\n</task>\n\n<requirements>\n{input}\n</requirements>\n\n<constraints>\n- Write clean, practical TypeScript code.\n- Strictly under 25 lines of code.\n- Output only the TypeScript code block without introductory or concluding text.\n</constraints>"
+  },
+  {
+   "type": "followup-cell",
+   "kind": "words",
+   "testCaseId": "t1",
+   "cell": {
+    "status": "not-tested",
+    "reason": "The model spent its token allowance on hidden reasoning (1,624 tokens) and wrote no answer."
+   }
+  },
+  {
+   "type": "followup-cell",
+   "kind": "words",
+   "testCaseId": "t2",
+   "cell": {
+    "status": "not-tested",
+    "reason": "The model spent its token allowance on hidden reasoning (1,624 tokens) and wrote no answer."
+   }
+  },
+  {
+   "type": "followup-cell",
+   "kind": "words",
+   "testCaseId": "t3",
+   "cell": {
+    "status": "not-tested",
+    "reason": "The model spent its token allowance on hidden reasoning (1,623 tokens) and wrote no answer."
+   }
+  },
+  {
+   "type": "followup-failed",
+   "kind": "words",
+   "reason": "No answer came back, so there was nothing to judge."
+  }
+ ]
+}

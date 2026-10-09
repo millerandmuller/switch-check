@@ -22,9 +22,10 @@ the shaped prompt, and 3 calls and 1 judge if the person presses Test it.
 Models: the candidates, the writer and the judges are in
 `config/candidates.json`; every one has a dated price in
 `config/model-prices.json`, written by `npm run check-models` (last run
-2026-10-09, 8 of 8 listed). Candidates: Claude Haiku 5.5, Sonnet 5.5, Opus 5.5,
+2026-10-09, 9 of 9 listed). Candidates: Claude Haiku 5.5, Sonnet 5.5, Opus 5.5,
 GPT-6 Luna, GPT-6 Sol, DeepSeek V4.1 Flash. Writer: Gemini 3.8 Flash. Judges, in
-order: Gemini 3.8 Flash, Grok 4.7. A test checks the two files agree.
+the order they are tried: Gemini 2.5 Flash, Gemini 3.8 Flash, Mistral Medium
+3.1 (chosen by measurement, section 2a). A test checks the two files agree.
 
 ## 2. Settings that were found by trying, 2026-10-09
 
@@ -68,6 +69,54 @@ order: Gemini 3.8 Flash, Grok 4.7. A test checks the two files agree.
   now use only its share of the judging time, so a stall like that leaves the
   second judge its own, and if both fail the checks are there unset to set.
 
+## 2a. Choosing the judges by measurement, 2026-10-09
+
+The judge was the weak point: Gemini stalled three times and one live check on
+production ended after 55 seconds with no verdict at all. So five plausible
+judges were each sent the same real judge prompt, rebuilt from a finished run
+(3 test cases, 3 answers each, 4 checks, 36 marks), six times.
+
+| Judge | Answered | Parsed | Median | Worst | Checks left unset |
+| --- | --- | --- | --- | --- | --- |
+| `google/gemini-3.8-flash` | 6 of 6 | 6 of 6 | 2.8 s | 15.8 s | 0 of 36 |
+| `x-ai/grok-4.7` | 0 of 6 | 0 of 6 | 45.0 s | 45.0 s | never answered |
+| `openai/gpt-5-mini` | 6 of 6 | 5 of 6 | 26.8 s | 28.6 s | 0 of 36 |
+| `mistralai/mistral-medium-3.1` | 6 of 6 | 6 of 6 | 4.2 s | 4.7 s | 0 of 36 |
+| `qwen/qwen3.5-122b-a10b` | 5 of 6 | 4 of 6 | 18.2 s | 45.0 s | 0 of 36 |
+
+**Grok 4.7 never answered once**, which is why the production run died: it was
+the fallback, it was given the rest of the minute, and it spent all of it. It
+is out.
+
+Three more were measured for the third seat, four calls each:
+`google/gemini-2.5-flash` 4 of 4 parsed, median 8.9 s, worst 9.1 s;
+`mistralai/mistral-medium-3` 4 of 4, median 4.7 s, worst 5.1 s;
+`qwen/qwen3-vl-235b-a22b-instruct` 4 of 4 but median 35.1 s, too slow to fit an
+attempt cap.
+
+Speed is not enough on its own, so each finalist was also given one answer
+broken on purpose: a priority outside the three allowed words, and a reply of
+154 words against a 75-word limit. Both checks must fail.
+
+| Judge | Priority check | Length check |
+| --- | --- | --- |
+| `google/gemini-2.5-flash` | failed it, twice | failed it, twice |
+| `google/gemini-3.8-flash` | failed it | failed it (one reply of the two did not parse) |
+| `mistralai/mistral-medium-3.1` | failed it, twice | **passed it, twice** |
+| `mistralai/mistral-medium-3` | failed it, twice | **passed it, twice** |
+
+The Mistral models are the fastest and steadiest of the lot and cannot count
+words. That decides the order: **Gemini 2.5 Flash** first (marked everything
+correctly, never above 9.1 s), **Gemini 3.8 Flash** second (the quickest
+median, strict, with a long tail the attempt cap now cuts), **Mistral Medium
+3.1** third, kept because it is the only one from a provider that is not
+Google and it will still answer when Google will not. Its leniency on counting
+is the reason it is third and not first.
+
+Left open: the first two share a provider. A single Google outage falls through
+to a judge that cannot count lengths. No fast, strict judge from a third
+provider turned up in this round.
+
 ## 3. Prices
 
 Checked on 2026-10-09 against https://openrouter.ai/api/v1/models, in US
@@ -91,7 +140,8 @@ All are constants in `lib/limits.ts`, each with a test.
 | Wait per call | 45 seconds, then "not tested" |
 | Route | 60 seconds total; the run plans for 55 |
 | Share of those 55 seconds | writing 25, the model calls 18, judging 12, each starting when its step starts and also getting what earlier steps left |
-| Share of the judging time per attempt | its own fraction of what is left, so the second judge keeps its own |
+| Share of the judging time per attempt | the shorter of its own fraction of what is left and a flat 12 s, so a judge that goes quiet is dropped early and the judges after it keep their turn |
+| Judges tried per run | 3, in order, one attempt each |
 | Checks per visitor per UTC day | 5 |
 | Checks for the whole site per UTC day | 30 |
 | A finished check, same task and same models | served again for 24 hours, no new run, no check spent |
@@ -115,18 +165,21 @@ testing of this build (the live runs, the reasoning probes and three
 re-recordings). The limit is the one that holds even if the app's own checks
 fail.
 
-**Worst case for one full check: about $0.76**, up from $0.42, because hidden
-reasoning is billed as output on top of each call's own allowance. The bound
-counts, per call, 1,624 output tokens for a candidate, 4,024 for the writer and
-5,024 for a judge. It assumes the four most expensive candidates answering
-every case at the cap, both judges running, the person pressing Test it, and
-input at 3 characters per token, which over-counts. The parts: the twelve
-candidate calls $0.244, the writer $0.016, both judges $0.112, "your words" and
-its judges $0.185, the shaped prompt $0.016, Test it and its judges $0.185.
+**Worst case for one full check: about $0.69.** It was $0.42 before hidden
+reasoning got its own billed allowance, rose to $0.76 with it, and came back
+down when Grok 4.7 was dropped: three cheaper judges cost less than the two
+before them. The bound counts, per call, 1,624 output tokens for a candidate,
+4,024 for the writer and 5,024 for a judge. It assumes the four most expensive
+candidates answering every case at the cap, every judge running, the person
+pressing Test it, and input at 3 characters per token, which over-counts. The
+parts: the twelve candidate calls $0.244, the writer $0.016, all three judges
+$0.075, "your words" and its judges $0.169, the shaped prompt $0.016, Test it
+and its judges $0.169.
 
-**$25 pays for 32 worst-case checks.** A day of 40 would have been **$30.33**,
-over the limit, so **the site cap was lowered from 40 to 30 a day** ($22.75 at
-worst). The per-visitor cap stays at 5, which is $3.79 at worst for one person.
+**$25 pays for 36 worst-case checks.** The site cap is 30 a day, which is
+**$20.67** at worst; it was lowered from 40 when a day could have cost $30.33.
+It has not been raised again: the headroom is worth more than the extra ten
+checks. The per-visitor cap stays at 5, which is $3.45 at worst for one person.
 A test (`scripts/lib/models.test.mjs`) recomputes all of this from the caps and
 the shipped prices and fails if a day could reach the limit.
 
@@ -227,6 +280,47 @@ times Gemini: 2.7 to 12.2 s on the same prompt replayed, once 46 s, and now a
 pair of fast failures. Worth considering: a third judge, or a shorter share so
 a stalled judge is abandoned sooner, or marking nothing and saying plainly that
 the judge was unreachable.
+
+## 6c. Ten open-ended checks after the judge change, 2026-10-09
+
+Run locally against the real API on the three default models, so none of it
+came off the live site's day. Ten different open-ended tasks.
+
+| Outcome | Count |
+| --- | --- |
+| switch | 7 |
+| stay | 0 |
+| test more | 3 |
+| no verdict | 0 |
+
+All 90 cells answered. The first judge answered all ten times, so the second
+and third were never needed. 14.3 s fastest, 22.2 s slowest, 17.1 s mean. The
+ten together cost $0.19.
+
+**Why three of ten said "test more", which is more than the two we would
+accept.** Nothing failed: every cell was answered and every answer marked. The
+three reasons are all the same shape, that one flipped mark would change the
+answer:
+
+1. "if Claude Sonnet 5.5 had passed one more check, the answer would be Claude Sonnet 5.5 instead of GPT-6 Luna"
+2. "if GPT-6 Luna had failed one more check, the answer would be Claude Haiku 5.5 instead of GPT-6 Luna"
+3. the same as 2, on another task
+
+Two things make that common, and neither is a fault in the judging:
+
+- **Two of the three default models are priced identically.** GPT-6 Luna and
+  Claude Haiku 5.5 are both $0.10 in and $0.50 out. Cost is the tie-break the
+  verdict leans on, so between those two it cannot separate anything: the
+  whole margin rests on the judged checks, and one mark either way swaps the
+  winner. Both of reasons 2 and 3 are exactly that pair.
+- **There are only twelve marks per model** (three test cases by four checks),
+  and capable models pass nearly all of them on a short task. A gap of zero or
+  one mark is the normal case, not the unusual one.
+
+So the rule is doing what the brief asks of it on a field that is too evenly
+matched to separate. No rule was changed. If fewer "test more" verdicts are
+wanted, the levers are more test cases or harder checks, or default models
+with prices that differ, not a softer rule.
 
 ## 7. Not decided yet
 

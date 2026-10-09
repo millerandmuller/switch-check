@@ -59,6 +59,26 @@ the five steps are one page.
 
 ### Fixed
 
+- **Three judges, each on a short leash.** The judge was the weak point: one
+  live check on the deployed site answered all nine cells and then ended after
+  55 seconds with no verdict, because the fallback judge was handed the rest
+  of the minute and never answered. Five judges were measured on the same real
+  judge prompt, six calls each: Grok 4.7 answered **none** of six and is gone.
+  The order is now Gemini 2.5 Flash, Gemini 3.8 Flash, Mistral Medium 3.1,
+  chosen on how often they answered, whether the answer could be read, and how
+  slow the worst case was. Mistral is fast and steady but passed a 154-word
+  reply against a 75-word limit, so it marks last rather than first. One
+  attempt may now take 12 seconds at most, so a judge that goes quiet costs
+  its own turn and not the run.
+- **When no judge answers, the page says so and offers one retry.** The
+  answers are kept and every check is left unset to set by hand, as before,
+  and there is now a "Try judging again" button that marks the same answers
+  again. It runs no model: the answers are kept with the check's ticket and
+  marked where they are. Once per check, like every other follow-up.
+- **A preview can no longer hand the live site a finished run.** The cache of
+  finished runs and the follow-up tickets now carry the environment, the way
+  the daily counts already did.
+
 - **Hidden reasoning no longer eats the answer.** A reasoning model used to
   get one 600-token cap for its thinking and its answer together, so on some
   open-ended wording it spent the lot on thinking and the cell read "not

@@ -206,6 +206,28 @@ asks the very same task with the very same models inside 24 hours. Nothing has
 been served that way (the probe tasks all carried a timestamp, so no one will
 ever ask for them), but the path is open.
 
+## 6b. The first production deployment, 2026-10-09
+
+Promoted from commit `61c8641` to `switch-check.vercel.app`, which is public
+(Vercel's sign-in wall covers the preview URLs and the bare production
+deployment URL, not the domain).
+
+| Check | Result |
+| --- | --- |
+| A real open-ended check | **Two were run. The first reached no verdict.** All nine cells answered in 5 s, then both judges failed: Gemini failed twice inside about 3 s, Grok took the remaining 41.8 s as the last judge and did not answer, and the route ran out at 55 s. The page is left as the brief asks, with the answers and the checks there unset for the person to set. The second check, on another task, finished in 16 s with all nine answered, judged by Gemini, and reached "test more" with its reason. |
+| The first version still stands | `switch-check-v1.vercel.app` serves the old five-step page: it still says "Step", and has none of the new headline, the recorded examples or the reasoning allowance. 19,669 bytes against the new page's 69,729. |
+| `/what-changed` | 200, titled "What changed · Switch Check", with both pictures served (81 KB and 96 KB). |
+| Credentials on the production build | 9 assets and 650,127 bytes scanned plus the HTML: the exact key, the key shape, `OPENROUTER_API_KEY`, `LIMIT_SALT` and any 64-character hex string each appear 0 times. `/api/status` returns nothing secret-shaped. |
+
+What the failed check means: a stall in one judge is survivable, a stall in
+both is not, and there is nothing after them. The judging step gets the time
+the two steps before it left, each judge takes its own share, and when the last
+one goes quiet the run simply ends without a verdict. Seen twice now, both
+times Gemini: 2.7 to 12.2 s on the same prompt replayed, once 46 s, and now a
+pair of fast failures. Worth considering: a third judge, or a shorter share so
+a stalled judge is abandoned sooner, or marking nothing and saying plainly that
+the judge was unreachable.
+
 ## 7. Not decided yet
 
 - Whether to raise the limits once real use is seen.

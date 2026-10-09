@@ -130,17 +130,17 @@ const info = (id) => candidates.candidates.find((m) => m.id === id);
 
 test("the judge is outside the models compared, from another provider when possible", () => {
   const choice = pickJudge(judges, [info(SONNET), info(LUNA)]);
-  assert.equal(choice.judge.id, "google/gemini-3.8-flash");
+  assert.equal(choice.judge.id, "google/gemini-2.5-flash");
   assert.equal(choice.isCandidate, false);
   assert.equal(choice.sharesProvider, false);
-  assert.equal(judgeLabel(choice), "Judged by Gemini 3.8 Flash, model names hidden, answer order shuffled");
+  assert.equal(judgeLabel(choice), "Judged by Gemini 2.5 Flash, model names hidden, answer order shuffled");
 });
 
 test("judges are tried cleanest first, then in the configured order", () => {
   const google = { id: "google/gemini-3.8-flash", name: "Gemini 3.8 Flash", provider: "Google" };
-  const xai = { id: "x-ai/grok-4.7", name: "Grok 4.7", provider: "SpaceXAI" };
-  const order = judgeOrder([google, xai], [info(SONNET), { id: "google/other", name: "Other", provider: "Google" }]);
-  assert.deepEqual(order.map((c) => c.judge.id), ["x-ai/grok-4.7", "google/gemini-3.8-flash"]);
+  const other = { id: "mistralai/mistral-medium-3.1", name: "Mistral Medium 3.1", provider: "Mistral" };
+  const order = judgeOrder([google, other], [info(SONNET), { id: "google/other", name: "Other", provider: "Google" }]);
+  assert.deepEqual(order.map((c) => c.judge.id), ["mistralai/mistral-medium-3.1", "google/gemini-3.8-flash"]);
   assert.equal(order[1].sharesProvider, true);
 });
 

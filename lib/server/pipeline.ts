@@ -39,6 +39,59 @@ function stepDeadline(deps: Pick<Deps, "now">, promisedMs: number, latestEnd: nu
   return Math.max(deps.now() + promisedMs, latestEnd);
 }
 
+// The answers of a run, in the shape the judge is given them: one entry per
+// test case, with every model that answered it. A case nobody answered is
+// left out, because there is nothing to mark.
+export function casesToJudge(plan: TaskPlan, cells: RunState["cells"], models: string[]): JudgeCase[] {
+  return plan.testCases
+    .map((testCase) => ({
+      testCaseId: testCase.id,
+      input: testCase.input,
+      answers: models.flatMap((modelId) => {
+        const cell = cells[modelId]?.[testCase.id];
+        return cell?.status === "answered" ? [{ modelId, text: cell.text }] : [];
+      }),
+    }))
+    .filter((testCase) => testCase.answers.length > 0);
+}
+
+// The judging step as events: which judge answered and every mark it made,
+// or an honest "no judge answered". Shared by a run and by judging the same
+// answers again later, so both say the same things in the same order.
+export async function* judgeEvents(
+  deps: Deps,
+  job: { judges: ReturnType<typeof judgeOrder>; taskPrompt: string; checks: TaskPlan["checks"]; cases: JudgeCase[]; deadline: number },
+): AsyncGenerator<RunEvent> {
+  if (job.cases.length === 0) return;
+  const outcome = await judgeAnswers(deps, job);
+  if (!outcome.ok) {
+    yield { type: "judge-failed", reason: outcome.error };
+    return;
+  }
+  const used = outcome.used;
+  yield { type: "judge-used", judge: { id: used.judge.id, name: used.judge.name, label: judgeLabel(used) } };
+  for (const [modelId, byCase] of Object.entries(outcome.judgement)) {
+    for (const [testCaseId, results] of Object.entries(byCase)) {
+      yield { type: "judged", modelId, testCaseId, results };
+    }
+  }
+}
+
+// Judges answers that are already on the page, without calling a single
+// candidate model again. Used by "Try judging again" after every judge went
+// quiet. The whole route is this one step, so it gets the route's allowance,
+// and the per-attempt cap keeps three tries inside it.
+export async function* runJudgeAgain(deps: Deps, job: { plan: TaskPlan; cases: JudgeCase[]; models: string[] }): AsyncGenerator<RunEvent> {
+  const judges = judgeOrder(deps.config.judges, job.models.map((id) => infoOf(deps, id)));
+  yield* judgeEvents(deps, {
+    judges,
+    taskPrompt: job.plan.prompt,
+    checks: job.plan.checks,
+    cases: job.cases,
+    deadline: deps.now() + routeBudgetMs(),
+  });
+}
+
 export function cellOf(completion: Completion): Cell {
   if (completion.status === "failed") return { status: "not-tested", reason: completion.reason };
   return {
@@ -151,29 +204,9 @@ export async function* runCheck(deps: Deps, job: CheckJob, runId: string): Async
   // 3. The judge: one call for the whole run, on its own allowance.
   yield stage("judge", "start");
   const judgeDeadline = stepDeadline(deps, LIMITS.judgeBudgetMs, routeDeadline);
-  const cases: JudgeCase[] = plan.testCases
-    .map((testCase) => ({
-      testCaseId: testCase.id,
-      input: testCase.input,
-      answers: job.models.flatMap((modelId) => {
-        const cell = state.cells[modelId]?.[testCase.id];
-        return cell?.status === "answered" ? [{ modelId, text: cell.text }] : [];
-      }),
-    }))
-    .filter((testCase) => testCase.answers.length > 0);
-  if (cases.length > 0) {
-    const outcome = await judgeAnswers(deps, { judges, taskPrompt: plan.prompt, checks: plan.checks, cases, deadline: judgeDeadline });
-    if (outcome.ok) {
-      const used = outcome.used;
-      yield emit({ type: "judge-used", judge: { id: used.judge.id, name: used.judge.name, label: judgeLabel(used) } });
-      for (const [modelId, byCase] of Object.entries(outcome.judgement)) {
-        for (const [testCaseId, results] of Object.entries(byCase)) {
-          yield emit({ type: "judged", modelId, testCaseId, results });
-        }
-      }
-    } else {
-      yield emit({ type: "judge-failed", reason: outcome.error });
-    }
+  const cases = casesToJudge(plan, state.cells, job.models);
+  for await (const event of judgeEvents(deps, { judges, taskPrompt: plan.prompt, checks: plan.checks, cases, deadline: judgeDeadline })) {
+    yield emit(event);
   }
   yield stage("judge", "done");
 

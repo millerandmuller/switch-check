@@ -36,9 +36,16 @@ export const LIMITS = {
   // can be given all of its share whatever the step before it did. A step also
   // gets what the steps before it left unused, so the promise is a floor and
   // not a ceiling.
-  writerBudgetMs: 25_000,
+  writerBudgetMs: 22_000,
   gridBudgetMs: 18_000,
-  judgeBudgetMs: 12_000,
+  judgeBudgetMs: 15_000,
+  // One judging attempt may take this long at most, so a judge that goes
+  // quiet is dropped early and the two after it still get their turn. Three
+  // attempts at this cap fit in the judging share and its leftover. Measured
+  // on one real judge prompt, six calls each: the three judges answered in
+  // 4.2 s, 8.9 s and 2.8 s at the median, with worst cases of 4.7 s, 9.1 s
+  // and 15.8 s, so only the rare long tail is cut.
+  judgeAttemptMs: 12_000,
   // Tokens the writer and the judge may use. They are not candidates, so they
   // are not held to the 600 above, but they are held to something.
   writerMaxTokens: 3000,

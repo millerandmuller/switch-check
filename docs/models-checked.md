@@ -12,4 +12,5 @@ Prices are USD per million tokens, as published by OpenRouter. Regenerate with `
 | `openai/gpt-6-sol` | OpenAI: GPT-6 Sol | $2.00 | $10.00 | 1,050,000 | 2026-10-09 |
 | `deepseek/deepseek-v4.1-flash` | DeepSeek: DeepSeek V4.1 Flash | $0.30 | $1.20 | 1,048,576 | 2026-10-09 |
 | `google/gemini-3.8-flash` | Google: Gemini 3.8 Flash | $0.75 | $3.75 | 1,048,576 | 2026-10-09 |
-| `x-ai/grok-4.7` | SpaceXAI: Grok 4.7 | $2.00 | $6.00 | 500,000 | 2026-10-09 |
+| `google/gemini-2.5-flash` | Google: Gemini 2.5 Flash | $0.30 | $2.50 | 1,048,576 | 2026-10-09 |
+| `mistralai/mistral-medium-3.1` | Mistral: Mistral Medium 3.1 | $0.40 | $2.00 | 131,072 | 2026-10-09 |

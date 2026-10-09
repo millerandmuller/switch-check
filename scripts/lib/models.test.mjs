@@ -43,7 +43,7 @@ test("names and providers are looked up by id, and a stray id shows as itself", 
   assert.equal(modelName(candidates, "openai/gpt-6-luna"), "GPT-6 Luna");
   assert.equal(providerOf(candidates, "openai/gpt-6-luna"), "OpenAI");
   assert.equal(modelName(candidates, "x/unknown"), "x/unknown");
-  assert.equal(modelName(candidates, "x-ai/grok-4.7"), "Grok 4.7");
+  assert.equal(modelName(candidates, "mistralai/mistral-medium-3.1"), "Mistral Medium 3.1");
 });
 
 // An upper bound on one full check, from the caps, with every model writing
@@ -79,7 +79,7 @@ function worstCheckUsd() {
 
 test("a full check at its caps stays near the bound recorded in docs/model-connection.md", () => {
   const bound = worstCheckUsd();
-  // The note says about $0.76. A change either way means the note is stale.
+  // The note says about $0.69. A change either way means the note is stale.
   assert.ok(bound > 0.6 && bound < 0.9, `bound ${bound.toFixed(3)} outside the expected range; update docs/model-connection.md`);
 });
 

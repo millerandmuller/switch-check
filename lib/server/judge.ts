@@ -7,17 +7,22 @@ import type { Check } from "../run-types.ts";
 import { timeoutFor, type Deps } from "./deps.ts";
 
 // Less than this left and the judge is not started: a half-finished judgement
-// would be worse than an honest "not judged".
-const MIN_MS_LEFT_TO_JUDGE = 8_000;
+// would be worse than an honest "not judged". The quickest judge answers in
+// about 4 s and the slowest of the three in about 9 s, so five seconds is
+// enough to be worth trying and short enough that the last judge still gets a
+// turn when the steps before it ran long.
+const MIN_MS_LEFT_TO_JUDGE = 5_000;
 
-// How long one attempt may take: its own share of what is left, so the judges
-// after it keep theirs. Without this a slow first judge used the whole
-// allowance (seen live: Gemini took 46 s on a prompt it usually answers in 3)
-// and the second judge was never tried, which ended the run with no
-// judgement at all rather than with a second opinion.
+// How long one attempt may take: the shorter of its own share of what is
+// left and the flat per-attempt cap. The share keeps the judges after it
+// from being starved; the cap drops a judge that has gone quiet early
+// instead of waiting out the whole allowance. Seen live before the cap:
+// one judge took 41.8 s of a 44 s window and the run ended with no
+// judgement at all.
 function attemptDeadline(deps: Pick<Deps, "now">, deadline: number, judgesLeft: number): number {
   const now = deps.now();
-  return now + Math.floor(Math.max(0, deadline - now) / Math.max(1, judgesLeft));
+  const share = Math.floor(Math.max(0, deadline - now) / Math.max(1, judgesLeft));
+  return now + Math.min(LIMITS.judgeAttemptMs, share);
 }
 
 export type JudgeOutcome =

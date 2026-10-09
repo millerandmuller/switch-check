@@ -163,7 +163,9 @@ export function reduce(state: RunState, event: RunEvent | UserAction): RunState 
         judged: { ...state.judged, [event.modelId]: { ...state.judged[event.modelId], [event.testCaseId]: event.results } },
       };
     case "judge-used":
-      return { ...state, judge: event.judge };
+      // A judge answered, so any earlier "no judge answered" no longer holds:
+      // judging again after every judge went quiet clears it.
+      return { ...state, judge: event.judge, judgeFailed: null };
     case "judge-failed": {
       // Every answered cell gets unset checks the person can set.
       if (state.plan === null) return { ...state, judgeFailed: event.reason };

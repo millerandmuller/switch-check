@@ -51,6 +51,9 @@ export type RunEvent =
 // What the person does on the page that changes the state.
 export type UserAction =
   | { type: "reset" }
+  // The stream ended without its last event: the connection is gone.
+  | { type: "stopped" }
+  | { type: "judge-again"; state: "running" | "used" }
   | { type: "set-check"; modelId: string; testCaseId: string; checkId: string; pass: boolean };
 
 export type StageState = { status: "waiting" | "running" | "done"; ms: number | null };
@@ -78,6 +81,8 @@ export type RunState = {
   cells: Record<string, Record<string, Cell>>;
   judged: Record<string, Record<string, CheckResult[]>>;
   judgeFailed: string | null;
+  // The one "try judging again" of this run. A new run starts with its own.
+  judgeAgain: "ready" | "running" | "used";
   serverVerdict: Verdict | null;
   ticket: string | null;
   words: FollowupState;
@@ -112,6 +117,7 @@ export function initialState(): RunState {
     cells: {},
     judged: {},
     judgeFailed: null,
+    judgeAgain: "ready",
     serverVerdict: null,
     ticket: null,
     words: emptyFollowup(),
@@ -123,6 +129,19 @@ export function initialState(): RunState {
   };
 }
 
+// A run that has ended has no stage still at work. Without this a stage cut
+// off part-way would keep its timer counting on the page.
+function withStagesStopped(stages: RunState["stages"]): RunState["stages"] {
+  const stopped = { ...stages };
+  for (const id of STAGES) if (stopped[id].status === "running") stopped[id] = { status: "waiting", ms: null };
+  return stopped;
+}
+
+// True when the run ended before every model call had come back.
+export function stoppedEarly(state: RunState): boolean {
+  return state.phase === "done" && state.stages.grid.status !== "done";
+}
+
 function withFollowup(state: RunState, kind: FollowupKind, change: (current: FollowupState) => FollowupState): RunState {
   return { ...state, [kind]: change(state[kind]) };
 }
@@ -131,6 +150,12 @@ export function reduce(state: RunState, event: RunEvent | UserAction): RunState 
   switch (event.type) {
     case "reset":
       return initialState();
+    case "stopped":
+      // Only a run in progress can be cut off; what had arrived is kept.
+      if (state.phase !== "running") return state;
+      return { ...state, phase: "done", stages: withStagesStopped(state.stages) };
+    case "judge-again":
+      return { ...state, judgeAgain: event.state };
     case "start":
       return {
         ...initialState(),
@@ -184,7 +209,7 @@ export function reduce(state: RunState, event: RunEvent | UserAction): RunState 
     case "ticket":
       return { ...state, ticket: event.id };
     case "error":
-      return { ...state, phase: "done", error: { kind: event.kind, message: event.message } };
+      return { ...state, phase: "done", stages: withStagesStopped(state.stages), error: { kind: event.kind, message: event.message } };
     case "done":
       return { ...state, phase: "done", totalMs: event.totalMs };
     case "set-check": {

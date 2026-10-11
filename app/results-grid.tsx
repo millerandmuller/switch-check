@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { formatUsd } from "@/lib/cost-speed";
-import type { RunState } from "@/lib/events";
+import { stoppedEarly, type RunState } from "@/lib/events";
 import { figure } from "@/lib/figure";
 import { formatMs, tokensText } from "@/lib/format";
 import type { ModelConfig } from "@/lib/models";
@@ -60,6 +60,7 @@ function AnswerCell({
   results,
   checks,
   judging,
+  stopped,
   onSet,
 }: {
   cell: Cell | undefined;
@@ -67,9 +68,19 @@ function AnswerCell({
   results: CheckResult[] | undefined;
   checks: { id: string; question: string }[];
   judging: boolean;
+  // The run ended before this cell's call came back.
+  stopped: boolean;
   onSet: (checkId: string, pass: boolean) => void;
 }) {
   const [raw, setRaw] = useState(false);
+  if (cell === undefined && stopped) {
+    return (
+      <div className="text-[14px]">
+        <p className="font-semibold">Not tested</p>
+        <p className="text-muted">The check stopped before {label} answered.</p>
+      </div>
+    );
+  }
   if (cell === undefined) {
     return (
       <p className="flex items-baseline gap-2 text-[14px] text-muted" role="status">
@@ -155,6 +166,7 @@ export function ResultsGrid({
   const gridRunning = state.stages.grid.status === "running";
   // A header may call a model "not tested" only once every call has finished.
   const gridDone = state.stages.grid.status === "done";
+  const stopped = stoppedEarly(state);
   const anySet = Object.values(state.judged).some((byCase) => Object.values(byCase).some((rs) => rs.some((r) => r.changedByUser)));
   return (
     <section className="card p-4" aria-labelledby="grid-heading">
@@ -181,7 +193,7 @@ export function ResultsGrid({
                         {summary.passed !== null ? (
                           <FigureChip fig={figure(`${summary.passed} of ${summary.total}`, "judged")} text={`${summary.passed} of ${summary.total}`} unit="checks passed" />
                         ) : (
-                          <span className="text-[12px] text-muted">{summary.answered === 0 ? (gridDone ? "Not tested" : "Waiting for answers") : judging ? "Judging…" : "Checks not set"}</span>
+                          <span className="text-[12px] text-muted">{summary.answered === 0 ? (gridDone ? "Not tested" : stopped ? "Check stopped early" : "Waiting for answers") : judging ? "Judging…" : "Checks not set"}</span>
                         )}
                         {gridDone && summary.answered > 0 && summary.answered < summary.asked && (
                           <span className="text-[12px] font-semibold text-worse">Answered {summary.answered} of {summary.asked} test cases</span>
@@ -229,6 +241,7 @@ export function ResultsGrid({
                             results={state.judged[summary.id]?.[testCase.id]}
                             checks={plan.checks}
                             judging={judging}
+                            stopped={stopped}
                             onSet={(checkId, pass) => onSet(summary.id, testCase.id, checkId, pass)}
                           />
                         )}

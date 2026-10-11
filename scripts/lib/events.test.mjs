@@ -2,7 +2,7 @@
 // live run, a cached run and a recorded one.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { asRecordedEvents, encodeEvent, initialState, parseEventLine, reduce, replay, splitLines, toRunData, withoutTicket } from "../../lib/events.ts";
+import { asRecordedEvents, encodeEvent, initialState, parseEventLine, reduce, replay, splitLines, stoppedEarly, toRunData, withoutTicket } from "../../lib/events.ts";
 import { figure } from "../../lib/figure.ts";
 
 const plan = {
@@ -63,6 +63,53 @@ test("an error ends the run and keeps what arrived", () => {
   assert.equal(state.phase, "done");
   assert.deepEqual(state.error, { kind: "limit", message: "Today's free runs are used up." });
   assert.equal(state.plan, plan);
+});
+
+test("a run cut off while the models are answering stops looking busy and keeps what arrived", () => {
+  const state = reduce(replay(events.slice(0, 6)), { type: "stopped" });
+  assert.equal(state.phase, "done");
+  assert.equal(state.stages.grid.status, "waiting");
+  assert.equal(state.stages.plan.status, "done");
+  assert.equal(state.stages.plan.ms, 4000);
+  assert.equal(state.cells.m1.t1.status, "answered");
+  assert.equal(state.plan, plan);
+  assert.equal(stoppedEarly(state), true);
+});
+
+test("a run cut off while judging leaves no stage running", () => {
+  const cut = [...events.slice(0, 8), { type: "stage", stage: "judge", state: "start", ms: 7000 }];
+  assert.equal(replay(cut).stages.judge.status, "running");
+  const state = reduce(replay(cut), { type: "stopped" });
+  assert.equal(state.stages.judge.status, "waiting");
+  assert.equal(state.stages.grid.status, "done");
+  // Every call had come back, so no cell is waiting on a model.
+  assert.equal(stoppedEarly(state), false);
+});
+
+test("stopping changes nothing when no run is in progress", () => {
+  const idle = initialState();
+  assert.equal(reduce(idle, { type: "stopped" }), idle);
+  const finished = replay(events);
+  assert.equal(reduce(finished, { type: "stopped" }), finished);
+  assert.equal(stoppedEarly(finished), false);
+  // A run still going has not stopped early, whatever its stages say.
+  assert.equal(stoppedEarly(replay(events.slice(0, 6))), false);
+});
+
+test("an error leaves no stage running", () => {
+  const state = replay([...events.slice(0, 2), { type: "error", kind: "failed", message: "The test could not be written." }]);
+  assert.equal(state.phase, "done");
+  assert.equal(state.stages.plan.status, "waiting");
+});
+
+test("the one retry of the judges belongs to its run: a new run gets its own", () => {
+  let state = replay([...events.slice(0, 8), { type: "judge-failed", reason: "No judge answered." }]);
+  assert.equal(state.judgeAgain, "ready");
+  state = reduce(state, { type: "judge-again", state: "running" });
+  assert.equal(state.judgeAgain, "running");
+  state = reduce(state, { type: "judge-again", state: "used" });
+  assert.equal(state.judgeAgain, "used");
+  assert.equal(reduce(state, events[0]).judgeAgain, "ready");
 });
 
 test("when the judge fails every answered cell gets unset checks the person can set", () => {

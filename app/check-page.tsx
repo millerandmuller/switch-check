@@ -121,13 +121,18 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
       const controller = new AbortController();
       abortRef.current?.abort();
       abortRef.current = controller;
+      // The run on screen stops looking busy before the message appears.
+      const dropped = () => {
+        dispatch({ type: "stopped" });
+        onRefused("The connection dropped before this finished. Nothing more will arrive for this check.", "dropped");
+      };
       try {
         const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: controller.signal });
         const outcome = await readRun(response, handle);
         if (outcome.kind === "refused") onRefused(outcome.error, outcome.reason);
-        else if (!outcome.complete) onRefused("The connection dropped before this finished.", "dropped");
+        else if (!outcome.complete) dropped();
       } catch (error) {
-        if (!(error instanceof DOMException && error.name === "AbortError")) onRefused("The connection dropped before this finished.", "dropped");
+        if (!(error instanceof DOMException && error.name === "AbortError")) dropped();
       }
     },
     [handle],
@@ -135,10 +140,9 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
 
   // Marking the answers again after every judge went quiet. It calls no
   // candidate model: the server marks the answers it already has.
-  const [judgeAgain, setJudgeAgain] = useState<"ready" | "running" | "used">("ready");
   const runJudgeAgain = useCallback(
     async (ticket: string) => {
-      setJudgeAgain("running");
+      dispatch({ type: "judge-again", state: "running" });
       try {
         const response = await fetch("/api/followup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket, kind: "judge" }) });
         const outcome = await readRun(response, handle);
@@ -146,7 +150,7 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
       } catch {
         handle({ type: "judge-failed", reason: "The connection dropped before the judges answered." });
       }
-      setJudgeAgain("used");
+      dispatch({ type: "judge-again", state: "used" });
     },
     [handle],
   );
@@ -346,7 +350,7 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
                 judging={judging}
                 onSet={(modelId, testCaseId, checkId, pass) => dispatch({ type: "set-check", modelId, testCaseId, checkId, pass })}
                 onJudgeAgain={state.ticket === null ? undefined : () => void runJudgeAgain(state.ticket as string)}
-                judgeAgainState={judgeAgain}
+                judgeAgainState={state.judgeAgain}
               />
               {state.plan !== null && (
                 <WordsCompare state={state} summaries={summaries} config={config} startedAt={followStarts.words ?? null} waitingForVerdict={recommended === null} />

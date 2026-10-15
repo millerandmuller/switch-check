@@ -8,6 +8,8 @@ import { computeVerdict } from "../../lib/verdict.ts";
 import { toRunData } from "../../lib/events.ts";
 import { LIMITS } from "../../lib/limits.ts";
 import { routeBudgetMs } from "../../lib/server/deps.ts";
+import { complete } from "../../lib/server/openrouter.ts";
+import { priceCaps, modelName } from "../../lib/models.ts";
 import { candidates, prices, depsWith, judgeReplyFor, planBody, SONNET, LUNA, HAIKU } from "./test-helpers.mjs";
 
 const WRITER = "google/gemini-3.8-flash";
@@ -125,6 +127,33 @@ test("a model that fails is not tested, with its reason, and the others still fi
   assert.equal(events.filter((e) => e.type === "judged").length, 6);
   const verdict = events.find((e) => e.type === "verdict").verdict;
   assert.equal(verdict.decision, "test-more");
+  assert.match(verdict.reason, /GPT-6 Luna \(0 of 3 test cases answered\)/);
+});
+
+// F1 failure path, end to end: OpenRouter finds no zero-data-retention
+// endpoint at the listed price and answers 404. The model is not tested with
+// that reason, through the same path as any failure, and is never counted as
+// worse: the verdict asks for more testing instead of ranking it.
+test("a model with no zero-data-retention endpoint is not tested with that reason, and the verdict ignores it", async () => {
+  const noEndpoint = {
+    apiKey: "sk-or-test-key-1234567890",
+    priceCaps: priceCaps(prices),
+    nameOf: (id) => modelName(candidates, id),
+    now: () => 0,
+    fetchImpl: async () => new Response(JSON.stringify({ error: { message: "No endpoints found that satisfy the max price for this request", code: 404 } }), { status: 404 }),
+  };
+  const refused = await complete(noEndpoint, { model: LUNA, prompt: "p", maxTokens: LIMITS.maxOutputTokens, timeoutMs: 45_000 });
+  const reason = "No zero-data-retention endpoint was available for GPT-6 Luna at its listed price.";
+  assert.equal(refused.reason, reason);
+  const { deps } = depsWith(script({ luna: () => refused }));
+  const events = await collect(runCheck(deps, job, "run-1"));
+  const lunaCells = events.filter((e) => e.type === "cell" && e.modelId === LUNA);
+  assert.equal(lunaCells.length, 3);
+  assert.ok(lunaCells.every((e) => e.cell.status === "not-tested" && e.cell.reason === reason));
+  assert.equal(events.filter((e) => e.type === "judged" && e.modelId === LUNA).length, 0, "a refused model was judged");
+  const verdict = events.find((e) => e.type === "verdict").verdict;
+  assert.equal(verdict.decision, "test-more");
+  assert.notEqual(verdict.model, LUNA);
   assert.match(verdict.reason, /GPT-6 Luna \(0 of 3 test cases answered\)/);
 });
 

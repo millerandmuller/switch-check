@@ -1,13 +1,16 @@
 // The model call: request shape, caps, timing, retry and what an error says.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildRequest, complete, redact, shapeCompletion } from "../../lib/server/openrouter.ts";
+import { buildRequest, complete, noZdrEndpointReason, redact, shapeCompletion } from "../../lib/server/openrouter.ts";
 import { LIMITS } from "../../lib/limits.ts";
+import { priceCaps } from "../../lib/models.ts";
+import { candidates, prices } from "./test-helpers.mjs";
 
 const KEY = "sk-or-test-key-1234567890";
+const CAP = { prompt: 1, completion: 2 };
 
 test("every call carries the key in the header only, the cap and the same reasoning budget", () => {
-  const { url, options } = buildRequest(KEY, { model: "a/b", prompt: "Hello {x}", maxTokens: 600 });
+  const { url, options } = buildRequest(KEY, { model: "a/b", prompt: "Hello {x}", maxTokens: 600 }, CAP);
   assert.equal(url, "https://openrouter.ai/api/v1/chat/completions");
   assert.equal(options.headers.Authorization, `Bearer ${KEY}`);
   assert.ok(!options.body.includes(KEY), "the key must not be in the body");
@@ -21,7 +24,7 @@ test("every call carries the key in the header only, the cap and the same reason
 // answer. Asking for only the answer's 600 lets a reasoning model spend all
 // 600 on reasoning and return nothing, which reads as "not tested".
 test("hidden reasoning is asked for on top of the answer's allowance, not out of it", () => {
-  const body = JSON.parse(buildRequest(KEY, { model: "a/b", prompt: "p", maxTokens: LIMITS.maxOutputTokens }).options.body);
+  const body = JSON.parse(buildRequest(KEY, { model: "a/b", prompt: "p", maxTokens: LIMITS.maxOutputTokens }, CAP).options.body);
   assert.equal(body.max_tokens, LIMITS.maxOutputTokens + LIMITS.maxReasoningTokens);
   assert.equal(
     body.max_tokens - LIMITS.maxReasoningTokens,
@@ -36,7 +39,7 @@ test("hidden reasoning is asked for on top of the answer's allowance, not out of
   assert.equal(body.reasoning.exclude, true);
   // The writer and the judge get the same headroom, or a long reasoning spell
   // leaves no plan and no judgement.
-  const writer = JSON.parse(buildRequest(KEY, { model: "a/b", prompt: "p", maxTokens: LIMITS.writerMaxTokens }).options.body);
+  const writer = JSON.parse(buildRequest(KEY, { model: "a/b", prompt: "p", maxTokens: LIMITS.writerMaxTokens }, CAP).options.body);
   assert.equal(writer.max_tokens, LIMITS.writerMaxTokens + LIMITS.maxReasoningTokens);
   assert.equal(writer.reasoning.max_tokens, LIMITS.maxReasoningTokens);
 });
@@ -46,7 +49,7 @@ test("hidden reasoning is asked for on top of the answer's allowance, not out of
 // reasoning (600 of 600, and again 1,624 of 1,624) and return nothing, while
 // the same model under a 1,024-token budget stopped at 873 and answered.
 test("the reasoning allowance is asked for as a budget, never as an effort", () => {
-  const body = JSON.parse(buildRequest(KEY, { model: "a/b", prompt: "p", maxTokens: 600 }).options.body);
+  const body = JSON.parse(buildRequest(KEY, { model: "a/b", prompt: "p", maxTokens: 600 }, CAP).options.body);
   assert.equal(body.reasoning.effort, undefined, "an effort does not bound the reasoning, and may not be sent with a budget");
   assert.equal(typeof body.reasoning.max_tokens, "number");
   assert.deepEqual(Object.keys(body.reasoning).sort(), ["exclude", "max_tokens"]);
@@ -110,6 +113,8 @@ function transport(responses, clock = { t: 0 }) {
     clock,
     transport: {
       apiKey: KEY,
+      priceCaps: { "a/b": CAP },
+      nameOf: (id) => (id === "a/b" ? "Model B" : id),
       now: () => clock.t,
       fetchImpl: async (url, init) => {
         calls.push({ url, init });
@@ -204,4 +209,55 @@ test("regex characters in a key are matched literally, and a key with spaces can
   const started = Date.now();
   redact(`${"a ".repeat(30000)}`, `a${" ".repeat(72)}`);
   assert.ok(Date.now() - started < 1000);
+});
+
+// F1: OpenRouter's default routing allows endpoints that keep the task and
+// train on it. Every call, whatever its role, asks for zero-data-retention
+// endpoints only, capped at the price the page's cost figures use.
+test("every call, candidate, writer and judge, asks for zero data retention at the listed price", async () => {
+  const caps = priceCaps(prices);
+  const sent = [];
+  const t = {
+    apiKey: KEY,
+    priceCaps: caps,
+    nameOf: (id) => id,
+    now: () => 0,
+    fetchImpl: async (url, init) => {
+      sent.push(JSON.parse(init.body));
+      return new Response(JSON.stringify(good.body), { status: 200 });
+    },
+  };
+  const roles = { candidate: candidates.default_models[0], writer: candidates.writer.id, judge: candidates.judges[0].id };
+  for (const [role, model] of Object.entries(roles)) {
+    await complete(t, { model, prompt: "p", maxTokens: 600, timeoutMs: 45_000 });
+    const body = sent.at(-1);
+    const listed = prices.models[model];
+    assert.equal(body.model, model);
+    assert.equal(body.provider?.zdr, true, `the ${role} call is not restricted to zero data retention`);
+    // OpenRouter's max_price is USD per million tokens, the unit of model-prices.json.
+    assert.deepEqual(body.provider.max_price, { prompt: listed.input_per_million, completion: listed.output_per_million }, `the ${role} call's cap is not its listed price`);
+    assert.equal(body.provider.data_collection, undefined, "zdr is the restriction; nothing is set that could loosen it");
+  }
+});
+
+test("a model with no listed price is never sent, so no call leaves without its cap", async () => {
+  const { transport: t, calls } = transport([good]);
+  const result = await complete(t, { ...request, model: "x/unpriced" });
+  assert.equal(result.status, "failed");
+  assert.match(result.reason, /no listed price/);
+  assert.equal(calls.length, 0);
+});
+
+// F1 failure path: with zdr and the cap, OpenRouter may find no endpoint and
+// answer 404 (read live on 2026-10-15: "No endpoints found that satisfy the
+// max price for this request"). That is not tested with a plain reason, never
+// a silent fallback to another endpoint.
+test("no qualifying endpoint reads not tested with the zero-data-retention reason", async () => {
+  const none = { status: 404, body: { error: { message: "No endpoints found that satisfy the max price for this request", code: 404 } } };
+  const { transport: t, calls } = transport([none, none]);
+  const result = await complete(t, request);
+  assert.equal(result.status, "failed");
+  assert.equal(result.reason, "No zero-data-retention endpoint was available for Model B at its listed price.");
+  assert.equal(result.reason, noZdrEndpointReason("Model B"));
+  for (const call of calls) assert.equal(JSON.parse(call.init.body).provider.zdr, true, "a retry is never sent without zdr");
 });

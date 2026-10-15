@@ -4,7 +4,7 @@
 
 import candidates from "../../config/candidates.json" with { type: "json" };
 import prices from "../../config/model-prices.json" with { type: "json" };
-import type { ModelConfig, ModelPrices } from "../models.ts";
+import { modelName, priceCaps, type ModelConfig, type ModelPrices } from "../models.ts";
 import type { Deps } from "./deps.ts";
 import { complete } from "./openrouter.ts";
 
@@ -12,7 +12,13 @@ export const modelConfig = candidates as unknown as ModelConfig;
 export const modelPrices = prices as unknown as ModelPrices;
 
 export function liveDeps(apiKey: string): Deps {
-  const transport = { fetchImpl: fetch, now: Date.now, apiKey };
+  const transport = {
+    fetchImpl: fetch,
+    now: Date.now,
+    apiKey,
+    priceCaps: priceCaps(modelPrices),
+    nameOf: (id: string) => modelName(modelConfig, id),
+  };
   return {
     complete: (request) => complete(transport, request),
     now: Date.now,

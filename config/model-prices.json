@@ -1,52 +1,85 @@
 {
-  "note": "Written by npm run check-models. Prices are USD per million tokens, as published by OpenRouter on the date in checked_on.",
+  "note": "Written by npm run check-models. Prices are USD per million tokens, as published by OpenRouter on the date in checked_on. zdr_at_price lists the zero-data-retention endpoints at or under that price, read from zdr_source_url on the same date; every call is capped at the listed price and sent only to such endpoints.",
   "source_url": "https://openrouter.ai/api/v1/models",
-  "checked_on": "2026-10-09",
+  "zdr_source_url": "https://openrouter.ai/api/v1/endpoints/zdr",
+  "checked_on": "2026-10-15",
   "models": {
     "anthropic/claude-haiku-5.5": {
       "listed": true,
       "input_per_million": 0.1,
-      "output_per_million": 0.5
+      "output_per_million": 0.5,
+      "zdr_at_price": [
+        "google-vertex/global",
+        "amazon-bedrock"
+      ]
     },
     "anthropic/claude-sonnet-5.5": {
       "listed": true,
       "input_per_million": 2,
-      "output_per_million": 10
+      "output_per_million": 10,
+      "zdr_at_price": [
+        "google-vertex/global",
+        "amazon-bedrock"
+      ]
     },
     "anthropic/claude-opus-5.5": {
       "listed": true,
       "input_per_million": 4,
-      "output_per_million": 20
+      "output_per_million": 20,
+      "zdr_at_price": [
+        "amazon-bedrock",
+        "google-vertex/global"
+      ]
     },
     "openai/gpt-6-luna": {
       "listed": true,
       "input_per_million": 0.1,
-      "output_per_million": 0.5
+      "output_per_million": 0.5,
+      "zdr_at_price": [
+        "azure"
+      ]
     },
     "openai/gpt-6-sol": {
       "listed": true,
       "input_per_million": 2,
-      "output_per_million": 10
+      "output_per_million": 10,
+      "zdr_at_price": [
+        "azure"
+      ]
     },
     "deepseek/deepseek-v4.1-flash": {
       "listed": true,
-      "input_per_million": 0.3,
-      "output_per_million": 1.2
+      "input_per_million": 0.02376,
+      "output_per_million": 0.72,
+      "zdr_at_price": [
+        "open-inference/fp4"
+      ]
     },
     "google/gemini-3.8-flash": {
       "listed": true,
       "input_per_million": 0.75,
-      "output_per_million": 3.75
+      "output_per_million": 3.75,
+      "zdr_at_price": [
+        "google-vertex/global"
+      ]
     },
     "google/gemini-2.5-flash": {
       "listed": true,
       "input_per_million": 0.3,
-      "output_per_million": 2.5
+      "output_per_million": 2.5,
+      "zdr_at_price": [
+        "google-vertex/eu",
+        "google-vertex/global",
+        "google-vertex"
+      ]
     },
     "mistralai/mistral-medium-3.1": {
       "listed": true,
       "input_per_million": 0.4,
-      "output_per_million": 2
+      "output_per_million": 2,
+      "zdr_at_price": [
+        "mistral/zdr"
+      ]
     }
   }
 }

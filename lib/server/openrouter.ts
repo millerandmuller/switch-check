@@ -38,9 +38,30 @@ export type Completion =
 
 export type Fetch = (url: string, init: RequestInit) => Promise<Response>;
 
-export type Transport = { fetchImpl: Fetch; now: () => number; apiKey: string };
+// The most a call may be billed, USD per million tokens, the unit OpenRouter's
+// `provider.max_price` takes (openrouter.ai/docs/features/provider-routing,
+// "Max Price": `{"prompt": 1, "completion": 2}` is $1/M in, $2/M out). It is
+// the listed price from config/model-prices.json, so a zero-data-retention
+// endpoint that charges more is refused rather than quietly costing more than
+// the figures on the page say.
+export type PriceCap = { prompt: number; completion: number };
 
-export function buildRequest(apiKey: string, request: Pick<CompleteRequest, "model" | "prompt" | "maxTokens">) {
+export type Transport = {
+  fetchImpl: Fetch;
+  now: () => number;
+  apiKey: string;
+  // Every model the app may call, with its cap. A model without one is never
+  // sent, so no call leaves without the price cap.
+  priceCaps: Record<string, PriceCap>;
+  // The name a reason should use for a model id.
+  nameOf: (id: string) => string;
+};
+
+export function noZdrEndpointReason(name: string): string {
+  return `No zero-data-retention endpoint was available for ${name} at its listed price.`;
+}
+
+export function buildRequest(apiKey: string, request: Pick<CompleteRequest, "model" | "prompt" | "maxTokens">, priceCap: PriceCap) {
   return {
     url: OPENROUTER_URL,
     options: {
@@ -64,6 +85,11 @@ export function buildRequest(apiKey: string, request: Pick<CompleteRequest, "mod
         // way (openrouter.ai/docs/use-cases/reasoning-tokens).
         reasoning: { max_tokens: LIMITS.maxReasoningTokens, exclude: true },
         messages: [{ role: "user", content: request.prompt }],
+        // Only endpoints OpenRouter lists as zero data retention, and none
+        // dearer than the listed price. OpenRouter's default lets a provider
+        // keep the task and train on it. If no endpoint qualifies, OpenRouter
+        // answers 404 and the model is not tested; there is no fallback.
+        provider: { zdr: true, max_price: { prompt: priceCap.prompt, completion: priceCap.completion } },
       }),
     },
   };
@@ -134,7 +160,11 @@ function shortReason(value: unknown, exactKey?: string): string {
 
 async function callOnce(transport: Transport, request: CompleteRequest, timeoutMs: number): Promise<Completion> {
   const startedAt = transport.now();
-  const built = buildRequest(transport.apiKey, request);
+  const priceCap = transport.priceCaps[request.model];
+  if (priceCap === undefined) {
+    return { status: "failed", reason: `${transport.nameOf(request.model)} has no listed price, so it was not called.`, timedOut: false, ms: 0 };
+  }
+  const built = buildRequest(transport.apiKey, request, priceCap);
   // The clock stops after the body is read, not when the headers arrive:
   // OpenRouter can send headers before the model has finished.
   const elapsed = () => Math.round(transport.now() - startedAt);
@@ -149,6 +179,12 @@ async function callOnce(transport: Transport, request: CompleteRequest, timeoutM
         detail = shortReason(((await response.json()) as ApiBody)?.error?.message, transport.apiKey);
       } catch {
         // No readable body: the status alone is the reason.
+      }
+      // What OpenRouter says when the ZDR and price filters leave nothing
+      // (checked 2026-10-15: 404 "No endpoints found that satisfy the max
+      // price for this request"). Said in the page's words, as not tested.
+      if (response.status === 404 && /no endpoints found/i.test(detail)) {
+        return { status: "failed", reason: noZdrEndpointReason(transport.nameOf(request.model)), timedOut: false, ms: elapsed() };
       }
       return { status: "failed", reason: `OpenRouter answered ${response.status}${detail ? `: ${detail}` : "."}`, timedOut: false, ms: elapsed() };
     }

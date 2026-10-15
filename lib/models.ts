@@ -64,3 +64,15 @@ export function configProblems(config: ModelConfig, prices: ModelPrices): string
   if (!/^\d{4}-\d{2}-\d{2}$/.test(prices.checked_on)) problems.push("The price check has no date.");
   return problems;
 }
+
+// The price cap each model is called under: its listed price, in the unit the
+// file and OpenRouter's `max_price` share (USD per million tokens). A model
+// with no listed price gets no cap, and a model without a cap is never called.
+export function priceCaps(prices: ModelPrices): Record<string, { prompt: number; completion: number }> {
+  const caps: Record<string, { prompt: number; completion: number }> = {};
+  for (const [id, price] of Object.entries(prices.models)) {
+    if (!price.listed || price.input_per_million === null || price.output_per_million === null) continue;
+    caps[id] = { prompt: price.input_per_million, completion: price.output_per_million };
+  }
+  return caps;
+}

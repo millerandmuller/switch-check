@@ -22,6 +22,10 @@ AI-Dopters 30-Day Community Hackathon.
   and the ticked models stay as the visitor left them, so a visitor who looks
   at an example and then types a task does not inherit GPT-6 Luna. The note at
   the top of a recorded verdict now names the task it was recorded for.
+- **A follow-up or a second judging that finishes late no longer writes to
+  the screen.** If a recorded example or a new check has taken the screen, the
+  late events are dropped, so a recording never shows a prompt written for
+  another task and a new check keeps its own one retry.
 - **The two pictures on `/what-changed` are retaken.** The "after" picture
   showed the Oct 9 verdict wording and the old cost chips; it now shows the
   current wording, the recorded note and the new button. The "before" picture
@@ -30,7 +34,8 @@ AI-Dopters 30-Day Community Hackathon.
 ### Added
 
 - **A "Copy this verdict" button under the verdict.** It copies the verdict
-  sentence, the evidence line and the page address as plain text. A recording
+  sentence, the evidence line, the quoted failing line when there is one and
+  the page address as plain text. A recording
   or a replay says so in the copied text, so a pasted result never reads as a
   run that happened just now. It has its own "Copied" state.
 - **A "Where it stands" section in the README**: the commit count and test

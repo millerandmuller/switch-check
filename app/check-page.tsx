@@ -52,6 +52,9 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
   const [recordedTask, setRecordedTask] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
+  // The ticket of the run on screen. A follow-up or a second judging of an
+  // earlier run drops its late events once another run has taken the screen.
+  const shownTicket = useRef<string | null>(null);
   const followedFor = useRef<string | null>(null);
   const verdictRef = useRef<HTMLElement | null>(null);
   const scrolledFor = useRef<string | null>(null);
@@ -88,6 +91,10 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
     if (event.type === "followup-start") setFollowStarts((current) => ({ ...current, [event.kind]: performance.now() }));
     dispatch(event);
   }, []);
+
+  useEffect(() => {
+    shownTicket.current = state.ticket;
+  }, [state.ticket]);
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -148,29 +155,37 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
   // candidate model: the server marks the answers it already has.
   const runJudgeAgain = useCallback(
     async (ticket: string) => {
+      const onScreen = () => shownTicket.current === ticket;
+      const handleIfShown = (event: RunEvent) => {
+        if (onScreen()) handle(event);
+      };
       dispatch({ type: "judge-again", state: "running" });
       try {
         const response = await fetch("/api/followup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket, kind: "judge" }) });
-        const outcome = await readRun(response, handle);
-        if (outcome.kind === "refused") handle({ type: "judge-failed", reason: outcome.error });
+        const outcome = await readRun(response, handleIfShown);
+        if (outcome.kind === "refused") handleIfShown({ type: "judge-failed", reason: outcome.error });
       } catch {
-        handle({ type: "judge-failed", reason: "The connection dropped before the judges answered." });
+        handleIfShown({ type: "judge-failed", reason: "The connection dropped before the judges answered." });
       }
-      dispatch({ type: "judge-again", state: "used" });
+      if (onScreen()) dispatch({ type: "judge-again", state: "used" });
     },
     [handle],
   );
 
   const runFollowup = useCallback(
     async (kind: "words" | "shape" | "variant", model: string, ticket: string) => {
-      // Follow-ups do not replace the run, so they do not abort it.
+      // Follow-ups do not replace the run, so they do not abort it. They do stop
+      // writing to the screen once another run, or a recording, has replaced it.
+      const handleIfShown = (event: RunEvent) => {
+        if (shownTicket.current === ticket) handle(event);
+      };
       try {
         const response = await fetch("/api/followup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket, kind, model }) });
-        const outcome = await readRun(response, handle);
-        if (outcome.kind === "refused") handle({ type: "followup-failed", kind, reason: outcome.error });
-        else if (!outcome.complete && kind !== "shape") handle({ type: "followup-failed", kind, reason: "The connection dropped before this finished." });
+        const outcome = await readRun(response, handleIfShown);
+        if (outcome.kind === "refused") handleIfShown({ type: "followup-failed", kind, reason: outcome.error });
+        else if (!outcome.complete && kind !== "shape") handleIfShown({ type: "followup-failed", kind, reason: "The connection dropped before this finished." });
       } catch {
-        handle({ type: "followup-failed", kind, reason: "The connection dropped before this finished." });
+        handleIfShown({ type: "followup-failed", kind, reason: "The connection dropped before this finished." });
       }
     },
     [handle],

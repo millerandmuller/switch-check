@@ -74,7 +74,7 @@ async function* replayEvents(events: RunEvent[]): AsyncGenerator<RunEvent> {
   yield* events;
 }
 
-// A run is worth keeping for the next visitor only if it finished cleanly:
+// A run is worth keeping for a replay only if it finished cleanly:
 // a verdict, a judge that worked, and every model answering.
 export function isCacheable(state: RunState): boolean {
   if (state.serverVerdict === null || state.error !== null || state.judgeFailed !== null) return false;
@@ -89,7 +89,7 @@ export async function handleCheck(raw: unknown, visitor: string, services: Servi
   const request = parsed.value;
 
   // A repeat of the same ask is answered from the cache: no model, no count.
-  const key = request.kind === "fresh" ? cacheKey(services.scope, request.task, request.models) : null;
+  const key = request.kind === "fresh" ? cacheKey(services.scope, visitor, request.task, request.models) : null;
   if (request.kind === "fresh" && key !== null) {
     const cached = await readCache(store, key);
     if (cached !== null) {

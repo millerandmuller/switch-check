@@ -62,20 +62,33 @@ test("asking the same thing again is answered from the cache: no model call, no 
   const { services, calls } = setup();
   await drain(await handleCheck(body, "v1", services));
   const before = calls.length;
-  const again = await drain(await handleCheck({ ...body, models: [HAIKU, SONNET, LUNA] }, "v2", services));
+  const again = await drain(await handleCheck({ ...body, models: [HAIKU, SONNET, LUNA] }, "v1", services));
   assert.equal(calls.length, before);
   assert.equal(again[0].type, "start");
   assert.equal(again[0].source, "cached");
   assert.ok(!again.some((e) => e.type === "ticket"), "a cached run has no ticket, so nothing live can start from it");
   assert.equal(again.find((e) => e.type === "cell" && e.cell.status === "answered").cell.ms.state, "recorded");
-  assert.equal(await services.store.get(visitorLimitKey(SCOPE, "2026-10-09", "v2")), null);
+  assert.equal(await services.store.get(visitorLimitKey(SCOPE, "2026-10-09", "v1")), "1");
   assert.equal(await services.store.get(siteLimitKey(SCOPE, "2026-10-09")), "1");
+});
+
+// F2: a finished run is replayed only to the visitor who ran it. Another
+// visitor with the very same task gets a run of their own, and never sees the
+// first visitor's answers or follow-ups.
+test("another visitor asking the very same thing gets a run of their own, not the first visitor's", async () => {
+  const { services, calls } = setup();
+  await drain(await handleCheck(body, "v1", services));
+  const before = calls.length;
+  const other = await drain(await handleCheck(body, "v2", services));
+  assert.notEqual(other[0].source, "cached", "the second visitor was replayed the first visitor's run");
+  assert.ok(calls.length > before, "no model was called for the second visitor");
+  assert.equal(await services.store.get(visitorLimitKey(SCOPE, "2026-10-09", "v2")), "1");
 });
 
 test("a cached run is told this visitor's current model, and carries no stale verdict", async () => {
   const { services } = setup();
   await drain(await handleCheck(body, "v1", services));
-  const again = await drain(await handleCheck({ ...body, current: LUNA }, "v2", services));
+  const again = await drain(await handleCheck({ ...body, current: LUNA }, "v1", services));
   assert.equal(again[0].current, LUNA);
   assert.ok(!again.some((e) => e.type === "verdict"));
   const state = replay(again);
@@ -238,13 +251,13 @@ test("the shaped prompt is saved on the server, and only that prompt can be test
   assert.ok(lunaPrompts.every((p) => p.startsWith("Shaped.")), "the saved prompt, not anything the page sent");
 });
 
-test("your words and the shaped prompt join the cached run for the next visitor", async () => {
+test("your words and the shaped prompt join the cached run for the same visitor's replay", async () => {
   const { services } = setup();
   const ticket = await liveRun(services);
   await drain(await handleFollowup({ ticket, kind: "words", model: LUNA }, services));
   await drain(await handleFollowup({ ticket, kind: "shape", model: LUNA }, services));
   await drain(await handleFollowup({ ticket, kind: "variant", model: LUNA }, services));
-  const replayed = await drain(await handleCheck(body, "v7", services));
+  const replayed = await drain(await handleCheck(body, "v1", services));
   assert.ok(replayed.some((e) => e.type === "followup-cell" && e.kind === "words"));
   assert.ok(replayed.some((e) => e.type === "shape"));
   assert.ok(!replayed.some((e) => e.type === "followup-start" && e.kind === "variant"), "testing the shaped prompt stays live");
@@ -268,7 +281,7 @@ test("the status says what is left today and whether live runs are on", async ()
 test("the cache key the handler uses is the one guard.ts defines", async () => {
   const { services } = setup();
   await drain(await handleCheck(body, "v1", services));
-  assert.ok(await services.store.get(cacheKey(SCOPE, body.task, body.models)));
+  assert.ok(await services.store.get(cacheKey(SCOPE, "v1", body.task, body.models)));
 });
 
 test("the response is a stream of json lines the page can read back", async () => {

@@ -80,16 +80,22 @@ export async function peekLimits(store: Store | null, scope: string, visitor: st
   }
 }
 
-// The cache key is the task and the chosen models, nothing else. Whitespace
-// runs are squashed and the models sorted, so the same ask is the same key.
-// The version changes when the prompts or the verdict rule do. The scope is
-// the environment, for the same reason the daily counts carry it: one store
-// is shared, and a run finished on a preview must never be served as the live
-// site's own finished run.
-const CACHE_VERSION = "v1";
+// The cache key is the visitor, the task and the chosen models, nothing else.
+// The visitor is in it so a finished run is replayed only to the person who
+// ran it: without it, anyone who typed the same task saw another person's
+// answers and follow-ups for a day. The visitor is the keyed hash used for
+// the daily count, never the address, and it is hashed again with the task,
+// so the key holds neither. Whitespace runs are squashed and the models
+// sorted, so the same ask is the same key. The version changes when the
+// prompts, the verdict rule or what the key holds do; v2 is the version with
+// the visitor in it, so no entry shared under v1 is ever served again. The
+// scope is the environment, for the same reason the daily counts carry it:
+// one store is shared, and a run finished on a preview must never be served as
+// the live site's own finished run.
+const CACHE_VERSION = "v2";
 
-export function cacheKey(scope: string, task: string, models: string[]): string {
-  const normal = JSON.stringify({ task: task.trim().replace(/\s+/g, " "), models: [...models].sort() });
+export function cacheKey(scope: string, visitor: string, task: string, models: string[]): string {
+  const normal = JSON.stringify({ visitor, task: task.trim().replace(/\s+/g, " "), models: [...models].sort() });
   return `cache:${scope}:${CACHE_VERSION}:${createHash("sha256").update(normal).digest("hex")}`;
 }
 
@@ -116,12 +122,12 @@ export async function writeCache(store: Store | null, key: string, entry: CacheE
   try {
     await store.set(key, JSON.stringify(entry), LIMITS.cacheSeconds);
   } catch {
-    // A cache that cannot be written costs the next visitor a run, nothing more.
+    // A cache that cannot be written costs the next replay a run, nothing more.
   }
 }
 
-// A follow-up that finished is added to the cached run, so the next visitor
-// sees "your words" and the shaped prompt as well.
+// A follow-up that finished is added to the cached run, so a replay of it
+// shows "your words" and the shaped prompt as well.
 export async function addToCache(store: Store | null, key: string, events: RunEvent[]): Promise<void> {
   if (store === null) return;
   const entry = await readCache(store, key);

@@ -83,9 +83,16 @@ export function limitsNotice(): string {
 }
 
 // What happens to a task once it is sent. Stated next to the Check button, not
-// buried: the person is told before the first run, not after.
+// buried: the person is told before the first run, not after. Every sentence
+// names who holds the data and for how long, and none promises what the app
+// does not control: the app controls which endpoints it asks for (zero data
+// retention, lib/server/openrouter.ts) and what it keeps itself, not what
+// OpenRouter's providers or the host keep. "Only you can see it" holds because
+// the cache key carries the visitor (cacheKey in lib/server/guard.ts).
+// "OpenRouter does not log them for this app" is the account's logging
+// setting, read in the dashboard on 2026-10-15 (docs/model-connection.md).
 export function privacyNotice(): string {
   const hours = LIMITS.cacheSeconds / 3600;
   const ticketMinutes = LIMITS.ticketSeconds / 60;
-  return `Your task, the test cases and the answers go to OpenRouter and on to the provider of each model you pick. A finished check, with the task it came from, is kept on the server for ${hours} hours so the same task on the same models is not paid for twice. The follow-ups of a check are kept ${ticketMinutes} minutes. Your address is never stored, only a keyed hash of it for the day's count. Nothing else is saved.`;
+  return `Your task, the test cases and the answers go through OpenRouter to the model providers, and only to endpoints OpenRouter lists as zero data retention. OpenRouter does not log them for this app. This app keeps a finished check for ${hours} hours so you can see it again without paying twice; only you can see it. Follow-ups are kept ${ticketMinutes} minutes. Your address is not stored by this app, only a keyed hash for the day's count; the hosting platform keeps its own short request logs. Please don't paste passwords or anything you would not put in an email.`;
 }

@@ -22,7 +22,8 @@ the shaped prompt, and 3 calls and 1 judge if the person presses Test it.
 Models: the candidates, the writer and the judges are in
 `config/candidates.json`; every one has a dated price in
 `config/model-prices.json`, written by `npm run check-models` (last run
-2026-10-09, 9 of 9 listed). Candidates: Claude Haiku 5.5, Sonnet 5.5, Opus 5.5,
+2026-10-15, 9 of 9 listed, 9 of 9 with a zero-data-retention endpoint at the
+listed price, section 6d). Candidates: Claude Haiku 5.5, Sonnet 5.5, Opus 5.5,
 GPT-6 Luna, GPT-6 Sol, DeepSeek V4.1 Flash. Writer: Gemini 3.8 Flash. Judges, in
 the order they are tried: Gemini 2.5 Flash, Gemini 3.8 Flash, Mistral Medium
 3.1 (chosen by measurement, section 2a). A test checks the two files agree.
@@ -321,6 +322,73 @@ So the rule is doing what the brief asks of it on a field that is too evenly
 matched to separate. No rule was changed. If fewer "test more" verdicts are
 wanted, the levers are more test cases or harder checks, or default models
 with prices that differ, not a softer rule.
+
+## 6d. Data handling, 2026-10-15
+
+**What every call asks for.** Each model call, whether candidate, writer or
+judge, is sent with `provider: { zdr: true, max_price: { prompt, completion } }`
+(`buildRequest` in `lib/server/openrouter.ts`). `zdr: true` restricts routing to
+endpoints OpenRouter lists as zero data retention. Without it, OpenRouter's
+default (`data_collection: "allow"`) lets a request reach providers that store
+it and may train on it. `max_price` is the model's listed price from
+`config/model-prices.json`, in the unit OpenRouter's `max_price` takes: USD per
+million tokens (openrouter.ai/docs/features/provider-routing, "Max Price",
+read 2026-10-15). Several ZDR endpoints cost 10% more than the listed price
+(regional Claude, Azure, Bedrock), and without the cap they would make every
+cost figure on the page low by up to 10%. A model with no listed price is never
+called at all.
+
+**When no endpoint qualifies.** OpenRouter answers 404. Read live on
+2026-10-15 with a cap no endpoint could meet, which cost nothing: `404 "No
+endpoints found that satisfy the max price for this request"`. The model is
+then **not tested**, with the reason "No zero-data-retention endpoint was
+available for [model] at its listed price.", through the same path as any
+failed call. It is never counted as worse, and there is no fallback to an
+endpoint that may keep the task.
+
+**Checked before every price update.** `npm run check-models` also reads
+`GET https://openrouter.ai/api/v1/endpoints/zdr` and fails if any configured
+model has no ZDR endpoint at or under its listed price. Endpoints with a service
+tier (flex, priority) are not counted, because OpenRouter only routes to them
+when a request opts into that tier and these never do. The qualifying
+endpoints for each model are written next to its price in
+`config/model-prices.json` (`zdr_at_price`) and in `docs/models-checked.md`.
+
+On 2026-10-15 all nine models had one. One consequence to watch: OpenRouter's
+listed price for DeepSeek V4.1 Flash fell that day from $0.30 / $1.20 to
+$0.024 / $0.72, and at that cap a single ZDR endpoint qualifies,
+`open-inference/fp4`, a 4-bit quantized one, where the old price had over
+twenty. Kept on purpose: the cap is the price the cost figure uses. The cost is
+that DeepSeek has no failover and runs quantized. It is not a default model.
+
+**The OpenRouter account's privacy settings.** These were read in the signed-in
+OpenRouter dashboard on 2026-10-15 and were not changed:
+
+| Setting | Where | State on 2026-10-15 |
+| --- | --- | --- |
+| Input & Output Logging (shows prompts and completions in logs) | Workspace > Observability | **Off** |
+| Broadcast to external observability platforms | Workspace > Observability | **Off**, no destinations |
+| Zero Data Retention, account-wide (all models, Anthropic, OpenAI, Google, SpaceXAI) | Account > Privacy | All **off**, so per-request `zdr: true` is what enforces it |
+| Allow paid endpoints that train on request data | Account > Privacy | **Off** |
+| Allow free endpoints that train on request data | Account > Privacy | **On** (no Switch Check model is free, so it does not touch this app) |
+| Allow free endpoints that publish prompts | Account > Privacy | **Off** |
+| Allow 1% data discount in workspaces | Account > Privacy | **Off** |
+
+So OpenRouter keeps no prompt text for this account. The same page says, for
+Google's account-level ZDR toggle, "Vertex endpoints require Safety Retention".
+For that reason the notice on the page says the task goes "only to endpoints
+OpenRouter lists as zero data retention", which is what the app controls, and
+does not say that they keep nothing.
+
+**What the app keeps itself.** A finished check is cached for 24 hours under a
+key made from the visitor's keyed hash, the task and the models
+(`cacheKey` in `lib/server/guard.ts`, version `v2`), so only the visitor who ran
+it is shown it again. Before 2026-10-15 the key held only the task and the
+models, so a second visitor who typed the same task was shown the first
+visitor's run; the `v1` entries are never read again and expire within the day.
+The key holds neither the task nor the address. Tickets for follow-ups are kept
+60 minutes. Error logs carry the error's name only. The hosting platform keeps
+its own request logs, which the app does not control.
 
 ## 7. Not decided yet
 

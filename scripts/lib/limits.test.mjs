@@ -1,6 +1,7 @@
 // Every cap on a run has a test, so a change to one cannot go unnoticed.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { billedOutputTokens, LIMITS, limitsNotice, privacyNotice } from "../../lib/limits.ts";
 import { routeBudgetMs } from "../../lib/server/deps.ts";
 import { candidates } from "./test-helpers.mjs";
@@ -96,11 +97,32 @@ test("the helper models are held to a cap too", () => {
   assert.ok(LIMITS.judgeMaxTokens > 0 && LIMITS.judgeMaxTokens <= 6000);
 });
 
-test("the privacy notice tells a person what is sent and how long it is kept", () => {
+test("the privacy notice tells a person what is sent, who keeps it and for how long", () => {
   const notice = privacyNotice();
   assert.ok(notice.includes("OpenRouter"));
-  assert.ok(notice.includes("24 hours"));
-  assert.ok(notice.includes("address is never stored"));
-  assert.ok(notice.includes("60 minutes"));
-  assert.ok(notice.includes("with the task it came from"));
+  assert.ok(notice.includes("24 hours"), notice);
+  assert.ok(notice.includes("60 minutes"), notice);
+  assert.ok(notice.includes("only you can see it"), notice);
+  assert.ok(notice.includes("Your address is not stored by this app"), notice);
+  assert.ok(notice.includes("the hosting platform keeps its own short request logs"), notice);
+  assert.ok(notice.includes("don't paste passwords"), notice);
+});
+
+// F3: "Nothing else is saved" promised what OpenRouter's providers and the host
+// keep, which the app does not control. The notice says what the app does
+// control: it asks only for endpoints OpenRouter lists as zero data retention.
+// It must not promise that they "keep nothing" either.
+test("the privacy notice does not promise what the app does not control", () => {
+  const notice = privacyNotice();
+  assert.ok(!/nothing else is saved/i.test(notice), `the old overclaim is back: ${notice}`);
+  assert.ok(notice.includes("endpoints OpenRouter lists as zero data retention"), notice);
+  assert.ok(!/keep nothing|never stored/i.test(notice), notice);
+});
+
+// The README quotes the notice. Built from the same function, so it cannot say
+// more, or less, than the page does.
+test("the README's privacy section quotes the notice the page shows, word for word", () => {
+  const readme = readFileSync(new URL("../../README.md", import.meta.url), "utf8");
+  assert.ok(readme.includes(`> ${privacyNotice()}`), "README.md does not quote privacyNotice() exactly");
+  assert.ok(!/nothing else is saved/i.test(readme), "the old overclaim is still in the README");
 });

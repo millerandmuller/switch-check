@@ -215,22 +215,36 @@ test("peeking says not live once the visitor or the site is out", async () => {
   assert.equal((await peekLimits(store, SCOPE, "v2", DAY)).live, true);
 });
 
-test("the cache key is the task and the models, whitespace squashed, models in any order", () => {
-  const a = cacheKey(SCOPE, "Sort my  emails\n", ["m/two", "m/one"]);
-  assert.equal(a, cacheKey(SCOPE, "  Sort my emails", ["m/one", "m/two"]));
-  assert.notEqual(a, cacheKey(SCOPE, "Sort my emails.", ["m/one", "m/two"]));
-  assert.notEqual(a, cacheKey(SCOPE, "Sort my emails", ["m/one", "m/three"]));
-  assert.notEqual(a, cacheKey(SCOPE, "sort my emails", ["m/one", "m/two"]), "case matters to a task");
-  assert.match(a, /^cache:production:v1:[0-9a-f]{64}$/);
+test("the cache key is the visitor, the task and the models, whitespace squashed, models in any order", () => {
+  const a = cacheKey(SCOPE, "v1", "Sort my  emails\n", ["m/two", "m/one"]);
+  assert.equal(a, cacheKey(SCOPE, "v1", "  Sort my emails", ["m/one", "m/two"]));
+  assert.notEqual(a, cacheKey(SCOPE, "v1", "Sort my emails.", ["m/one", "m/two"]));
+  assert.notEqual(a, cacheKey(SCOPE, "v1", "Sort my emails", ["m/one", "m/three"]));
+  assert.notEqual(a, cacheKey(SCOPE, "v1", "sort my emails", ["m/one", "m/two"]), "case matters to a task");
+  assert.match(a, /^cache:production:v2:[0-9a-f]{64}$/);
   // A preview must never be handed the live site's finished run, or the other way round.
-  assert.notEqual(a, cacheKey("preview", "Sort my  emails\n", ["m/two", "m/one"]));
-  assert.match(cacheKey("preview", "x", ["m/one"]), /^cache:preview:v1:/);
+  assert.notEqual(a, cacheKey("preview", "v1", "Sort my  emails\n", ["m/two", "m/one"]));
+  assert.match(cacheKey("preview", "v1", "x", ["m/one"]), /^cache:preview:v2:/);
+});
+
+// F2: with only the task and models in the key, a second person who typed the
+// same task was replayed the first person's answers and follow-ups for a day.
+test("two visitors with the same task and models never share a finished run; one visitor always does", () => {
+  const task = "Reply to Jane Doe about invoice 4471";
+  const models = ["m/one", "m/two"];
+  const visitorA = visitorId("203.0.113.9", "salt");
+  const visitorB = visitorId("198.51.100.4", "salt");
+  const a = cacheKey(SCOPE, visitorA, task, models);
+  assert.notEqual(a, cacheKey(SCOPE, visitorB, task, models), "another visitor got the same key");
+  assert.equal(a, cacheKey(SCOPE, visitorA, task, [...models].reverse()), "the same visitor lost their replay");
+  // The key holds neither the task nor the address, nor the visitor hash in the clear.
+  for (const leak of [task, "Jane", "4471", "203.0.113.9", visitorA]) assert.ok(!a.includes(leak), `the key contains ${leak}`);
 });
 
 test("a cached run is kept for 24 hours and follow-ups are added to it", async () => {
   let t = 0;
   const store = memoryStore(() => t);
-  const key = cacheKey(SCOPE, "task", ["a", "b"]);
+  const key = cacheKey(SCOPE, "v1", "task", ["a", "b"]);
   assert.equal(await readCache(store, key), null);
   await writeCache(store, key, { events: [{ type: "done", totalMs: 1 }], extra: [] });
   await addToCache(store, key, [{ type: "shape", model: "a", prompt: "p {input}" }]);

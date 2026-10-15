@@ -35,11 +35,15 @@ What the page cannot show: the judge is a model, so it can be wrong or lenient, 
 
 ## Spending limits
 
-A credit limit of **$25** is set on the model key in the OpenRouter dashboard (dated in `docs/model-connection.md`). In the app: 5 checks per visitor and 30 for the whole site per UTC day, counted before any model is called; at most 4 models, exactly 3 test cases, 600 answer tokens plus 1,024 reasoning tokens per call, 2,000 characters of task; a finished check is served again for 24 hours without a new run. At the worst the caps allow, one check is about $0.76, so a day costs at most $22.75. If the store behind the counts cannot be reached, live checks stop and the recorded examples are offered. All caps are constants in `lib/limits.ts`, each with a test, and a test checks that a whole day of worst-case checks stays under the credit limit.
+A credit limit of **$25** is set on the model key in the OpenRouter dashboard (dated in `docs/model-connection.md`). In the app: 5 checks per visitor and 30 for the whole site per UTC day, counted before any model is called; at most 4 models, exactly 3 test cases, 600 answer tokens plus 1,024 reasoning tokens per call, 2,000 characters of task; a finished check is served again for 24 hours without a new run. At the worst the caps allow, one check is about $0.69, so a day of 30 costs at most about $21 (prices of 2026-10-15). These figures are not kept by hand: they come from the caps in `lib/limits.ts` and the prices in `config/model-prices.json`, and `scripts/lib/models.test.mjs` recomputes them and fails if a worst-case day could reach the $25 limit. The breakdown is in `docs/model-connection.md`. If the store behind the counts cannot be reached, live checks stop and the recorded examples are offered.
 
 ## Privacy
 
-Your task, the test cases and the answers go to OpenRouter and on to each model's provider. A finished check is kept on the server for 24 hours. Nothing else is saved and a visitor's address is never stored, only a keyed hash used for the daily count.
+The page says this next to the Check button, before the first run (`privacyNotice()` in `lib/limits.ts`):
+
+> Your task, the test cases and the answers go through OpenRouter to the model providers, and only to endpoints OpenRouter lists as zero data retention. OpenRouter does not log them for this app. This app keeps a finished check for 24 hours so you can see it again without paying twice; only you can see it. Follow-ups are kept 60 minutes. Your address is not stored by this app, only a keyed hash for the day's count; the hosting platform keeps its own short request logs. Please don't paste passwords or anything you would not put in an email.
+
+How each part holds: every model call is sent with `zdr: true` and its listed price as a cap, and a model with no such endpoint is reported as not tested rather than sent elsewhere; `npm run check-models` fails if any model has none. A finished check is cached under a key that includes a keyed hash of the visitor, so it is never shown to anyone else. The OpenRouter account's logging and training settings, read on 2026-10-15, are in `docs/model-connection.md` section 6d.
 
 ## Run it
 
@@ -48,7 +52,7 @@ npm install
 cp .env.example .env.local   # add your OpenRouter key; .env.local is git-ignored
 npm run dev                  # http://localhost:3000
 npm test                     # pure logic and the server flow, with a fake model, no network
-npm run check-models         # re-reads OpenRouter's prices into config/ and docs/models-checked.md
+npm run check-models         # re-reads OpenRouter's prices and zero-data-retention endpoints into config/ and docs/models-checked.md
 npm run record-examples      # re-records the three examples (spends a few cents)
 ```
 

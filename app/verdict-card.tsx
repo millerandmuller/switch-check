@@ -2,6 +2,7 @@ import type { RunState } from "@/lib/events";
 import { sourceNote } from "@/lib/format";
 import { figure } from "@/lib/figure";
 import type { VerdictResult } from "@/lib/verdict";
+import { secondaryButtonClass } from "./ui";
 import { FigureChip } from "./figure-chip";
 
 const DECISION_WORDS = { switch: "Switch", stay: "Stay", "test-more": "Test more" } as const;
@@ -23,6 +24,8 @@ export function VerdictCard({
   result,
   changeNote,
   recordedTask,
+  onCopy,
+  copied,
   names,
   nowMs,
   verdictRef,
@@ -31,6 +34,8 @@ export function VerdictCard({
   result: VerdictResult | null;
   changeNote: string | null;
   recordedTask: string | null;
+  onCopy: () => void;
+  copied: boolean;
   names: Record<string, string>;
   nowMs: number;
   verdictRef: React.RefObject<HTMLElement | null>;
@@ -76,6 +81,11 @@ export function VerdictCard({
               {result.verdict.quote.checkQuestion}” on this line: “{result.verdict.quote.line}”
             </p>
           )}
+          <div>
+            <button type="button" onClick={onCopy} className={secondaryButtonClass}>
+              {copied ? "Copied" : "Copy this verdict"}
+            </button>
+          </div>
         </>
       )}
     </section>

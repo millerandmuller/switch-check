@@ -16,6 +16,7 @@ import { parseCheckRequest } from "@/lib/request";
 import { setCurrent, toggleModel, type Selection } from "@/lib/selection";
 import { readRun } from "@/lib/stream-client";
 import { computeVerdict, summarize, verdictChangeNote, type Verdict } from "@/lib/verdict";
+import { verdictText } from "@/lib/verdict-text";
 import { Elapsed } from "./elapsed";
 import { ShapedPrompt, WordsCompare } from "./followups";
 import { PlanView } from "./plan-view";
@@ -41,6 +42,8 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
   const [editState, setEditState] = useState<{ plan: TaskPlan | null; values: string[] }>({ plan: null, values: [] });
   const [planProblem, setPlanProblem] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // Its own flag, so copying the verdict does not turn the prompt buttons to "Copied".
+  const [copiedVerdict, setCopiedVerdict] = useState(false);
   const [stageStarts, setStageStarts] = useState<Partial<Record<StageId, number>>>({});
   const [followStarts, setFollowStarts] = useState<{ words?: number; variant?: number }>({});
   const [previous, setPrevious] = useState<Verdict | null>(null);
@@ -250,15 +253,21 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
     verdictRef.current?.focus({ preventScroll: true });
   }, [verdictKey]);
 
-  async function copy(text: string) {
+  async function copy(text: string, setFlag: (on: boolean) => void = setCopied) {
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
+      setFlag(true);
+      window.setTimeout(() => setFlag(false), 2000);
     } catch {
       // No clipboard permission: the prompt is on screen to select by hand.
     }
   }
+
+  const copyVerdict = () => {
+    if (result === null || result.waiting) return;
+    const address = `${window.location.origin}${window.location.pathname}`;
+    void copy(verdictText(result.verdict, { source: state.source, at: state.at }, names, address), setCopiedVerdict);
+  };
 
   const changeNote = previous !== null && result !== null && !result.waiting ? verdictChangeNote(previous, result.verdict, names) : null;
   const started = state.phase !== "idle";
@@ -320,7 +329,7 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
 
           {started && (
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-5" aria-live="polite" aria-busy={state.phase === "running"}>
-              <VerdictCard state={state} result={result} changeNote={changeNote} recordedTask={recordedTask} names={names} nowMs={nowMs} verdictRef={verdictRef} />
+              <VerdictCard state={state} result={result} changeNote={changeNote} recordedTask={recordedTask} onCopy={copyVerdict} copied={copiedVerdict} names={names} nowMs={nowMs} verdictRef={verdictRef} />
 
               {state.source === "live" && state.phase === "running" && (
                 <section className="card p-5" aria-label="Progress">

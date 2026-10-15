@@ -32,6 +32,15 @@ test("cost per 1,000 runs is the mean answered call times 1,000, estimated, with
   assert.equal(cost.usdPer1000Runs.state, "estimated");
   assert.match(cost.usdPer1000Runs.note, /2026-10-09/);
   assert.equal(cost.basedOn, 2);
+  // The note carries the sample size, so the chip cannot print the estimate
+  // without saying how few calls it rests on.
+  assert.match(cost.usdPer1000Runs.note, /^from 2 answered calls, OpenRouter price checked 2026-10-09$/);
+});
+
+test("an estimate from one call says one call, not one calls", () => {
+  const cost = costPer1000Runs([{ inputTokens: 1000, outputTokens: 100, ms: 1 }], price, "2026-10-09");
+  assert.equal(cost.kind, "estimated");
+  assert.match(cost.usdPer1000Runs.note, /^from 1 answered call, OpenRouter price checked 2026-10-09$/);
 });
 
 test("a model with no answered call has no cost, with the reason", () => {

@@ -112,15 +112,25 @@ test("equal cost goes to the faster model, then to the lower id, whatever the li
   assert.equal(pickModel(summarize({ ...data, models: [...data.models].reverse() })), "b");
 });
 
-test("every model tying on checks says so and picks the cheapest", () => {
+test("a tie at the ceiling is reported as checks that did not separate the models", () => {
   const verdict = ok(build({ big: { passes: 9, tokens: 4000 }, small: { passes: 9, tokens: 100 }, mid: { passes: 9, tokens: 1000 } }, "big"));
   assert.equal(verdict.model, "small");
-  assert.match(verdict.reason, /Every model passed the same number, so the cheapest is the pick\./);
+  assert.match(verdict.reason, /Every model passed all 9 checks, so these checks did not separate them\./);
+  assert.match(verdict.reason, /the cheapest of equals, not the best of them/);
 });
 
-test("a tie below the maximum is just as steady as a tie at the top", () => {
+test("a tie below the maximum is just as steady as a tie at the top, and is not called a ceiling", () => {
   const verdict = ok(build({ big: { passes: 5, tokens: 4000 }, small: { passes: 5, tokens: 100 } }, "big"));
   assert.equal(verdict.decision, "switch");
+  assert.match(verdict.reason, /Every model passed the same number, so the cheapest is the pick\./);
+  assert.doesNotMatch(verdict.reason, /did not separate/);
+});
+
+test("a stay on a ceiling tie says the checks did not separate the models", () => {
+  const verdict = ok(build({ small: { passes: 9, tokens: 100 }, big: { passes: 9, tokens: 4000 } }, "small"));
+  assert.equal(verdict.decision, "stay");
+  assert.match(verdict.reason, /Every model passed all 9 checks, so these checks did not separate them\./);
+  assert.doesNotMatch(verdict.reason, /the same as every other model here/);
 });
 
 test("a model that was not tested on every case makes the verdict test more, and is named", () => {
@@ -182,6 +192,17 @@ test("the evidence line says who wrote the cases, how many were edited and who j
   assert.equal(evidenceLine(data), "Three test cases, written by Writer, one run, judged by Judge. Enough to point, not to prove.");
   const edited = { ...data, plan: { ...plan, testCases: plan.testCases.map((c, i) => (i === 0 ? { ...c, edited: true } : c)) } };
   assert.match(evidenceLine(edited), /Three test cases, 1 edited by you, the rest written by Writer/);
+});
+
+test("a judge that also wrote the checks is named as the model that wrote them", () => {
+  const data = build({ a: { passes: 9 }, b: { passes: 9 } }, "a");
+  const same = { ...data, writerName: "Gemini 3.8 Flash", judgeName: "Gemini 3.8 Flash" };
+  assert.match(evidenceLine(same), /judged by Gemini 3\.8 Flash, the model that wrote them\./);
+  // A different judge keeps the plain clause: the admission is only owed when
+  // the two roles are one model.
+  const apart = { ...data, writerName: "Gemini 3.8 Flash", judgeName: "Mistral Medium 3.1" };
+  assert.match(evidenceLine(apart), /judged by Mistral Medium 3\.1\./);
+  assert.doesNotMatch(evidenceLine(apart), /the model that wrote them/);
 });
 
 test("the sentence is built only from figures that are listed with a state", () => {

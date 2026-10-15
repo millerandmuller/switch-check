@@ -177,12 +177,16 @@ export function evidenceLine(data: RunData): string {
     .flatMap((byCase) => Object.values(byCase).flat())
     .filter((result) => result.changedByUser).length;
   const writer = edited === 0 ? `written by ${data.writerName}` : `${edited} edited by you, the rest written by ${data.writerName}`;
+  // A judge that is also the writer is marking its own checks. The sentence
+  // names both roles, so it has to name the overlap too, or it reads as two
+  // independent opinions.
+  const judge = data.judgeName === data.writerName ? `${data.judgeName}, the model that wrote them` : data.judgeName;
   const marks = flipped === 0 ? "" : `, ${flipped} result${flipped === 1 ? "" : "s"} set by you`;
   const cut = Object.values(data.cells)
     .flatMap((byCase) => Object.values(byCase))
     .filter((cell) => cell.status === "answered" && cell.truncated).length;
   const cutText = cut === 0 ? "" : ` ${cut} answer${cut === 1 ? " was" : "s were"} cut off at the token limit and marked as far as they were written.`;
-  return `${cases === 3 ? "Three" : cases} test cases, ${writer}, one run, judged by ${data.judgeName}${marks}.${cutText} Enough to point, not to prove.`;
+  return `${cases === 3 ? "Three" : cases} test cases, ${writer}, one run, judged by ${judge}${marks}.${cutText} Enough to point, not to prove.`;
 }
 
 export function computeVerdict(data: RunData): VerdictResult {
@@ -258,6 +262,9 @@ export function computeVerdict(data: RunData): VerdictResult {
   const recommended = byId.get(recommendedId) as ModelSummary;
   const best = Math.max(...complete.map((summary) => summary.passed as number));
   const allTie = complete.every((summary) => summary.passed === best);
+  // Every model passed every check: the tie is at the ceiling, which says
+  // something different from an ordinary tie. See ceilingSentence.
+  const atCeiling = allTie && best === recommended.total;
   const decision = recommendedId === data.current ? "stay" : "switch";
   const figures: LabelledFigure[] = [passFigure(recommended, `${recommended.name} checks passed`)];
   const recommendedCost = costFigureOf(recommended, `${recommended.name} cost`);
@@ -272,10 +279,12 @@ export function computeVerdict(data: RunData): VerdictResult {
       cheaper.length === 0
         ? "No cheaper model was in this run."
         : `The cheaper ${cheaper.length === 1 ? "model" : "models"} passed fewer: ${cheaper.map((summary) => `${summary.name} ${summary.passed} of ${summary.total}`).join(", ")}.`;
-    reason = `Stay on ${current.name}. It passed ${current.passed} of ${current.total} checks${allTie ? ", the same as every other model here" : ""}. ${cheaperText}`;
+    const sameClause = !atCeiling && allTie ? ", the same as every other model here" : "";
+    const ceiling = atCeiling ? ` ${ceilingSentence(current.total)}` : "";
+    reason = `Stay on ${current.name}. It passed ${current.passed} of ${current.total} checks${sameClause}.${ceiling} ${cheaperText}`;
     for (const summary of cheaper) figures.push(passFigure(summary, `${summary.name} checks passed`));
   } else {
-    reason = switchReason(current, recommended, allTie, figures);
+    reason = switchReason(current, recommended, allTie, atCeiling, figures);
   }
 
   return {
@@ -295,7 +304,14 @@ function nameOf(summaries: ModelSummary[], id: string | null): string {
   return summaries.find((summary) => summary.id === id)?.name ?? "another model";
 }
 
-function switchReason(current: ModelSummary, pick: ModelSummary, allTie: boolean, figures: LabelledFigure[]): string {
+// Every compared model passed every check. Saying only "the same number"
+// lets a reader hear "equally good"; what the run shows is checks that could
+// not tell the models apart. Worded the same way in both verdicts.
+function ceilingSentence(checks: number): string {
+  return `Every model passed all ${checks} checks, so these checks did not separate them.`;
+}
+
+function switchReason(current: ModelSummary, pick: ModelSummary, allTie: boolean, atCeiling: boolean, figures: LabelledFigure[]): string {
   const pickPassed = pick.passed as number;
   const currentPassed = current.passed as number;
   let passPhrase: string;
@@ -324,7 +340,9 @@ function switchReason(current: ModelSummary, pick: ModelSummary, allTie: boolean
     }
   }
   figures.push(passFigure(current, `${current.name} checks passed`));
-  const tie = allTie ? " Every model passed the same number, so the cheapest is the pick." : "";
+  let tie = "";
+  if (atCeiling) tie = ` ${ceilingSentence(pick.total)} The pick is the cheapest of equals, not the best of them.`;
+  else if (allTie) tie = " Every model passed the same number, so the cheapest is the pick.";
   return `Switch to ${pick.name}. It passed ${pickPassed} of ${pick.total} checks, ${passPhrase}${costPhrase}.${tie}`;
 }
 

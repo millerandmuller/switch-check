@@ -57,7 +57,15 @@ export function costPer1000Runs(calls: CallUsage[], price: ModelPrice | undefine
   const mean = costs.reduce((sum, cost) => sum + cost, 0) / costs.length;
   return {
     kind: "estimated",
-    usdPer1000Runs: figure(mean * RUNS, "estimated", `OpenRouter price checked ${priceCheckedOn}`),
+    // The note carries the sample size, not just the price date: a mean of a
+    // few calls multiplied by 1,000 and printed to the cent reads as precise
+    // unless the page says how much is behind it. Set here, at the one place
+    // the estimate is made, so every chip that draws it says the same.
+    usdPer1000Runs: figure(
+      mean * RUNS,
+      "estimated",
+      `from ${costs.length} answered call${costs.length === 1 ? "" : "s"}, OpenRouter price checked ${priceCheckedOn}`,
+    ),
     basedOn: costs.length,
     calls: calls.length,
   };

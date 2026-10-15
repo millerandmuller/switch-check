@@ -273,7 +273,7 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
       </div>
       <header className="relative flex flex-wrap items-center gap-x-7 gap-y-2 px-gutter py-3">
         <p className="whitespace-nowrap font-display text-[1.3rem] font-semibold tracking-[-0.01em]">Switch Check</p>
-        <p className="text-[13px] text-muted">Nothing is saved on this page. Reloading it empties it.</p>
+        <p className="text-[13px] text-muted">Nothing you type is saved in your browser. Reloading the page empties it.</p>
       </header>
 
       <main className="relative w-full flex-1 px-gutter pb-12 pt-4">

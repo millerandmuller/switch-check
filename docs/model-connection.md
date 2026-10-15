@@ -189,8 +189,9 @@ three default models, measured call by call at the shipped prices: $0.0218,
 $0.0094 and $0.0189, mean **$0.017** for the writing, the nine candidate calls
 and the judge. The follow-ups roughly double that when a person uses them.
 
-Worth watching: a single worst-case day of 30 checks ($22.75) is nearly the
-whole $23.96 left on the key. The cap is right against the $25 limit, but the
+Worth watching: a single worst-case day of 30 checks ($20.67 at these prices,
+$20.56 at the 2026-10-15 prices, as recomputed by `scripts/lib/models.test.mjs`)
+is most of the $23.96 that was left on the key. The cap is right against the $25 limit, but the
 balance, not the limit, is what runs out first.
 
 ## 6. Credentials, checked 2026-10-09 (rerun before the first deploy)

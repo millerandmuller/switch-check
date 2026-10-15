@@ -391,6 +391,69 @@ The key holds neither the task nor the address. Tickets for follow-ups are kept
 60 minutes. Error logs carry the error's name only. The hosting platform keeps
 its own request logs, which the app does not control.
 
+**Where the calls went, checked.** The first live check after this change
+(local, 2026-10-15 10:19) was read in OpenRouter's activity page. Every call
+went to a zero-data-retention provider: Google for both Claude models and both
+Gemini models, Azure for GPT-6 Luna.
+
+## 6e. Speed under zero-data-retention routing, 2026-10-15
+
+**Why it was measured.** In three live checks after the change above, GPT-6
+Luna ran out of time on one case in two of them, at 35 s and 32 s. In both of
+those, the first judge did not answer either, and the check took about 49 s.
+On 2026-10-09, before the change, ten checks answered all 90 of 90 cells.
+
+**The judge part is fixed in the code.** When the answers run long, judging
+starts with only its 15 s share. Split evenly across three judges, the first
+judge (Gemini 2.5 Flash, 8.9 s at the median) got 5 s and could not answer.
+`attemptDeadline` (`lib/server/judge.ts`) now holds back only the 5 s the next
+judge needs, and only when that leaves the current attempt 5 s too. With 15 s
+left: 10 s, then the remaining 5 s, then no third turn. With more time,
+every attempt is still capped at 12 s.
+
+**The measurement.** 10 calls per model, one after another, with the app's
+real request shape: `zdr: true`, the listed price as the cap, the classify
+example's prompt and test cases, 600 answer tokens plus 1,024 for reasoning,
+and a 45 s limit per call. Times are wall-clock from this machine, including
+the network.
+
+| Model | Endpoint | Times (s), in order | Over 15 s |
+| --- | --- | --- | --- |
+| GPT-6 Luna | Azure, every call | 4.4, 3.2, 2.0, **45.0 (no answer)**, 2.0, **45.0 (no answer)**, 1.7, 9.6, **26.3**, 2.6 | **3 of 10** (2 never answered) |
+| Claude Haiku 5.5 (control) | Google, every call | 0.8, 0.8, 1.1, 0.8, 0.7, 0.9, 0.8, 0.9, 1.0, 0.7 | 0 of 10 |
+
+Luna was billed at its listed price ($0.10 / $0.50), so the answers came from
+the plain Azure endpoint, not a regional one. Luna's tail is slow on its own,
+with no judge and no other call involved. Under ZDR it has a single provider,
+so a slow call has nowhere else to go.
+
+**DeepSeek V4.1 Flash without 4-bit endpoints.** Sent with
+`quantizations: ["int8", "fp6", "fp8", "mxfp8", "fp16", "bf16", "fp32"]`,
+the values in OpenRouter's provider-routing doc that are not 4-bit. `unknown`
+is left out, because unknown precision cannot show that full precision is
+reachable.
+
+- At today's listed price as the cap ($0.024 / $0.72): no endpoint qualifies.
+  1 call, `404 "No endpoints found for the request with quantization: ..."`,
+  nothing billed. Every non-4-bit ZDR endpoint costs more than that.
+- At the 2026-10-09 listed price as the cap ($0.30 / $1.20): 10 of 10
+  answered, spread across three providers. Times 0.9, 0.6, 0.9, 1.1, 1.0, 1.0,
+  0.6, 0.8, 0.8, 0.7 s; 0 of 10 over 15 s.
+
+| Provider | Calls | Price billed (in / out per 1M) | Quantization |
+| --- | --- | --- | --- |
+| CoreWeave | 4 | $0.15 / $0.65 | fp8 |
+| Morph | 3 | $0.033 / $0.60 | fp8 |
+| DeepInfra | 3 | $0.14 / $0.42 | fp8 |
+
+The price billed is OpenRouter's own cost for each call divided by its tokens,
+and it matches the ZDR list exactly. The quantization is read from that list
+for the provider at that price. The reply does not name it. So a non-4-bit
+DeepSeek is reachable under ZDR, and fast, but only with a cap above today's
+listed price, at up to $0.15 / $0.65.
+
+All of the above together cost under $0.01.
+
 ## 7. Not decided yet
 
 - Whether to raise the limits once real use is seen.

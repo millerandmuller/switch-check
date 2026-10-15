@@ -1,9 +1,10 @@
 // The small pure rules the page leans on: which tiles may be ticked, how
 // times and ages read, and how a stream is read back.
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { setCurrent, tileOrder, toggleModel, withCurrent } from "../../lib/selection.ts";
-import { ageText, dateOnly, formatMs, sourceNote, tokensText } from "../../lib/format.ts";
+import { ageText, dateOnly, formatMs, recordedTag, sourceNote, tokensText } from "../../lib/format.ts";
 import { readRun } from "../../lib/stream-client.ts";
 import { encodeEvent } from "../../lib/events.ts";
 
@@ -99,4 +100,18 @@ test("a recorded run's note names the task it was recorded for; a live run has n
   const cached = sourceNote("cached", "2026-10-09T11:59:40Z", task, Date.parse("2026-10-09T12:00:00Z"));
   assert.ok(cached !== null && !cached.lead.includes("for the task"), "a replay of the visitor's own task needs no task quote");
   assert.equal(cached.lead, "Replayed from earlier today.");
+});
+
+test("a recording tags the words row with its date; a live run and a replay do not", () => {
+  assert.equal(recordedTag("recorded", "2026-10-09T11:59:00.000Z"), "Recorded on 2026-10-09. Nothing in this row was run just now.");
+  assert.equal(recordedTag("live", "2026-10-09T11:59:00.000Z"), null);
+  assert.equal(recordedTag("cached", "2026-10-09T11:59:00.000Z"), null);
+  assert.equal(recordedTag("recorded", null), null);
+});
+
+test("the words row draws that tag, so a frame cut around it still says recorded", () => {
+  const source = readFileSync(new URL("../../app/followups.tsx", import.meta.url), "utf8");
+  const words = source.slice(source.indexOf("export function WordsCompare"), source.indexOf("export function ShapedPrompt"));
+  assert.ok(words.includes("recordedTag(state.source, state.at)"), "WordsCompare computes the tag from the run's source and date");
+  assert.ok(/\{tag\}/.test(words) && words.includes('data-testid="words-recorded-tag"'), "WordsCompare draws it");
 });

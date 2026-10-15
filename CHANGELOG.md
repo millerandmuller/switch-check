@@ -22,6 +22,12 @@ AI-Dopters 30-Day Community Hackathon.
   and the ticked models stay as the visitor left them, so a visitor who looks
   at an example and then types a task does not inherit GPT-6 Luna. The note at
   the top of a recorded verdict now names the task it was recorded for.
+- **The "your words as typed" row of a recording carries its own "Recorded on"
+  date.** The page's recorded note sits far above that row, so a picture or a
+  screen recording cut around the row could read as a live run.
+- **The "test more" sentence gives counts.** It now says "if X had passed 7 of
+  9 checks instead of 8 of 9", which is true whether or not X had already
+  failed some checks; "had failed one more check" was not.
 - **A follow-up or a second judging that finishes late no longer writes to
   the screen.** If a recorded example or a new check has taken the screen, the
   late events are dropped, so a recording never shows a prompt written for

@@ -1,5 +1,6 @@
 import type { FollowupState, RunState } from "@/lib/events";
 import { figure } from "@/lib/figure";
+import { recordedTag } from "@/lib/format";
 import { modelName, type ModelConfig } from "@/lib/models";
 import type { ModelSummary } from "@/lib/verdict";
 import { Elapsed } from "./elapsed";
@@ -49,6 +50,7 @@ export function WordsCompare({
     );
   }
   const name = modelName(config, words.model);
+  const tag = recordedTag(state.source, state.at);
   const mine = tally(words, state.plan.checks.length);
   const written = summaries.find((summary) => summary.id === words.model);
   return (
@@ -56,6 +58,11 @@ export function WordsCompare({
       <h2 id="words-heading" className="font-display text-[1.25rem] font-semibold">
         Your words as typed against the written prompt
       </h2>
+      {tag !== null && (
+        <p className="mt-1 text-[13px] font-semibold" data-testid="words-recorded-tag">
+          {tag}
+        </p>
+      )}
       <p className="text-[12.5px] text-muted">
         Your task exactly as you typed it, with each test case under it, run on {name} and marked with the same checks.
       </p>

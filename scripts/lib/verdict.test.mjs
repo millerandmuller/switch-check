@@ -75,13 +75,27 @@ test("a pick one check behind the best is one flipped result from losing, so it 
   const verdict = ok(build({ big: { passes: 9, tokens: 4000 }, small: { passes: 8, tokens: 100 } }, "big"));
   assert.equal(verdict.decision, "test-more");
   assert.equal(verdict.model, "small", "the page still says which model it would have picked");
-  assert.match(verdict.reason, /^Test more\. One judged result decides this: if SMALL had failed one more check, the answer would be BIG instead of SMALL\./);
+  assert.match(verdict.reason, /^Test more\. One judged result decides this: if SMALL had passed 7 of 9 checks instead of 8 of 9, the answer would be BIG instead of SMALL\./);
 });
 
 test("a cheaper model two behind is one flipped result from winning, so it is test more", () => {
   const verdict = ok(build({ big: { passes: 9, tokens: 4000 }, small: { passes: 7, tokens: 100 } }, "big"));
   assert.equal(verdict.decision, "test-more");
   assert.match(verdict.reason, /One judged result decides this: .* the answer would be SMALL instead of BIG\./);
+});
+
+test("the one-result sentence gives the counts, true for a model that already failed checks", () => {
+  // SMALL already failed two checks (7 of 9). The sentence names the model whose
+  // flip decides it, with its real count: BIG losing one check makes SMALL the pick.
+  const flipUp = ok(build({ big: { passes: 9, tokens: 4000 }, small: { passes: 7, tokens: 100 } }, "big"));
+  assert.match(flipUp.reason, /if BIG had passed 8 of 9 checks instead of 9 of 9, the answer would be SMALL instead of BIG/);
+  // SMALL already failed one (8 of 9); the sentence must not say "failed one more" as if it had failed none.
+  const flipDown = ok(build({ big: { passes: 9, tokens: 4000 }, small: { passes: 8, tokens: 100 } }, "big"));
+  assert.match(flipDown.reason, /if SMALL had passed 7 of 9 checks instead of 8 of 9/);
+  for (const verdict of [flipUp, flipDown]) assert.doesNotMatch(verdict.reason, /one more check/);
+  // The "instead of" count is the model's real count in the run.
+  const small = summarize(build({ big: { passes: 9, tokens: 4000 }, small: { passes: 8, tokens: 100 } }, "big")).find((m) => m.name === "SMALL");
+  assert.equal(small.passed, 8);
 });
 
 test("a cheaper model three behind is out of the running and the verdict is stay", () => {

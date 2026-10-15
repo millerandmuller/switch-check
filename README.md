@@ -19,7 +19,7 @@ A task too large for one short answer, such as a whole app, is run as a **slice*
 
 ## Where it stands
 
-Source and history: https://github.com/millerandmuller/switch-check, 56 commits between 2026-09-27 and 2026-10-15, 287 tests.
+Source and history: https://github.com/millerandmuller/switch-check, 57 commits between 2026-09-27 and 2026-10-15, 290 tests.
 
 On 2026-10-15 a live check on the public page, task ‘turn rough meeting notes into action items with an owner and a due date’, on the two default models: Claude Haiku 5.5 passed 12 of 12 judged checks, the same as Claude Sonnet 5.5, at an estimated 93% lower cost per 1,000 runs (OpenRouter prices of 2026-10-15); the task as typed passed 8 of 12 against 12 of 12 for the written prompt. One run of three generated test cases, which is enough to point, not to prove.
 

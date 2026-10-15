@@ -244,7 +244,8 @@ export function computeVerdict(data: RunData): VerdictResult {
       if (!movable) continue;
       const other = pickModel(complete, { id: summary.id, delta });
       if (other !== recommendedId) {
-        const direction = delta === 1 ? "passed" : "failed";
+        // Stated as counts, so it is true whether or not the model has already failed some checks.
+        const now = summary.passed as number;
         return {
           waiting: false,
           verdict: testMore(
@@ -252,7 +253,7 @@ export function computeVerdict(data: RunData): VerdictResult {
             summaries,
             current,
             recommendedId,
-            `One judged result decides this: if ${summary.name} had ${direction} one more check, the answer would be ${nameOf(summaries, other)} instead of ${nameOf(summaries, recommendedId)}. Flip a result below to see it, or run again.`,
+            `One judged result decides this: if ${summary.name} had passed ${now + delta} of ${summary.total} checks instead of ${now} of ${summary.total}, the answer would be ${nameOf(summaries, other)} instead of ${nameOf(summaries, recommendedId)}. Flip a result below to see it, or run again.`,
           ),
         };
       }

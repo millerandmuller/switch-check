@@ -62,3 +62,11 @@ export function sourceNote(
   }
   return null;
 }
+
+// The tag a recording puts on a figure that sits far from the page's recorded
+// note, so a frame cut around that figure still says it is a recording. A live
+// run or a replay of the visitor's own check has none.
+export function recordedTag(source: "live" | "cached" | "recorded" | null, at: string | null): string | null {
+  if (source !== "recorded" || at === null) return null;
+  return `Recorded on ${dateOnly(at)}. Nothing in this row was run just now.`;
+}

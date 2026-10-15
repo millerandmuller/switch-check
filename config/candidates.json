@@ -25,16 +25,10 @@
       "id": "openai/gpt-6-sol",
       "name": "GPT-6 Sol",
       "provider": "OpenAI"
-    },
-    {
-      "id": "deepseek/deepseek-v4.1-flash",
-      "name": "DeepSeek V4.1 Flash",
-      "provider": "DeepSeek"
     }
   ],
   "default_models": [
     "anthropic/claude-sonnet-5.5",
-    "openai/gpt-6-luna",
     "anthropic/claude-haiku-5.5"
   ],
   "default_current": "anthropic/claude-sonnet-5.5",

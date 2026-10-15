@@ -3,6 +3,22 @@
 What changed in Switch Check, newest first. Days are the days of the Early
 AI-Dopters 30-Day Community Hackathon.
 
+## Oct 15, 2026, Day 21
+
+### Changed
+
+- **The page starts with two models, Claude Sonnet 5.5 and Claude Haiku
+  5.5.** Every call now goes only to endpoints OpenRouter lists as zero data
+  retention, at no more than the listed price. Under that rule, GPT-6 Luna can
+  only reach one provider, and it took over 15 seconds on 3 of 10 calls; two
+  never answered. Haiku answered all 10 in about a second. GPT-6 Luna is still
+  on the list, and the page says which cells were not tested when it is slow.
+- **DeepSeek V4.1 Flash is not offered for now.** At its listed price its only
+  zero-data-retention endpoint is a 4-bit one, so a check could not reach a
+  full-precision DeepSeek. It comes back once it has a price cap of its own.
+- **The three recorded examples are unchanged.** They are dated runs from
+  Oct 9 and still show GPT-6 Luna.
+
 ## Week 3, so far (Oct 9, 2026, Day 15)
 
 The first tester stopped at the fourth step, where the page asked for six

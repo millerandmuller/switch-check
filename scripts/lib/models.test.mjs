@@ -21,10 +21,21 @@ test("every model the app can call has a dated price from OpenRouter", () => {
   }
 });
 
-test("no more than six candidates, and a run starts with three of them", () => {
+// Two defaults since 2026-10-15: Sonnet and Haiku, the two that answered
+// fastest under zero-data-retention routing (docs/model-connection.md 6e).
+// Two is the least a comparison needs.
+test("no more than six candidates, and a run starts with the two fastest under zero data retention", () => {
   assert.ok(candidates.candidates.length <= 6);
-  assert.equal(candidates.default_models.length, 3);
+  assert.deepEqual(candidates.default_models, ["anthropic/claude-sonnet-5.5", "anthropic/claude-haiku-5.5"]);
+  assert.equal(candidates.default_models.length, LIMITS.minModels);
   assert.ok(candidates.default_models.length <= LIMITS.maxModels);
+});
+
+// DeepSeek V4.1 Flash has no zero-data-retention endpoint above 4-bit at its
+// listed price (2026-10-15), so as a candidate it could only read not tested.
+test("DeepSeek V4.1 Flash is not offered until it has a price cap it can be reached at", () => {
+  assert.ok(!candidates.candidates.some((m) => m.id === "deepseek/deepseek-v4.1-flash"));
+  assert.ok(candidates.candidates.some((m) => m.id === "openai/gpt-6-luna"), "GPT-6 Luna stays a candidate");
 });
 
 test("the config problems function names what is wrong", () => {

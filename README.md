@@ -6,7 +6,7 @@ Live page: https://switch-check.vercel.app · The first version, kept as it was:
 
 ## What it does
 
-You type a task in plain words, pick up to four models and the one you use today, and press **Check**. Then, with no further input:
+You type a task in plain words, pick up to four models and the one you use today, and press **Check**. The page starts with two, Claude Sonnet 5.5 and Claude Haiku 5.5: every call goes only to zero-data-retention endpoints, and under that rule these two answered fastest (10 of 10 calls in about a second each, where GPT-6 Luna took over 15 s on 3 of 10; `docs/model-connection.md` section 6e). GPT-6 Luna, Claude Opus 5.5 and GPT-6 Sol can be added. DeepSeek V4.1 Flash is not offered for now, because at its listed price it has no zero-data-retention endpoint above 4-bit. Then, with no further input:
 
 1. **Writing.** One model (Gemini 3.8 Flash) turns your words into a prompt with one input slot, three test cases and three to five yes or no checks. The checks are written before any model has answered. The page lists what it added to your words.
 2. **Running.** Every model you picked answers every test case, in parallel, through OpenRouter. Each answer is capped at 600 tokens, with a further 1,024 tokens allowed for hidden reasoning, and every model gets exactly the same prompt and the same reasoning budget. A model that fails or takes too long is **not tested**, never counted as worse.
@@ -35,7 +35,7 @@ What the page cannot show: the judge is a model, so it can be wrong or lenient, 
 
 ## Spending limits
 
-A credit limit of **$25** is set on the model key in the OpenRouter dashboard (dated in `docs/model-connection.md`). In the app: 5 checks per visitor and 30 for the whole site per UTC day, counted before any model is called; at most 4 models, exactly 3 test cases, 600 answer tokens plus 1,024 reasoning tokens per call, 2,000 characters of task; a finished check is served again for 24 hours without a new run. At the worst the caps allow, one check is about $0.69, so a day of 30 costs at most about $21 (prices of 2026-10-15). These figures are not kept by hand: they come from the caps in `lib/limits.ts` and the prices in `config/model-prices.json`, and `scripts/lib/models.test.mjs` recomputes them and fails if a worst-case day could reach the $25 limit. The breakdown is in `docs/model-connection.md`. If the store behind the counts cannot be reached, live checks stop and the recorded examples are offered.
+A credit limit of **$25** is set on the model key in the OpenRouter dashboard (dated in `docs/model-connection.md`). In the app: 5 checks per visitor and 30 for the whole site per UTC day, counted before any model is called; at most 4 models, exactly 3 test cases, 600 answer tokens plus 1,024 reasoning tokens per call, 2,000 characters of task; a finished check is served again for 24 hours without a new run. At the worst the caps allow, one check is about $0.68, so a day of 30 costs at most about $21 (prices of 2026-10-15). These figures are not kept by hand: they come from the caps in `lib/limits.ts` and the prices in `config/model-prices.json`, and `scripts/lib/models.test.mjs` recomputes them and fails if a worst-case day could reach the $25 limit. The breakdown is in `docs/model-connection.md`. If the store behind the counts cannot be reached, live checks stop and the recorded examples are offered.
 
 ## Privacy
 

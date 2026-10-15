@@ -13,16 +13,28 @@ import { timeoutFor, type Deps } from "./deps.ts";
 // turn when the steps before it ran long.
 const MIN_MS_LEFT_TO_JUDGE = 5_000;
 
-// How long one attempt may take: the shorter of its own share of what is
-// left and the flat per-attempt cap. The share keeps the judges after it
-// from being starved; the cap drops a judge that has gone quiet early
-// instead of waiting out the whole allowance. Seen live before the cap:
-// one judge took 41.8 s of a 44 s window and the run ended with no
-// judgement at all.
-function attemptDeadline(deps: Pick<Deps, "now">, deadline: number, judgesLeft: number): number {
+// How long one attempt may take: everything left, less a reserve for the next
+// judge, and never more than the flat per-attempt cap. The cap drops a judge
+// that has gone quiet early instead of waiting out the whole allowance. Seen
+// live before the cap: one judge took 41.8 s of a 44 s window and the run
+// ended with no judgement at all.
+//
+// The reserve replaces an even split. Split evenly, 15 s across three judges
+// gave the first judge 5 s, and the first judge (Gemini 2.5 Flash, 8.9 s at
+// the median) could not answer in 5 s: every time the grid ran to its limit,
+// the second judge marked instead. So the attempt holds back only what the
+// next judge needs to be started at all (MIN_MS_LEFT_TO_JUDGE), and only when
+// that still leaves this attempt the same minimum. A reserve that would leave
+// this attempt less than that is not usable, so this attempt takes what is
+// left. The last judge has no one to reserve for. With 15 s left: 10 s, then
+// the remaining 5 s, then no third turn.
+export function attemptDeadline(deps: Pick<Deps, "now">, deadline: number, judgesLeft: number): number {
   const now = deps.now();
-  const share = Math.floor(Math.max(0, deadline - now) / Math.max(1, judgesLeft));
-  return now + Math.min(LIMITS.judgeAttemptMs, share);
+  const left = Math.max(0, deadline - now);
+  const anotherWaiting = judgesLeft > 1;
+  const reserveUsable = left - MIN_MS_LEFT_TO_JUDGE >= MIN_MS_LEFT_TO_JUDGE;
+  const reserve = anotherWaiting && reserveUsable ? MIN_MS_LEFT_TO_JUDGE : 0;
+  return now + Math.min(LIMITS.judgeAttemptMs, left - reserve);
 }
 
 export type JudgeOutcome =

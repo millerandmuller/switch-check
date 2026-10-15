@@ -39,9 +39,9 @@ export default function WhatChanged() {
               Before and after
             </h2>
             <figure className="card overflow-hidden p-3">
-              <Image src="/what-changed/before.jpg" width={1484} height={669} alt="The first version, step 4 of 5: an Outputs screen with six boxes for outputs pasted in from other tools." className="h-auto w-full rounded-xl" />
+              <Image src="/what-changed/before.jpg" width={1484} height={669} alt="The first version, step 4 of 5 with your own prompt: an Outputs screen reading 0 of 6 pasted, with the first two of six empty boxes for outputs pasted in from other tools." className="h-auto w-full rounded-xl" />
               <figcaption className="mt-2 text-[13.5px] text-muted">
-                <b>Before.</b> Step 4 of 5, shown with the sample&apos;s outputs loaded. With your own prompt the six boxes start empty: each output is run in another tool and pasted back. Still reachable at{" "}
+                <b>Before.</b> Step 4 of 5 with your own prompt: six empty boxes, one per input and model. Each output is run in another tool and pasted back. Still reachable at{" "}
                 <a href={OLD_VERSION} className="font-semibold text-accent underline underline-offset-2">
                   switch-check-v1.vercel.app
                 </a>
@@ -49,9 +49,9 @@ export default function WhatChanged() {
               </figcaption>
             </figure>
             <figure className="card overflow-hidden p-3">
-              <Image src="/what-changed/after.jpg" width={1568} height={707} alt="The new page showing a verdict sentence, the figures behind it each with a state, and the test cases that were written." className="h-auto w-full rounded-xl" />
+              <Image src="/what-changed/after.jpg" width={1568} height={707} alt="The new page showing the recorded note that names its task, a verdict sentence, the figures behind it each with a state, and the start of the test cases that were written." className="h-auto w-full rounded-xl" />
               <figcaption className="mt-2 text-[13.5px] text-muted">
-                <b>After.</b> One page. This is the recorded example of 2026-10-09, shown as recorded on the page itself: one sentence typed, one button pressed, a verdict with the figures behind it.
+                <b>After.</b> One page. This is the recorded example of 2026-10-09, shown as recorded on the page itself: the note names the task it was recorded for, and the verdict comes with the figures behind it. On the live page it is one sentence typed and one button pressed.
               </figcaption>
             </figure>
           </section>

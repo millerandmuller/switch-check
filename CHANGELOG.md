@@ -18,6 +18,32 @@ AI-Dopters 30-Day Community Hackathon.
   full-precision DeepSeek. It comes back once it has a price cap of its own.
 - **The three recorded examples are unchanged.** They are dated runs from
   Oct 9 and still show GPT-6 Luna.
+- **Pressing a recorded example no longer fills in the form.** The task box
+  and the ticked models stay as the visitor left them, so a visitor who looks
+  at an example and then types a task does not inherit GPT-6 Luna. The note at
+  the top of a recorded verdict now names the task it was recorded for.
+- **The two pictures on `/what-changed` are retaken.** The "after" picture
+  showed the Oct 9 verdict wording and the old cost chips; it now shows the
+  current wording, the recorded note and the new button. The "before" picture
+  shows step 4 of the first version with your own prompt, six empty boxes.
+
+### Added
+
+- **A "Copy this verdict" button under the verdict.** It copies the verdict
+  sentence, the evidence line and the page address as plain text. A recording
+  or a replay says so in the copied text, so a pasted result never reads as a
+  run that happened just now. It has its own "Copied" state.
+- **A "Where it stands" section in the README**: the commit count and test
+  count with dates, and one dated outcome of a live check, labelled judged,
+  estimated and generated as the page labels it.
+
+### Missed
+
+- **The GitHub repository description and the portal project description still
+  describe the first version.** Both wait for Lutfiya to say go.
+- **The copied text was checked on the page, not pasted.** The automated
+  browser could not paste, so the text was captured at the moment of copying
+  and compared with the page.
 
 ## Week 3, so far (Oct 9, 2026, Day 15)
 

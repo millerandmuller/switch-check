@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { setCurrent, tileOrder, toggleModel, withCurrent } from "../../lib/selection.ts";
-import { ageText, dateOnly, formatMs, tokensText } from "../../lib/format.ts";
+import { ageText, dateOnly, formatMs, sourceNote, tokensText } from "../../lib/format.ts";
 import { readRun } from "../../lib/stream-client.ts";
 import { encodeEvent } from "../../lib/events.ts";
 
@@ -84,4 +84,19 @@ test("an age under a minute reads just now, at the edge too", () => {
   const now = Date.parse("2026-10-09T12:00:00Z");
   assert.equal(ageText("2026-10-09T11:59:01Z", now), "just now");
   assert.equal(ageText("2026-10-09T11:59:00Z", now), "1 minute ago");
+});
+
+test("a recorded run's note names the task it was recorded for; a live run has none", () => {
+  const task = "Tell me whether each support ticket is about billing, a bug, or a feature request.";
+  const recorded = sourceNote("recorded", "2026-10-09T11:59:00.000Z", task, 0);
+  assert.ok(recorded !== null);
+  assert.ok(recorded.lead.includes("for the task"));
+  assert.ok(recorded.lead.includes(`\u201c${task}\u201d`), "the task is quoted as typed, no rewording");
+  assert.equal(recorded.lead, `Recorded on 2026-10-09 for the task \u201c${task}\u201d`, "no second full stop after a task that ends in one");
+  assert.equal(sourceNote("recorded", "2026-10-09T11:59:00.000Z", "Sort my mail", 0).lead, "Recorded on 2026-10-09 for the task \u201cSort my mail\u201d.");
+  assert.ok(recorded.rest.startsWith("Nothing on this page was run just now."));
+  assert.equal(sourceNote("live", "2026-10-09T11:59:00.000Z", task, 0), null);
+  const cached = sourceNote("cached", "2026-10-09T11:59:40Z", task, Date.parse("2026-10-09T12:00:00Z"));
+  assert.ok(cached !== null && !cached.lead.includes("for the task"), "a replay of the visitor's own task needs no task quote");
+  assert.equal(cached.lead, "Replayed from earlier today.");
 });

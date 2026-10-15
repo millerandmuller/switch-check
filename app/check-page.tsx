@@ -44,6 +44,9 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
   const [stageStarts, setStageStarts] = useState<Partial<Record<StageId, number>>>({});
   const [followStarts, setFollowStarts] = useState<{ words?: number; variant?: number }>({});
   const [previous, setPrevious] = useState<Verdict | null>(null);
+  // The task a shown recording was made for. Showing a recording does not touch
+  // the form, so the verdict card names the task itself.
+  const [recordedTask, setRecordedTask] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
   const followedFor = useRef<string | null>(null);
@@ -221,8 +224,7 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
     setRefusal(null);
     setTaskProblem(null);
     setPrevious(null);
-    setTask(example.task);
-    setSelection({ models: example.models, current: example.current });
+    setRecordedTask(example.task);
     followedFor.current = null;
     for (const event of asRecordedEvents(example.events, "recorded")) handle(event);
   }
@@ -318,7 +320,7 @@ export function CheckPage({ config, prices, examples }: { config: ModelConfig; p
 
           {started && (
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-5" aria-live="polite" aria-busy={state.phase === "running"}>
-              <VerdictCard state={state} result={result} changeNote={changeNote} names={names} nowMs={nowMs} verdictRef={verdictRef} />
+              <VerdictCard state={state} result={result} changeNote={changeNote} recordedTask={recordedTask} names={names} nowMs={nowMs} verdictRef={verdictRef} />
 
               {state.source === "live" && state.phase === "running" && (
                 <section className="card p-5" aria-label="Progress">

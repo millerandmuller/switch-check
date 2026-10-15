@@ -1,5 +1,5 @@
 import type { RunState } from "@/lib/events";
-import { ageText, dateOnly } from "@/lib/format";
+import { sourceNote } from "@/lib/format";
 import { figure } from "@/lib/figure";
 import type { VerdictResult } from "@/lib/verdict";
 import { FigureChip } from "./figure-chip";
@@ -8,28 +8,21 @@ const DECISION_WORDS = { switch: "Switch", stay: "Stay", "test-more": "Test more
 
 // Where the run came from, in words a reader cannot miss. A recording is never
 // presented as a run that just happened.
-function SourceLine({ state, nowMs }: { state: RunState; nowMs: number }) {
-  if (state.source === "recorded" && state.at !== null) {
-    return (
-      <p className="rounded-2xl bg-chip px-4 py-2.5 text-[14px]" role="note">
-        <b>Recorded on {dateOnly(state.at)}.</b> Nothing on this page was run just now. Times read recorded, not measured.
-      </p>
-    );
-  }
-  if (state.source === "cached" && state.at !== null) {
-    return (
-      <p className="rounded-2xl bg-chip px-4 py-2.5 text-[14px]" role="note">
-        <b>{ageText(state.at, nowMs) === "just now" ? "Replayed from earlier today" : `Recorded ${ageText(state.at, nowMs)}`}.</b> The same task on the same models was checked earlier today, so this is that run, shown again. Nothing was run just now.
-      </p>
-    );
-  }
-  return null;
+function SourceLine({ state, recordedTask, nowMs }: { state: RunState; recordedTask: string | null; nowMs: number }) {
+  const note = sourceNote(state.source, state.at, recordedTask, nowMs);
+  if (note === null) return null;
+  return (
+    <p className="rounded-2xl bg-chip px-4 py-2.5 text-[14px]" role="note">
+      <b>{note.lead}</b> {note.rest}
+    </p>
+  );
 }
 
 export function VerdictCard({
   state,
   result,
   changeNote,
+  recordedTask,
   names,
   nowMs,
   verdictRef,
@@ -37,6 +30,7 @@ export function VerdictCard({
   state: RunState;
   result: VerdictResult | null;
   changeNote: string | null;
+  recordedTask: string | null;
   names: Record<string, string>;
   nowMs: number;
   verdictRef: React.RefObject<HTMLElement | null>;
@@ -44,7 +38,7 @@ export function VerdictCard({
   if (result === null) return null;
   return (
     <section ref={verdictRef} id="verdict" tabIndex={-1} aria-labelledby="verdict-heading" className="card flex flex-col gap-3 p-5 ring-1 ring-accent/40 focus:outline-none focus:shadow-none">
-      <SourceLine state={state} nowMs={nowMs} />
+      <SourceLine state={state} recordedTask={recordedTask} nowMs={nowMs} />
       {result.waiting ? (
         <>
           <h2 id="verdict-heading" className="font-display text-[1.25rem] font-semibold">

@@ -37,3 +37,28 @@ export function ageText(thenIso: string, nowMs: number): string {
 export function dateOnly(iso: string): string {
   return iso.slice(0, 10);
 }
+
+// The note at the top of the verdict card: where the run came from, in words a
+// reader cannot miss. A recording names the task it was recorded for, because
+// showing it does not put that task in the task box. A live run has no note.
+export function sourceNote(
+  source: "live" | "cached" | "recorded" | null,
+  at: string | null,
+  task: string | null,
+  nowMs: number,
+): { lead: string; rest: string } | null {
+  if (at === null) return null;
+  if (source === "recorded") {
+    // The task is quoted as typed; a full stop follows the quote only when the task has none of its own.
+    const forTask = task === null ? "." : ` for the task \u201c${task}\u201d${/[.!?]$/.test(task) ? "" : "."}`;
+    return { lead: `Recorded on ${dateOnly(at)}${forTask}`, rest: "Nothing on this page was run just now. Times read recorded, not measured." };
+  }
+  if (source === "cached") {
+    const age = ageText(at, nowMs);
+    return {
+      lead: `${age === "just now" ? "Replayed from earlier today" : `Recorded ${age}`}.`,
+      rest: "The same task on the same models was checked earlier today, so this is that run, shown again. Nothing was run just now.",
+    };
+  }
+  return null;
+}

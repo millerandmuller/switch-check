@@ -454,6 +454,52 @@ listed price, at up to $0.15 / $0.65.
 
 All of the above together cost under $0.01.
 
+## 6f. The three judges under zero-data-retention routing, 2026-10-15
+
+**Why it was measured.** On the live production check of 2026-10-15 the first
+judge (Gemini 2.5 Flash) did not answer inside its share, although only the two
+default models were on the grid and GPT-6 Luna was not involved. Section 6e read
+the first-judge failures as following Luna's timeouts. This run had no Luna, so
+the reading needed numbers of its own. The judge order is not changed here.
+
+**The measurement.** The method of section 2a with the request shape of 6e. The
+judge prompt is the one the app sends: `shuffleBlind` and `buildJudgePrompt`
+(`lib/judging.ts`) on the recorded "Sort support tickets" example (its prompt,
+its 4 checks and its 9 answers, 36 marks per call), a new shuffle for every
+call, and every reply read with `parseJudgement`. Each call went through the
+app's own `complete` and `buildRequest` (`lib/server/openrouter.ts`): `zdr: true`,
+the listed price as the cap, 4,000 answer tokens, a 45 s limit. 10 calls per
+judge, one after another, from this machine, so the times include the local
+network. The script was a one-off and is not kept in the repository. The
+provider is the one OpenRouter names in each response; it names the company, not
+the endpoint, so the endpoint is the one the ZDR list gives for that provider
+(Vertex for Google) and was not read from the activity page.
+
+| Judge | Endpoint | Times (s), in order | Over 12 s | Answered | Parsed | Unset |
+| --- | --- | --- | --- | --- | --- | --- |
+| Gemini 2.5 Flash | Google, every call | 7.0, 8.3, 10.1, 7.7, 7.0, 6.6, 6.9, 5.5, 9.3, 6.9 | 0 of 10 | 10 of 10 | 10 of 10 | 0 of 360 |
+| Gemini 3.8 Flash | Google, every call | 2.4, 2.4, 2.4, 3.0, 2.7, 2.6, 2.5, 3.4, 2.9, 2.2 | 0 of 10 | 10 of 10 | 10 of 10 | 0 of 360 |
+| Mistral Medium 3.1 | Mistral, every call | 2.4, 2.4, 2.1, 2.1, 2.2, 2.1, 2.2, 2.2, 2.4, 2.1 | 0 of 10 | 10 of 10 | 10 of 10 | 0 of 360 |
+
+Medians: 7.0 s, 2.6 s and 2.2 s. Worst calls: 10.1 s, 3.4 s and 2.4 s. No reply
+was cut off at the token limit.
+
+**Cost.** OpenRouter's own cost for the 30 calls adds up to $0.066 ($0.037,
+$0.017 and $0.012 per judge). They did not go through the page, so they did not
+touch the site's daily counter.
+
+**What the numbers show.** Under zero-data-retention routing, with no Luna on
+the grid and no other call running, the first judge answered and parsed 10 of 10
+calls, none over 12 s and the slowest at 10.1 s, which is slower than the other
+two seats (7.0 s at the median against about 2.5 s) and inside the 12 s attempt
+cap every time. So these ten calls do not reproduce the production failure, and show no slow
+tail of the judge that would explain it. What differed on production and was
+not measured here is the time the judge was left with after the writer and the
+answers had run, and the task and the answers themselves. The first judge's
+worst case stayed under the 12 s attempt cap in all 10 calls, so the
+more-than-1-in-10 condition for flagging it is not met. The order of the judges
+is decided in a separate step.
+
 ## 7. Not decided yet
 
 - Whether to raise the limits once real use is seen.
